@@ -290,19 +290,28 @@ pub fn init_with_objects_and_keys(
     first_object: id,
     mut va_args: VaList,
 ) -> id {
-    let first_key: id = va_args.next(env);
-    // Spec: `dictionaryWithObjectsAndKeys:` should @throw if the first key is
-    // nil. We log + return an empty dictionary instead of panicking the host.
+    // Spec (Apple docs): the list is `(object1, key1, object2, key2, ...)`,
+    // terminated by a nil OBJECT. A nil first object therefore means an empty
+    // dictionary, and we must NOT read any further varargs (reading past the
+    // terminator yields garbage).
     let mut host_object = <DictionaryHostObject as Default>::default();
-    if first_key == nil {
-        log!(
-            "Warning: dictionaryWithObjectsAndKeys:/initWithObjectsAndKeys: first key is nil; \
-             returning empty dictionary."
-        );
+    if first_object == nil {
         *env.objc.borrow_mut(this) = host_object;
         return this;
     }
-    host_object.insert(env, first_key, first_object, /* copy_key: */ true);
+    let first_key: id = va_args.next(env);
+    // Spec: `dictionaryWithObjectsAndKeys:` should @throw if a key is nil.
+    // Instead of discarding the whole dictionary (which loses valid pairs
+    // that follow), skip the nil-keyed pair and keep parsing the rest.
+    if first_key == nil {
+        log!(
+            "Warning: dictionaryWithObjectsAndKeys:/initWithObjectsAndKeys: \
+             first key is nil for value {:?}; skipping pair and continuing.",
+            first_object
+        );
+    } else {
+        host_object.insert(env, first_key, first_object, /* copy_key: */ true);
+    }
 
     loop {
         let object: id = va_args.next(env);
