@@ -215,16 +215,32 @@ mod collections {
                 assert!(existing.base & PAGE_SIZE_ALIGN_MASK == 0);
                 // re-align base address by splitting in 2 chunks:
                 // less than page size, not aligned
-                let left = Chunk::new(existing.base + size, PAGE_SIZE - size);
+                let left_size = PAGE_SIZE - size;
+                let left = Chunk::new(existing.base + size, left_size);
                 // (maybe) more than page size, aligned
                 let right = Chunk::new(existing.base + PAGE_SIZE, existing.size.get() - PAGE_SIZE);
                 assert_eq!(left.last_byte() + 1, right.base); // sanity check, bases
                 assert_eq!(left.size.get() + right.size.get(), rump_size); // sanity check, sizes
-                self.insert(left);
-                self.insert(right);
-            } else {
+                if left_size >= MIN_CHUNK_SIZE {
+                    self.insert(left);
+                    self.insert(right);
+                } else {
+                    // The unaligned left sliver is below MIN_CHUNK_SIZE and
+                    // can't be tracked by the size-bucketed free list. Give
+                    // the caller the whole existing chunk instead; its base
+                    // is page-aligned, so the page-alignment invariant holds.
+                    return Some(Chunk::new(existing.base, existing.size.get()));
+                }
+            } else if rump_size >= MIN_CHUNK_SIZE {
                 let rump = Chunk::new(rump_base, rump_size);
                 self.insert(rump);
+            } else {
+                // The rump is below MIN_CHUNK_SIZE and can't go into the
+                // size-bucketed free list (its invariant is `size >=
+                // MIN_CHUNK_SIZE`). Absorb it into the allocation instead of
+                // panicking; at most MIN_CHUNK_SIZE - 1 bytes are lost, which
+                // is negligible internal fragmentation.
+                return Some(Chunk::new(existing.base, existing.size.get()));
             }
 
             Some(alloc)
@@ -494,14 +510,22 @@ impl Allocator {
             if new_size >= PAGE_SIZE && new_base & PAGE_SIZE_ALIGN_MASK != 0 {
                 // Invariant of page alignment would be violated!
                 // So we're not combining
-                self.unused_chunks.insert(adjacent);
-                self.unused_chunks.insert(freed);
+                // Sub-MIN_CHUNK_SIZE slivers can't live in the bucketed free
+                // list, so drop them (bounded loss, matches reserve()).
+                if adjacent.size.get() >= MIN_CHUNK_SIZE {
+                    self.unused_chunks.insert(adjacent);
+                }
+                if freed.size.get() >= MIN_CHUNK_SIZE {
+                    self.unused_chunks.insert(freed);
+                }
             } else {
                 // We are good to combine
                 let combined = Chunk::new(new_base, new_size);
-                self.unused_chunks.insert(combined);
+                if combined.size.get() >= MIN_CHUNK_SIZE {
+                    self.unused_chunks.insert(combined);
+                }
             }
-        } else {
+        } else if freed.size.get() >= MIN_CHUNK_SIZE {
             self.unused_chunks.insert(freed);
         }
 
@@ -518,6 +542,10 @@ mod grow_in_place_tests {
     /// reserve an arena first.
     fn arena() -> Allocator {
         let mut allocator = Allocator::new();
+        // Mirror what `Mem` does in production: reserve the null segment at
+        // address 0 first. Without this, the very first `alloc` could legally
+        // return base 0, which is indistinguishable from NULL to the guest.
+        allocator.reserve(Chunk::new(0, PAGE_SIZE));
         allocator.reserve(Chunk::new(PAGE_SIZE, 64 * PAGE_SIZE));
         allocator
     }
@@ -580,14 +608,15 @@ mod grow_in_place_tests {
 #[cfg(test)]
 mod probe_tests {
     use super::Allocator;
+    /// The null segment must prevent malloc from ever handing out address 0.
     #[test]
-    fn probe() {
+    fn alloc_never_returns_null_address_when_memory_is_available() {
         let mut a = Allocator::new();
+        a.reserve(super::Chunk::new(0, super::PAGE_SIZE));
         let base = a.alloc(16);
-        eprintln!("PROBE alloc = {:#x}", base);
-        let chunk = a.free(base);
-        eprintln!("PROBE free size = {:#x}", chunk);
+        assert_ne!(base, 0, "malloc handed out address 0");
+        assert_eq!(a.free(base), 16);
         let base2 = a.alloc(16);
-        eprintln!("PROBE alloc2 = {:#x}", base2);
+        assert_ne!(base2, 0);
     }
 }
