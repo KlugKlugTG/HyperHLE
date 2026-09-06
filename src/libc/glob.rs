@@ -111,6 +111,17 @@ fn glob(
     while !next_dir_entry.is_null() {
         let name_c_str: ConstPtr<u8> = next_dir_entry.cast().cast_const() + dirent_name_offset;
 
+        // POSIX: glob() never returns "." or ".." entries (unless explicitly
+        // included in the pattern, which we don't support — leading dots also
+        // require GLOB_PERIOD, which is not honored here).
+        {
+            let name: &[u8] = &env.mem.cstr_at(name_c_str);
+            if name == b"." || name == b".." {
+                next_dir_entry = readdir(env, dirp);
+                continue;
+            }
+        }
+
         // TODO: should we match on the whole path or just the filename?
         if fnmatch(env, subpattern_c_str, name_c_str, 0) == 0 {
             // TODO: use `lstat` and/or `stat` to get information on names found

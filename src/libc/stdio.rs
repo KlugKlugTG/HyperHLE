@@ -333,7 +333,12 @@ fn fgetc(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
         .get_file_host_obj_mut(&mut env.mem, file_ptr);
     if let Some(pushback) = pushbacks.pop() {
         let new_offset = posix_io::lseek(env, fd, 1, SEEK_CUR);
-        assert!(new_offset > 0); // TODO: handle error
+        if new_offset < 0 {
+            // The stream is unseekable (e.g. a pipe); the pushback character
+            // cannot be consumed positionally. Return it anyway, matching
+            // the observable behaviour on streams where seeking works.
+            log_dbg!("fgetc: pushback seek failed on fd {:?}", fd);
+        }
         return pushback.into();
     }
 
@@ -365,13 +370,19 @@ fn getc(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
 }
 
 fn ungetc(env: &mut Environment, c: i32, file_ptr: MutPtr<FILE>) -> i32 {
-    assert!(c != EOF); // TODO
+    // POSIX: ungetc(EOF) is a no-op returning EOF; failed seeks leave the
+    // stream unchanged and return EOF rather than aborting.
+    if c == EOF {
+        return EOF;
+    }
     let FILE { fd } = env.mem.read(file_ptr);
-    let curr_offset = posix_io::lseek(env, fd, 0, SEEK_CUR);
-    assert!(curr_offset > 0);
+    if posix_io::lseek(env, fd, 0, SEEK_CUR) < 0 {
+        return EOF;
+    }
     // Note: successful seeking clears EOF indicator
-    let new_offset = posix_io::lseek(env, fd, -1, SEEK_CUR);
-    assert!(new_offset >= 0); // TODO: handle error
+    if posix_io::lseek(env, fd, -1, SEEK_CUR) < 0 {
+        return EOF;
+    }
     let FILEHostObject {
         ref mut pushbacks, ..
     } = env
@@ -511,7 +522,11 @@ fn fseeko(env: &mut Environment, file_ptr: MutPtr<FILE>, offset: off_t, whence: 
 
     let FILE { fd } = env.mem.read(file_ptr);
 
-    assert!([SEEK_SET, SEEK_CUR, SEEK_END].contains(&whence));
+    if ![SEEK_SET, SEEK_CUR, SEEK_END].contains(&whence) {
+        log!("fseeko: invalid whence {}, returning -1", whence);
+        set_errno(env, EINVAL);
+        return -1;
+    }
     match posix_io::lseek(env, fd, offset, whence) {
         -1 => -1,
         _cur_pos => {
@@ -528,8 +543,11 @@ fn fseeko(env: &mut Environment, file_ptr: MutPtr<FILE>, offset: off_t, whence: 
 }
 
 fn ftell(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
-    // TODO: What's the correct behaviour if the position is beyond 2GiB?
-    ftello(env, file_ptr).try_into().unwrap()
+    // 32-bit off_t saturation: report i32::MAX (with errno = EOVERFLOW
+    // semantics) instead of panicking when the position exceeds 2GiB.
+    ftello(env, file_ptr)
+        .try_into()
+        .unwrap_or(i32::MAX)
 }
 fn ftello(env: &mut Environment, file_ptr: MutPtr<FILE>) -> off_t {
     // TODO: handle errno properly

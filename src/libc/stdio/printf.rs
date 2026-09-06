@@ -101,15 +101,24 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
             }
             pad_width
         };
-        assert!(pad_width >= 0); // TODO: Implement right-padding
+        // C11 §7.21.6.1: a negative field-width argument (via `*`) is
+        // equivalent to a `-` flag followed by the absolute value, i.e. the
+        // result is left-justified within a field of that width.
+        let left_justified = if pad_width < 0 {
+            true
+        } else {
+            left_justified
+        };
+        let pad_width = pad_width.unsigned_abs();
 
         let precision = if get_format_char(&env.mem, format_char_idx) == b'.' {
             format_char_idx += 1;
             let precision = if get_format_char(&env.mem, format_char_idx) == b'*' {
                 let precision = args.next::<i32>(env);
-                assert!(precision >= 0); // TODO: ignore negative
                 format_char_idx += 1;
-                precision as usize
+                // C11 §7.21.6.1: a negative precision argument (via `*`) is
+                // treated as if the precision were omitted entirely.
+                precision.max(0) as usize
             } else {
                 let mut precision = 0;
                 while let c @ b'0'..=b'9' = get_format_char(&env.mem, format_char_idx) {
@@ -211,9 +220,20 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                     write!(&mut res, "{ch}").unwrap();
                 } else {
                     let c: u8 = args.next(env);
-                    assert!(pad_char == ' ' && pad_width == 0);
-                    // TODO
-                    res.push(c);
+                    // Pad the character like a string instead of aborting when
+                    // a width is given (e.g. "%5c"); matches C semantics.
+                    if pad_width > 0 {
+                        let pad_width = pad_width as usize;
+                        if left_justified {
+                            write!(&mut res, "{c:<pad_width$}").unwrap();
+                        } else if pad_char == '0' {
+                            write!(&mut res, "{c:0>pad_width$}").unwrap();
+                        } else {
+                            write!(&mut res, "{c:>pad_width$}").unwrap();
+                        }
+                    } else {
+                        res.push(c);
+                    }
                 }
             }
             // Apple extension?
@@ -226,39 +246,72 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 let _ = prepend_sign;
                 // Убрали assert!(length_modifier.is_none());
                 let c: unichar = args.next(env);
-                assert!(pad_char == ' ' && pad_width == 0);
                 // Заменяем .unwrap() на .unwrap_or('?'), чтобы не было паники
                 // на невалидном UTF-16!
                 let c = char::from_u32(c.into()).unwrap_or('?');
-                write!(&mut res, "{c}").unwrap();
+                if pad_width > 0 {
+                    let pad_width = pad_width as usize;
+                    if left_justified {
+                        write!(&mut res, "{c:<pad_width$}").unwrap();
+                    } else if pad_char == '0' {
+                        write!(&mut res, "{c:0>pad_width$}").unwrap();
+                    } else {
+                        write!(&mut res, "{c:>pad_width$}").unwrap();
+                    }
+                } else {
+                    write!(&mut res, "{c}").unwrap();
+                }
             }
             b's' => {
                 // assert!(!prepend_sign);
                 // TODO: support length modifier
                 // assert!(length_modifier.is_none());
                 let c_string: ConstPtr<u8> = args.next(env);
-                // assert!(pad_char == ' ');
-                // TODO
                 if !c_string.is_null() {
-                    if let Some(precision) = precision {
+                    // Apply precision first (max bytes written), then padding.
+                    // Use lossy UTF-8 conversion instead of panicking on
+                    // invalid guest strings.
+                    let truncated: Vec<u8> = if let Some(precision) = precision {
                         let str_len = strlen(env, c_string);
-                        res.extend_from_slice(
-                            env.mem.bytes_at(c_string, str_len.min(precision as _)),
-                        )
-                    } else if pad_width > 0 {
+                        env.mem
+                            .bytes_at(c_string, str_len.min(precision as _))
+                            .to_vec()
+                    } else {
+                        env.mem.cstr_at(c_string).to_vec()
+                    };
+                    if pad_width > 0 {
                         let pad_width = pad_width as usize;
-                        let str = env.mem.cstr_at_utf8(c_string).unwrap();
+                        let str = String::from_utf8_lossy(&truncated);
                         if left_justified {
                             write!(&mut res, "{str:<pad_width$}").unwrap();
+                        } else if pad_char == '0' {
+                            write!(&mut res, "{str:0>pad_width$}").unwrap();
                         } else {
                             write!(&mut res, "{str:>pad_width$}").unwrap();
                         }
                     } else {
-                        res.extend_from_slice(env.mem.cstr_at(c_string));
+                        res.extend_from_slice(&truncated);
                     }
                 } else {
-                    // assert!(precision.is_none());
-                    res.extend_from_slice("(null)".as_bytes());
+                    // POSIX: a null pointer for %s is printed as "(null)",
+                    // still subject to precision and field width.
+                    let fallback = "(null)";
+                    let truncated: &str = match precision {
+                        Some(precision) => &fallback[..fallback.len().min(precision)],
+                        None => fallback,
+                    };
+                    if pad_width > 0 {
+                        let pad_width = pad_width as usize;
+                        if left_justified {
+                            write!(&mut res, "{truncated:<pad_width$}").unwrap();
+                        } else if pad_char == '0' {
+                            write!(&mut res, "{truncated:0>pad_width$}").unwrap();
+                        } else {
+                            write!(&mut res, "{truncated:>pad_width$}").unwrap();
+                        }
+                    } else {
+                        res.extend_from_slice(truncated.as_bytes());
+                    }
                 }
             }
             b'S' => {
@@ -270,10 +323,25 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
                 assert_eq!(env.mem.read(ctype_locale), b'C');
                 let w_string: ConstPtr<wchar_t> = args.next(env);
-                assert!(pad_char == ' ' && pad_width == 0);
-                // TODO
                 if !w_string.is_null() {
-                    res.extend_from_slice(env.mem.wcstr_at(w_string).as_bytes());
+                    let w = env.mem.wcstr_at(w_string);
+                    // Precision for %S limits the number of wide characters
+                    // written; width then pads the result.
+                    let mut s: String = match precision {
+                        Some(precision) => w.chars().take(precision).collect(),
+                        None => w,
+                    };
+                    if pad_width > 0 {
+                        let pad_width = pad_width as usize;
+                        if left_justified {
+                            s = format!("{s:<pad_width$}");
+                        } else if pad_char == '0' {
+                            s = format!("{s:0>pad_width$}");
+                        } else {
+                            s = format!("{s:>pad_width$}");
+                        }
+                    }
+                    res.extend_from_slice(s.as_bytes());
                 } else {
                     res.extend_from_slice("(null)".as_bytes());
                 }
@@ -516,9 +584,12 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 let tmp = format!("{:#x}", ptr.to_bits());
                 if pad_width > 0 {
                     let pad_width = pad_width as usize;
-                    assert!(pad_char == ' '); // TODO
+                    // C standard leaves `0` padding for %p implementation-
+                    // defined; support it like the other integer pads.
                     if left_justified {
                         write!(&mut res, "{tmp:<pad_width$}").unwrap();
+                    } else if pad_char == '0' {
+                        write!(&mut res, "{tmp:0>pad_width$}").unwrap();
                     } else {
                         write!(&mut res, "{tmp:>pad_width$}").unwrap();
                     }
@@ -720,9 +791,14 @@ fn f_format(
     } else if pad_char == '0' {
         format!("{float:0>pad_width$.precision$}")
     } else {
-        assert!(pad_char == ' ');
-        // TODO
-        format!("{float:>pad_width$.precision$}")
+        // Space-padded right-justification: sign, then digits padded
+        // with spaces to fill the total width.
+        let formatted = format!("{float:.precision$}");
+        if formatted.len() < pad_width {
+            format!("{}{}", " ".repeat(pad_width - formatted.len()), formatted)
+        } else {
+            formatted
+        }
     }
 }
 
@@ -753,9 +829,12 @@ fn e_format(
             pad_width.saturating_sub(sign.len())
         )
     } else {
-        assert!(pad_char == ' ');
-        // TODO
-        format!("{full_str:>pad_width$}")
+        // Space-padded right-justification.
+        if full_str.len() < pad_width {
+            format!("{}{}", " ".repeat(pad_width - full_str.len()), full_str)
+        } else {
+            full_str
+        }
     }
 }
 

@@ -5,7 +5,7 @@
  */
 //! `dirent.h`
 
-use crate::abi::GuestFunction;
+use crate::abi::{CallFromHost, GuestFunction};
 use crate::dyld::FunctionExports;
 use crate::fs::{FsNodeType, GuestPath};
 use crate::libc::errno::{set_errno, EBADF, ENOENT};
@@ -78,7 +78,13 @@ pub(super) fn opendir(env: &mut Environment, filename: ConstPtr<u8>) -> MutPtr<D
             set_errno(env, ENOENT);
             return Ptr::null();
         };
-        let vec = iter.map(|(str, type_)| (str.to_string(), type_)).collect();
+        let mut vec: Vec<(String, FsNodeType)> = iter
+            .map(|(str, type_)| (str.to_string(), type_))
+            .collect();
+        // POSIX requires readdir() to return "." and ".." as the first two
+        // entries of every directory.
+        vec.insert(0, ("..".to_string(), FsNodeType::Directory));
+        vec.insert(0, (".".to_string(), FsNodeType::Directory));
         State::get_mut(env).open_dirs.insert(dir, vec);
         State::get_mut(env).read_dirs.insert(dir, Vec::new());
         dir
@@ -88,7 +94,6 @@ pub(super) fn opendir(env: &mut Environment, filename: ConstPtr<u8>) -> MutPtr<D
     }
 }
 
-// TODO: return '.' and '..' entries as well
 pub(super) fn readdir(env: &mut Environment, dirp: MutPtr<DIR>) -> MutPtr<dirent> {
     // TODO: handle errno properly
     set_errno(env, 0);
@@ -114,11 +119,24 @@ pub(super) fn readdir(env: &mut Environment, dirp: MutPtr<DIR>) -> MutPtr<dirent
             FsNodeType::File => DT_REG,
             FsNodeType::Directory => DT_DIR,
         };
-        // TODO: fill other fields
+        // Fill fields other than the name with values matching Apple's
+        // dirent layout: a plausible inode (derived from the entry name),
+        // the record length (actual struct size), and d_seekoff left at 0
+        // (the guest is not allowed to rely on it for telldir anyway).
+        let d_ino = {
+            // FNV-1a hash of the name: stable fake inode per entry.
+            let mut h: u64 = 0xcbf29ce484222325;
+            for b in str.as_bytes() {
+                h ^= *b as u64;
+                h = h.wrapping_mul(0x100000001b3);
+            }
+            h
+        };
+        let d_reclen = guest_size_of::<dirent>() as u16;
         let mut dirent = dirent {
-            d_ino: 0,
+            d_ino,
             d_seekoff: 0,
-            d_reclen: 0,
+            d_reclen,
             d_namlen: len as u16,
             d_type,
             d_name: [b'\0'; MAXPATHLEN],
@@ -164,19 +182,37 @@ fn scandir(
     // TODO: handle errno properly
     set_errno(env, 0);
 
-    assert!(select.to_ptr().is_null());
-    assert!(compar.to_ptr().is_null());
-
     let dirp = opendir(env, dirname);
     if dirp.is_null() {
-        // TODO: set errno
+        set_errno(env, ENOENT);
         return -1;
     }
     let mut next_dir_entry = readdir(env, dirp);
     let mut tmp_vec: Vec<MutPtr<dirent>> = vec![];
     while !next_dir_entry.is_null() {
-        tmp_vec.push(next_dir_entry);
+        // POSIX: entries are only included if the optional select callback
+        // returns non-zero (a NULL callback means "select everything").
+        let mut keep = true;
+        if !select.to_ptr().is_null() {
+            let keep_res: i32 = select.call_from_host(env, (next_dir_entry.cast_const(),));
+            keep = keep_res != 0;
+        }
+        if keep {
+            tmp_vec.push(next_dir_entry);
+        }
         next_dir_entry = readdir(env, dirp);
+    }
+    // POSIX: entries are sorted with the optional compar callback (e.g.
+    // alphasort). A NULL callback leaves them in directory order.
+    if !compar.to_ptr().is_null() {
+        tmp_vec.sort_by(|&a, &b| {
+            let pa: ConstPtr<ConstPtr<dirent>> = env.mem.alloc_and_write(a).cast_const();
+            let pb: ConstPtr<ConstPtr<dirent>> = env.mem.alloc_and_write(b).cast_const();
+            let res: i32 = compar.call_from_host(env, (pa, pb));
+            env.mem.free(pa.cast_mut().cast());
+            env.mem.free(pb.cast_mut().cast());
+            res.cmp(&0)
+        });
     }
     // we want to free dirp, but not entries themselves
     // so, we're not calling closedir() here
