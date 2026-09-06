@@ -312,10 +312,17 @@ impl Allocator {
             return;
         };
         self.unused_chunks.remove_with_base(to_trisect.base);
-        if let Some(before) = before {
+        // Leftover free chunks smaller than MIN_CHUNK_SIZE can't be tracked
+        // by the size-bucketed free list (its invariant is `size >=
+        // MIN_CHUNK_SIZE`). Mach-O loaders regularly reserve odd-sized
+        // segments (e.g. __IMPORT or padding between sections), which leaves
+        // sub-16-byte slivers around them. Rather than panicking, drop them:
+        // at most 15 bytes per segment boundary are lost, which is negligible
+        // and matches how real allocators round reservations up.
+        if let Some(before) = before.filter(|c| c.size.get() >= MIN_CHUNK_SIZE) {
             self.unused_chunks.insert(before);
         }
-        if let Some(after) = after {
+        if let Some(after) = after.filter(|c| c.size.get() >= MIN_CHUNK_SIZE) {
             self.unused_chunks.insert(after);
         }
         self.used_chunks.insert(chunk);
@@ -457,6 +464,10 @@ impl Allocator {
                 self.unused_chunks
                     .insert(Chunk::new(adjacent_base + extra, remainder));
             }
+            // else: the leftover sliver is below MIN_CHUNK_SIZE, so it can't
+            // go into the size-bucketed free list; it is absorbed into the
+            // grown allocation instead (grown_size already covers it because
+            // we took the whole chunk in that case).
         }
 
         assert!(self.used_chunks.remove_with_base(base).is_some());
@@ -487,10 +498,7 @@ impl Allocator {
                 self.unused_chunks.insert(freed);
             } else {
                 // We are good to combine
-                let combined = Chunk::new(
-                    freed.base.min(adjacent.base),
-                    freed.size.get() + adjacent.size.get(),
-                );
+                let combined = Chunk::new(new_base, new_size);
                 self.unused_chunks.insert(combined);
             }
         } else {
