@@ -901,10 +901,31 @@ impl Mem {
             return self.alloc(size);
         }
 
-        // TODO: for a moment we always assume that we do not have enough size
-        //       to realloc inplace
         let old_size = self.allocator.find_allocated_size(old_ptr.to_bits());
         if old_size >= size {
+            return old_ptr;
+        }
+
+        // Fast path: if the memory right after the allocation happens to be
+        // free, grow the allocation in place instead of allocating a new
+        // block, copying everything and freeing the old one. Apps that grow
+        // buffers repeatedly (arrays, string builders, asset loading) hit
+        // this path a lot.
+        if let Some(grown_size) = self
+            .allocator
+            .grow_in_place(old_ptr.to_bits(), old_size, size)
+        {
+            // Mirror `alloc`: memory is only pre-zeroed when the allocator
+            // is configured to hand out zeroed memory; zero just the tail.
+            if self.zero_memory_on_free {
+                self.bytes_at_mut(old_ptr.cast(), grown_size)[old_size as usize..].fill(0);
+            }
+            log_dbg!(
+                "Reallocated in place {:?} ({:#x} -> {:#x} bytes)",
+                old_ptr,
+                old_size,
+                grown_size
+            );
             return old_ptr;
         }
 

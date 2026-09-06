@@ -397,6 +397,74 @@ impl Allocator {
         self.used_chunks.get_size_with_base(base).is_some()
     }
 
+    /// Try to grow the allocation at `base` in place, by taking over free
+    /// space that immediately follows it.
+    ///
+    /// On success, returns the new (actual) size of the allocation, which is
+    /// at least `new_size` and may exceed it. Returns [None] (leaving the
+    /// allocator state untouched) if the following memory isn't free or
+    /// growing in place would violate the allocator's invariants.
+    #[must_use]
+    pub fn grow_in_place(
+        &mut self,
+        base: VAddr,
+        old_size: GuestUSize,
+        new_size: GuestUSize,
+    ) -> Option<GuestUSize> {
+        let extra = new_size - old_size;
+
+        // Only live allocations can be grown.
+        if self.used_chunks.get_size_with_base(base).is_none() {
+            return None;
+        }
+
+        let adjacent_base = base + old_size;
+        let adjacent = self.unused_chunks.remove_with_base(adjacent_base)?;
+        let adjacent_size = adjacent.size.get();
+        if adjacent_size < extra {
+            // Not enough room; put the chunk back exactly as it was.
+            self.unused_chunks.insert(adjacent);
+            return None;
+        }
+
+        let grown_size = if adjacent_size >= PAGE_SIZE {
+            // Page-aligned free chunks can't be split at an arbitrary
+            // offset without breaking the page-alignment invariant, so
+            // take the whole chunk.
+            old_size + adjacent_size
+        } else {
+            let remainder = adjacent_size - extra;
+            if remainder < MIN_CHUNK_SIZE {
+                // Too small to be a free chunk on its own; take the whole
+                // chunk.
+                old_size + adjacent_size
+            } else {
+                new_size
+            }
+        };
+
+        // Chunks of PAGE_SIZE or larger must stay page-aligned. Growing a
+        // small (16-byte-aligned) allocation into page-sized territory would
+        // violate that, so bail out instead.
+        if grown_size >= PAGE_SIZE && base & PAGE_SIZE_ALIGN_MASK != 0 {
+            self.unused_chunks.insert(adjacent);
+            return None;
+        }
+
+        if adjacent_size < PAGE_SIZE {
+            let remainder = adjacent_size - extra;
+            if remainder >= MIN_CHUNK_SIZE {
+                self.unused_chunks
+                    .insert(Chunk::new(adjacent_base + extra, remainder));
+            }
+        }
+
+        assert!(self.used_chunks.remove_with_base(base).is_some());
+        self.used_chunks.insert(Chunk::new(base, grown_size));
+
+        Some(grown_size)
+    }
+
     /// Returns the size of the freed chunk so it can be zeroed if desired
     #[must_use]
     pub fn free(&mut self, base: VAddr) -> GuestUSize {
@@ -430,5 +498,88 @@ impl Allocator {
         }
 
         freed.size.get()
+    }
+}
+
+#[cfg(test)]
+mod grow_in_place_tests {
+    use super::{Allocator, Chunk, GuestUSize, PAGE_SIZE, PAGE_SIZE_ALIGN_MASK};
+
+    /// The allocator starts with no free memory at all (in production the
+    /// null segment / Mach-O segments are reserved by `Mem`), so tests must
+    /// reserve an arena first.
+    fn arena() -> Allocator {
+        let mut allocator = Allocator::new();
+        allocator.reserve(Chunk::new(PAGE_SIZE, 64 * PAGE_SIZE));
+        allocator
+    }
+
+    fn alloc_at(allocator: &mut Allocator, size: GuestUSize) -> GuestUSize {
+        let base = allocator.alloc(size);
+        assert_ne!(base, 0, "alloc returned NULL for size {size}");
+        base
+    }
+
+    #[test]
+    fn grow_in_place_takes_adjacent_free_chunk() {
+        let mut allocator = arena();
+        let a = alloc_at(&mut allocator, 16);
+        let b = alloc_at(&mut allocator, 64);
+        let c = alloc_at(&mut allocator, 16);
+        // Free the middle allocation so `a`... wait, adjacency: free b, grow a.
+        allocator.free(b);
+        let grown = allocator.grow_in_place(a, 16, 32).expect("should grow");
+        assert!(grown >= 32);
+        // The grown allocation must not overlap c.
+        assert!(a + grown <= c);
+    }
+
+    #[test]
+    fn grow_in_place_without_adjacent_free_chunk_is_noop() {
+        let mut allocator = arena();
+        let a = alloc_at(&mut allocator, 16);
+        let b = alloc_at(&mut allocator, 16);
+        let grown = allocator.grow_in_place(a, 16, 32);
+        assert!(grown.is_none());
+        // Allocator state untouched: b is still live.
+        assert_eq!(allocator.try_find_allocated_size(b), Some(16));
+    }
+
+    #[test]
+    fn grow_in_place_rejects_non_live_base() {
+        let mut allocator = arena();
+        let a = alloc_at(&mut allocator, 16);
+        allocator.free(a);
+        assert!(allocator.grow_in_place(a, 16, 32).is_none());
+    }
+
+    #[test]
+    fn grow_in_place_preserves_page_alignment_invariant() {
+        let mut allocator = arena();
+        // Small (16-aligned) allocation directly before a large free region.
+        let a = alloc_at(&mut allocator, 16);
+        let b = alloc_at(&mut allocator, 2 * PAGE_SIZE);
+        allocator.free(b);
+        let grown = allocator.grow_in_place(a, 16, PAGE_SIZE);
+        // Either it refuses (safe), or the result respects alignment.
+        if let Some(grown) = grown {
+            let new_base_ok = grown < PAGE_SIZE || a & PAGE_SIZE_ALIGN_MASK == 0;
+            assert!(new_base_ok);
+        }
+    }
+}
+
+#[cfg(test)]
+mod probe_tests {
+    use super::Allocator;
+    #[test]
+    fn probe() {
+        let mut a = Allocator::new();
+        let base = a.alloc(16);
+        eprintln!("PROBE alloc = {:#x}", base);
+        let chunk = a.free(base);
+        eprintln!("PROBE free size = {:#x}", chunk);
+        let base2 = a.alloc(16);
+        eprintln!("PROBE alloc2 = {:#x}", base2);
     }
 }
