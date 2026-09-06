@@ -206,8 +206,8 @@ fn scandir(
     // alphasort). A NULL callback leaves them in directory order.
     if !compar.to_ptr().is_null() {
         tmp_vec.sort_by(|&a, &b| {
-            let pa: ConstPtr<ConstPtr<dirent>> = env.mem.alloc_and_write(a).cast_const();
-            let pb: ConstPtr<ConstPtr<dirent>> = env.mem.alloc_and_write(b).cast_const();
+            let pa: ConstPtr<MutPtr<dirent>> = env.mem.alloc_and_write(a).cast_const();
+            let pb: ConstPtr<MutPtr<dirent>> = env.mem.alloc_and_write(b).cast_const();
             let res: i32 = compar.call_from_host(env, (pa, pb));
             env.mem.free(pa.cast_mut().cast());
             env.mem.free(pb.cast_mut().cast());
