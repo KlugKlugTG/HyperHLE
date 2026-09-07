@@ -9,7 +9,8 @@ use crate::frameworks::core_graphics::cg_bitmap_context::{
 };
 use crate::frameworks::core_graphics::cg_color_space::CGColorSpaceCreateDeviceRGB;
 use crate::frameworks::core_graphics::cg_context::{
-    CGContextFillRect, CGContextRelease, CGContextScaleCTM, CGContextSetRGBFillColor,
+    CGContextFillRect, CGContextRelease, CGContextRestoreGState, CGContextSaveGState,
+    CGContextScaleCTM, CGContextSetRGBFillColor,
     CGContextTranslateCTM,
 };
 use crate::frameworks::core_graphics::cg_image::{self, kCGImageAlphaPremultipliedLast};
@@ -1170,8 +1171,13 @@ fn make_icon_from_glyph(
     );
     UIGraphicsPushContext(env, context);
 
-    // Compensate for row order inversion
-    CGContextTranslateCTM(env, context, 0.0, ICON_SIZE.height);
+    let scaled_width = ICON_SIZE.width * ui_scale;
+    let scaled_height = ICON_SIZE.height * ui_scale;
+
+    // Compensate for row order inversion. The offset is in bitmap pixels,
+    // so it must be scaled along with everything else.
+    CGContextSaveGState(env, context);
+    CGContextTranslateCTM(env, context, 0.0, scaled_height);
     CGContextScaleCTM(env, context, ui_scale, -ui_scale);
 
     let (r, g, b, a) = bg_color;
@@ -1184,14 +1190,21 @@ fn make_icon_from_glyph(
             size: ICON_SIZE,
         },
     );
+    CGContextRestoreGState(env, context);
 
-    let font: id = msg_class![env; UIFont systemFontOfSize:font_size];
+    // Draw the glyph at 1:1 device pixels with a larger font, so it is
+    // rasterized at the higher resolution instead of being upscaled by
+    // the CTM (which would make it blurry).
+    CGContextTranslateCTM(env, context, 0.0, scaled_height);
+    CGContextScaleCTM(env, context, 1.0, -1.0);
+
+    let font: id = msg_class![env; UIFont systemFontOfSize:(font_size * ui_scale)];
     let glyph_string: id = ns_string::from_rust_string(env, [glyph].into_iter().collect());
     let glyph_size: CGSize = msg![env; glyph_string sizeWithFont:font];
     CGContextSetRGBFillColor(env, context, 1.0, 1.0, 1.0, 1.0); // white
     let glyph_origin = CGPoint {
-        x: ICON_SIZE.width / 2.0 - glyph_size.width / 2.0,
-        y: ICON_SIZE.height / 2.0 - glyph_size.height / 2.0 + baseline_offset,
+        x: scaled_width / 2.0 - glyph_size.width / 2.0,
+        y: scaled_height / 2.0 - glyph_size.height / 2.0 + baseline_offset * ui_scale,
     };
     let _: CGSize = msg![env; glyph_string drawAtPoint:glyph_origin withFont:font];
     release(env, glyph_string);
@@ -1199,9 +1212,10 @@ fn make_icon_from_glyph(
     UIGraphicsPopContext(env);
 
     let cg_image = CGBitmapContextCreateImage(env, context);
-    // This radius should match the one in src/bundle.rs.
+    // This radius should match the one in src/bundle.rs, adjusted for the
+    // bitmap resolution.
     cg_image::borrow_image_mut(&mut env.objc, cg_image).round_corners(
-        12.0, /* four_corners: */ true, /* add_sheen: */ true,
+        12.0 * ui_scale, /* four_corners: */ true, /* add_sheen: */ true,
     );
     CGContextRelease(env, context);
 
