@@ -573,7 +573,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())registerForRemoteNotificationTypes:(UIRemoteNotificationType)types {
-    log!("TODO: ignoring registerForRemoteNotificationTypes:{}", types);
+    // Push notifications cannot work in an emulator; apps register on every
+    // launch, so keep the log quiet (debug level only).
+    log_dbg!("registerForRemoteNotificationTypes:{} ignored", types);
 }
 
 // `- (UIRemoteNotificationType)enabledRemoteNotificationTypes` —

@@ -349,6 +349,13 @@ fn xmlCtxtReset(_env: &mut Environment, ctxt: u32) {
 }
 
 #[allow(non_snake_case)]
+fn xmlInitParser(_env: &mut Environment) {
+    // libxml2 documents this as "sets up the library global state"; the real
+    // library is initialized lazily by every entry point we forward to, so
+    // this only needs to exist as a cheap no-op.
+}
+
+#[allow(non_snake_case)]
 fn xmlCleanupParser(_env: &mut Environment) {
     // libxml2 documents this as "rarely needed"; we forward it but keep our
     // handle table intact.
@@ -2705,6 +2712,7 @@ const FUNCTIONS: FunctionExports = &[
     export_c_func!(xmlFreeParserCtxt(_)),
     export_c_func!(xmlCtxtReset(_)),
     export_c_func!(xmlCleanupParser()),
+    export_c_func!(xmlInitParser()),
     export_c_func!(xmlCtxtGetLastError(_)),
     export_c_func!(xmlCtxtResetLastError(_)),
     export_c_func!(xmlReadFile(_, _, _)),
