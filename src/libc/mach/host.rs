@@ -11,7 +11,7 @@ use crate::dyld::FunctionExports;
 use crate::libc::mach::core_types::natural_t;
 use crate::libc::mach::port::mach_port_t;
 use crate::libc::mach::thread_info::{kern_return_t, mach_msg_type_number_t, KERN_INVALID_ARGUMENT, KERN_SUCCESS};
-use crate::mem::{guest_size_of, MutPtr, SafeRead, PAGE_SIZE};
+use crate::mem::{guest_size_of, GuestUSize, MutPtr, SafeRead, PAGE_SIZE};
 use crate::{export_c_func, Environment};
 
 type host_t = mach_port_t;
@@ -54,6 +54,7 @@ pub fn physical_memory(env: &Environment) -> u64 {
 }
 
 const HOST_VM_INFO: host_flavor_t = 2;
+const HOST_VM_INFO64: host_flavor_t = 4;
 
 #[repr(C, packed)]
 struct vm_statistics {
@@ -318,11 +319,75 @@ fn clock_get_attributes(
     KERN_SUCCESS
 }
 
+/// `kern_return_t host_statistics64(host_t host, host_flavor_t flavor,
+///                                  host_info_t host_info_out,
+///                                  mach_msg_type_number_t
+///                                      *host_info_out_count)`
+///
+/// The 64-bit variant of `host_statistics`, used by memory-monitors and by
+/// Mono's `GCGetTotalMemory`-style probes via
+/// `sysctl(CTL_VM, VM_METER)`-style reporting paths. Fill the same
+/// freshly-booted device model as `host_statistics`.
+fn host_statistics64(
+    env: &mut Environment,
+    host: host_t,
+    flavor: host_flavor_t,
+    host_info_out: host_info_t,
+    host_info_out_count: MutPtr<mach_msg_type_number_t>,
+) -> kern_return_t {
+    if host != MACH_HOST_SELF {
+        log!(
+            "host_statistics64: unexpected host port {:#010x} (expected MACH_HOST_SELF {:#010x}); \
+             returning KERN_INVALID_ARGUMENT",
+            host,
+            MACH_HOST_SELF
+        );
+        return KERN_INVALID_ARGUMENT;
+    }
+    if flavor != HOST_VM_INFO64 {
+        log!(
+            "host_statistics64: unsupported flavor {}; returning KERN_INVALID_ARGUMENT",
+            flavor
+        );
+        return KERN_INVALID_ARGUMENT;
+    }
+    let available = env.mem.read(host_info_out_count);
+    // Callers occasionally pass a byte-size count by mistake (as with
+    // host_statistics); writing `available` words could then overflow the
+    // buffer, so cap the write at a generous upper bound for the struct
+    // (the real iOS 6 count is well under this).
+    let fields_to_write = available.min(64);
+    let physical = physical_memory(env);
+    let total_pages = (physical / PAGE_SIZE as u64) as natural_t;
+    let free_count = total_pages / 4;
+    let inactive_count = total_pages / 8;
+    let wire_count = total_pages / 4;
+    let active_count = total_pages - free_count - inactive_count - wire_count;
+    // vm_statistics64 begins with the same four natural_t counts as
+    // vm_statistics (free/active/inactive/wire); everything after them is
+    // 64-bit statistics that may safely read as zero on a quiet device.
+    let field_size = guest_size_of::<natural_t>() as GuestUSize;
+    for i in 0..fields_to_write {
+        let value: natural_t = match i {
+            0 => free_count,
+            1 => active_count,
+            2 => inactive_count,
+            3 => wire_count,
+            _ => 0,
+        };
+        env.mem.write((host_info_out + (i as GuestUSize * field_size)).cast(), value);
+    }
+    env.mem.write(host_info_out_count, fields_to_write);
+    KERN_SUCCESS
+}
+
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(mach_host_self()),
     export_c_func!(host_page_size(_, _)),
     export_c_func!(host_statistics(_, _, _, _)),
+    export_c_func!(host_statistics64(_, _, _, _)),
     export_c_func!(host_get_clock_service(_, _, _)),
     export_c_func!(clock_get_time(_, _)),
     export_c_func!(clock_get_attributes(_, _, _, _)),
 ];
+

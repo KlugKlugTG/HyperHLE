@@ -41,6 +41,7 @@ pub mod mmap;
 pub mod net;
 pub mod netdb;
 pub mod posix_io;
+pub mod resolv;
 pub mod pthread;
 pub mod sched;
 pub mod semaphore;
@@ -132,6 +133,7 @@ pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {
         pthread::once::FUNCTIONS,
         pthread::rwlock::FUNCTIONS,
         pthread::thread::FUNCTIONS,
+        resolv::FUNCTIONS,
         sched::FUNCTIONS,
         semaphore::FUNCTIONS,
         setjmp::FUNCTIONS,
