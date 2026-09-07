@@ -13,6 +13,7 @@ use crate::{msg, Environment};
 use std::time::Instant;
 
 use crate::dyld::HostConstant;
+use crate::frameworks::core_graphics::cg_geometry::CGSize;
 use crate::mem::{ConstVoidPtr, MutPtr};
 
 pub mod ui_accelerometer;
@@ -219,10 +220,25 @@ fn uia_trait_tab_bar(env: &mut Environment) -> ConstVoidPtr {
     write_uiaccessibility_trait(env, 1 << 18)
 }
 
+fn ui_layout_fitting_size(env: &mut Environment, width: f32, height: f32) -> ConstVoidPtr {
+    env.mem
+        .alloc_and_write(crate::frameworks::core_graphics::CGSize { width, height })
+        .cast()
+        .cast_const()
+}
+
 pub const CONSTANTS: &[(&str, HostConstant)] = &[
     (
         "_UIBackgroundTaskInvalid",
         HostConstant::Custom(ui_background_task_invalid),
+    ),
+    (
+        "_UILayoutFittingCompressedSize",
+        HostConstant::Custom(|env| ui_layout_fitting_size(env, 0.0, 0.0)),
+    ),
+    (
+        "_UILayoutFittingExpandedSize",
+        HostConstant::Custom(|env| ui_layout_fitting_size(env, -1.0, -1.0)),
     ),
     (
         "_UIImagePickerControllerOriginalImage",

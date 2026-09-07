@@ -362,7 +362,11 @@ where
                 return 0;
             }
             _ => {
-                log!("sysctl(byname) for '{name_str}': the buffer of size {oldlen} is too low to fit the value of size {len}, returning -1");
+                // This is the real-sysctl behavior (ENOMEM), apps probe with
+                // a small buffer all the time, so only log it at debug level.
+                log_dbg!(
+                    "sysctl(byname) for '{name_str}': the buffer of size {oldlen} is too low to fit the value of size {len}, returning -1"
+                );
                 return -1;
             }
         }

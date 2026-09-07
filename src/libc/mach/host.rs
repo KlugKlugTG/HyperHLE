@@ -55,6 +55,35 @@ pub fn physical_memory(env: &Environment) -> u64 {
 
 const HOST_VM_INFO: host_flavor_t = 2;
 const HOST_VM_INFO64: host_flavor_t = 4;
+// host_sched_info { min_timeout, min_quantum } — HOST_SCHED_INFO is 3.
+const HOST_SCHED_INFO: host_flavor_t = 3;
+
+/// `struct host_sched_info` (<mach/host_info.h>): the scheduler reports
+/// the minimum timeout and quantum, both equal to the initial quantum in
+/// milliseconds.
+fn host_statistics_sched_info(
+    env: &mut Environment,
+    host_info_out: host_info_t,
+    host_info_out_count: MutPtr<mach_msg_type_number_t>,
+) -> kern_return_t {
+    let out_size_available = env.mem.read(host_info_out_count);
+    if (out_size_available as u32) < 2 {
+        log!(
+            "host_statistics: caller buffer too small for HOST_SCHED_INFO: \
+             available={}",
+            out_size_available
+        );
+        return KERN_INVALID_ARGUMENT;
+    }
+    let initial_quantum_ms: natural_t = 2;
+    for (i, value) in [initial_quantum_ms, initial_quantum_ms].iter().enumerate() {
+        let field_size = guest_size_of::<natural_t>() as GuestUSize;
+        env.mem
+            .write((host_info_out + (i as GuestUSize * field_size)).cast(), *value);
+    }
+    env.mem.write(host_info_out_count, 2);
+    KERN_SUCCESS
+}
 
 #[repr(C, packed)]
 struct vm_statistics {
@@ -117,6 +146,27 @@ fn host_statistics(
             MACH_HOST_SELF
         );
         return KERN_INVALID_ARGUMENT;
+    }
+    if flavor == HOST_SCHED_INFO {
+        return host_statistics_sched_info(env, host_info_out, host_info_out_count);
+    }
+    if flavor == HOST_SCHED_INFO {
+        // Real iOS returns the scheduler's initial quantum (in ms) for both
+        // fields; report a sane 2 ms rather than failing the call.
+        let available = env.mem.read(host_info_out_count);
+        if (available as u32) < 2 {
+            log!(
+                "host_statistics: caller buffer too small for sched info: \
+                 available={}",
+                available
+            );
+            return KERN_INVALID_ARGUMENT;
+        }
+        env.mem.write(host_info_out.cast(), 2);
+        env.mem
+            .write((host_info_out + guest_size_of::<natural_t>() as u32).cast(), 2);
+        env.mem.write(host_info_out_count, 2);
+        return KERN_SUCCESS;
     }
     if flavor != HOST_VM_INFO {
         log!(

@@ -10,6 +10,15 @@ use crate::libc;
 use crate::objc;
 
 // CoreAudio
+// libresolv.9 (stub resolver state functions)
+pub const LIBRESOLV: super::HostDylib = super::HostDylib {
+    path: "/usr/lib/libresolv.9.dylib",
+    aliases: &["/usr/lib/libresolv.dylib"],
+    class_exports: &[],
+    constant_exports: &[],
+    function_exports: &[crate::libc::resolv::FUNCTIONS],
+};
+
 pub const CORE_AUDIO: super::HostDylib = super::HostDylib {
     path: "/System/Library/Frameworks/CoreAudio.framework/CoreAudio",
     aliases: &[],
@@ -97,6 +106,8 @@ pub const TWITTER: super::HostDylib = super::HostDylib {
     function_exports: &[],
 };
 
+// libresolv — stub resolver-state entry points; the functions are shared
+// with the main libc table so lookups through either dylib resolve to the
 // CoreTelephony — touchHLE has no cellular radio, but we expose real
 // `CTTelephonyNetworkInfo` / `CTCarrier` classes plus the
 // `CTRadioAccessTechnology*` string constants and the
@@ -222,6 +233,7 @@ pub const DYLIB_LIST: &[&super::HostDylib] = &[
     &frameworks::address_book::DYLIB,
     &frameworks::accounts::DYLIB,
     &frameworks::game_controller::DYLIB,
+    &LIBRESOLV,
     &CORE_AUDIO,
     &frameworks::media_toolbox::DYLIB,
     &frameworks::web_kit::DYLIB,
