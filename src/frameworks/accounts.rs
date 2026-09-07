@@ -21,7 +21,10 @@
 //! Reference: Apple `Accounts.framework` headers (`ACAccountType.h`,
 //! `ACAccountStore.h`, `ACFacebookAccountType.h`).
 
-use crate::dyld::{ConstantExports, FunctionExports, HostConstant, HostDylib};
+use crate::abi::{CallFromHost, GuestFunction};
+use crate::dyld::{ConstantExports, HostConstant, HostDylib};
+use crate::frameworks::foundation::ns_array;
+use crate::objc::{id, nil, objc_classes, ClassExports};
 
 pub const CONSTANTS: ConstantExports = &[
     // ACAccountType identifiers — apps pass these to
@@ -104,12 +107,106 @@ pub const CONSTANTS: ConstantExports = &[
     ),
 ];
 
-pub const FUNCTIONS: FunctionExports = &[];
+/// Host object backing `ACAccountType` instances handed out by
+/// `-[ACAccountStore accountTypeWithAccountTypeIdentifier:]`.
+#[derive(Default)]
+struct ACAccountTypeHostObject {
+    identifier: id,
+}
+impl crate::objc::HostObject for ACAccountTypeHostObject {}
+
+pub const CLASSES: ClassExports = objc_classes! {
+
+(env, this, _cmd);
+
+@implementation ACAccountStore: NSObject
+
+// `+alloc`/`-init` come from `NSObject`.
+
+// `- (NSArray<ACAccount *> *)accounts;`
+//
+// touchHLE has no account database, so the store is always empty. This
+// mirrors a device with no Twitter/Facebook/etc. accounts configured.
+- (id)accounts {
+    let empty = ns_array::from_vec(env, Vec::new());
+    crate::objc::autorelease(env, empty)
+}
+
+// `- (ACAccountType *)accountTypeWithAccountTypeIdentifier:
+//                                    (NSString *)typeIdentifier;`
+- (id)accountTypeWithAccountTypeIdentifier:(id)type_identifier {
+    let class = env.objc.get_known_class("ACAccountType", &mut env.mem);
+    let host_object = Box::new(ACAccountTypeHostObject {
+        identifier: type_identifier,
+    });
+    let new = env.objc.alloc_object(class, host_object, &mut env.mem);
+    crate::objc::autorelease(env, new)
+}
+
+// `- (void)requestAccessToAccountsWithType:
+//               (ACAccountType *)accountType
+//               options:(NSDictionary *)options
+//               completion:(void (^)(BOOL granted, NSError *error))
+//               completion;`
+//
+// With no accounts there is nothing to authorize, so like on a real
+// device with no matching account the completion handler is called
+// with `granted = NO`. The error is left nil; apps key off the granted
+// flag (ACErrorAccountNotFound is what the real framework reports,
+// but a nil error keeps stub handling simpler on the guest side).
+- (())requestAccessToAccountsWithType:(id)_account_type
+                              options:(id)_options
+                           completion:(id)completion
+{
+    if completion == nil {
+        return;
+    }
+    // Block layout on 32-bit ARM: the invoke function pointer lives at
+    // word 3 (same as in GameController.framework handling).
+    let invoke_ptr: u32 = env.mem.read(completion.cast::<u32>() + 3u32);
+    if invoke_ptr == 0 {
+        return;
+    }
+    let invoke = GuestFunction::from_addr_with_thumb_bit(invoke_ptr);
+    let _: () = invoke.call_from_host(env, (false, nil));
+}
+
+@end
+
+@implementation ACAccountType: NSObject
+
+// `- (NSString *)identifier;`
+- (id)identifier {
+    env.objc.borrow::<ACAccountTypeHostObject>(this).identifier
+}
+
+// `- (Class)accountClass;`
+- (id)accountClass {
+    env.objc.get_known_class("ACAccount", &mut env.mem)
+}
+
+@end
+
+@implementation ACAccount: NSObject
+
+// There are never any accounts, so instances of this class only exist
+// if an app constructs one itself. All accessors return empty values.
+- (id)username {
+    nil
+}
+
+- (id)credential {
+    nil
+}
+
+@end
+
+};
 
 pub const DYLIB: HostDylib = HostDylib {
     path: "/System/Library/Frameworks/Accounts.framework/Accounts",
     aliases: &[],
-    class_exports: &[],
+    class_exports: &[CLASSES],
     constant_exports: &[CONSTANTS],
-    function_exports: &[FUNCTIONS],
+    function_exports: &[],
 };
