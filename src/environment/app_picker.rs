@@ -119,11 +119,6 @@ fn enumerate_apps(apps_dir: &Path) -> Result<Vec<AppInfo>, std::io::Error> {
     Ok(apps)
 }
 
-/// URL that Android maps to the .ipa file picker activity (see
-/// android/app/src/main/java/org/touchhle/android/AddIpaActivity.java and
-/// AndroidManifest.xml).
-const ADD_IPA_URL: &str = "touchhle://add-ipa";
-
 /// List the file names of the .ipa files directly inside the apps directory.
 ///
 /// This is cheap enough to poll every run-loop iteration, unlike a full
@@ -705,23 +700,11 @@ fn app_picker_inner(
             // system file picker finishes, we can detect the new file and
             // refresh the app grid.
             awaited_ipa = Some(list_top_level_ipa_files(&apps_dir));
-            if std::env::consts::OS == "android" {
-                // AddIpaActivity handles this URL: it opens the system file
-                // picker and copies the picked file into the apps directory.
-                if let Err(e) = crate::window::open_url(env, ADD_IPA_URL) {
-                    echo!("Couldn't open IPA picker: {}", e);
-                }
-            } else {
-                // On desktop, fall back to opening the apps directory in the
-                // file manager so .ipa files can be added manually.
-                match paths::url_for_opening_apps_dir() {
-                    Ok(url) => {
-                        if let Err(e) = crate::window::open_url(env, &url) {
-                            echo!("Couldn't open file manager at {:?}: {}", url, e);
-                        }
-                    }
-                    Err(e) => echo!("Couldn't open file manager: {}", e),
-                }
+            // MainActivity (Android) opens the system file picker and copies
+            // the picked file into the apps directory. On other platforms,
+            // the apps directory is opened in the file manager instead.
+            if let Err(e) = crate::window::launch_ipa_picker(env) {
+                echo!("Couldn't open IPA picker: {}", e);
             }
         } else if std::mem::take(&mut host_obj.copyright_show) {
             copyright_info_page_idx = 0;

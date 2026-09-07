@@ -1457,10 +1457,15 @@ impl Environment {
                     std::panic::resume_unwind(e);
                 }
             };
-            self.window
-                .as_mut()
-                .unwrap()
-                .poll_for_events(self.options.as_ref());
+            // As with the main app run loop, poll for events with SDL treating
+            // the current stack as the main stack; without this, event polling
+            // would be skipped for the rest of the picker session as soon as
+            // anything calls on_parent_stack_in_coroutine().
+            {
+                let window = self.window.as_mut().unwrap();
+                window.on_main_stack = true;
+                window.poll_for_events(self.options.as_ref());
+            }
             assert!(self.threads.len() == 1);
             match self.threads[0].blocked_by {
                 ThreadBlock::NotBlocked => {}

@@ -2223,6 +2223,43 @@ pub fn open_url(env: &mut Environment, url: &str) -> Result<(), String> {
     env.on_parent_stack_in_coroutine(|_, _| sdl2::url::open_url(url).map_err(|e| e.to_string()))
 }
 
+/// SDL COMMAND_USER value used to ask MainActivity to open the system file
+/// picker for adding an .ipa file. Must be >= 0x8000 (see SDLActivity.java).
+#[cfg(target_os = "android")]
+const ADD_IPA_COMMAND: u32 = 0x8000;
+
+// SDL_AndroidSendMessage is only available in SDL builds for Android.
+#[cfg(target_os = "android")]
+extern "C" {
+    fn SDL_AndroidSendMessage(command: u32, param: i32) -> i32;
+}
+
+/// Ask the Java side to open the system file picker for adding an .ipa file
+/// (see MainActivity.onUnhandledMessage). On other platforms, fall back to
+/// opening the apps directory in the file manager.
+///
+/// Unlike [open_url], this never opens a URL, so it is safe to call from the
+/// app picker without risking a failed system intent.
+pub fn launch_ipa_picker(env: &mut Environment) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        let _ = env;
+        let result = unsafe { SDL_AndroidSendMessage(ADD_IPA_COMMAND, 0) };
+        if result == 0 {
+            Ok(())
+        } else {
+            Err("SDL error".to_string())
+        }
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        match crate::paths::url_for_opening_apps_dir() {
+            Ok(url) => open_url(env, &url),
+            Err(e) => Err(e),
+        }
+    }
+}
+
 /// Show an SDL messagebox for an error (typically after a panic).
 ///
 /// The window argument allows for passing in the parent window for the

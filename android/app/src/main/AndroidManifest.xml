@@ -110,25 +110,6 @@
             -->
         </activity>
 
-        <!-- Opened via touchhle://add-ipa from the app picker's "+" tile:
-             lets the user pick an .ipa file and copies it into the
-             touchHLE_apps directory. -->
-        <activity
-            android:name=".AddIpaActivity"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-
-                <data
-                    android:host="add-ipa"
-                    android:scheme="touchhle" />
-            </intent-filter>
-        </activity>
-
         <provider
             android:name="org.touchhle.android.DocumentsProvider"
             android:authorities="${applicationId}.provider"
