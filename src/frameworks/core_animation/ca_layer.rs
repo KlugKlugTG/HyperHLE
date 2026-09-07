@@ -21,6 +21,7 @@ use crate::frameworks::core_graphics::cg_color::{CGColorHostObject, CGColorRef};
 use crate::frameworks::core_graphics::cg_color_space::CGColorSpaceCreateDeviceRGB;
 use crate::frameworks::core_graphics::cg_context::{
     CGContextClearRect, CGContextDrawImage, CGContextFillRect, CGContextRef, CGContextRelease,
+    CGContextScaleCTM,
     CGContextRestoreGState, CGContextSaveGState, CGContextSetRGBFillColor, CGContextTranslateCTM,
 };
 use crate::frameworks::core_graphics::cg_image::{
@@ -836,16 +837,24 @@ pub const CLASSES: ClassExports = objc_classes! {
         return;
     }
 
+    // Rasterize layer contents at --ui-scale times the point size, so text
+    // and vector-drawn UI stay sharp on high-resolution displays. The
+    // compositor samples the bitmap onto a proportionally larger quad, so
+    // guest code still works in (unmultiplied) point coordinates.
+    let ui_scale: GuestUSize = env.options.ui_scale.get() as GuestUSize;
+    let scaled_width = int_width.checked_mul(ui_scale).unwrap();
+    let scaled_height = int_height.checked_mul(ui_scale).unwrap();
+
     let need_new_context = cg_context.is_none_or(|existing|
-            CGBitmapContextGetWidth(env, existing) != int_width ||
-            CGBitmapContextGetHeight(env, existing) != int_height
+            CGBitmapContextGetWidth(env, existing) != scaled_width ||
+            CGBitmapContextGetHeight(env, existing) != scaled_height
     );
     let cg_context = if need_new_context {
         if let Some(old_context) = cg_context { CGContextRelease(env, old_context); }
         let color_space = CGColorSpaceCreateDeviceRGB(env);
         let cg_context = CGBitmapContextCreate(
-            env, Ptr::null(), int_width, int_height, 8,
-            int_width.checked_mul(4).unwrap(), color_space,
+            env, Ptr::null(), scaled_width, scaled_height, 8,
+            scaled_width.checked_mul(4).unwrap(), color_space,
             kCGImageByteOrder32Big | kCGImageAlphaPremultipliedLast
         );
         env.objc.borrow_mut::<CALayerHostObject>(this).cg_context = Some(cg_context);
@@ -853,10 +862,14 @@ pub const CLASSES: ClassExports = objc_classes! {
     } else {
         cg_context.unwrap()
     };
+    // Save/restore so the scale/translate below never accumulate across
+    // redraws of the same context.
+    CGContextSaveGState(env, cg_context);
+    CGContextScaleCTM(env, cg_context, ui_scale as CGFloat, ui_scale as CGFloat);
     CGContextTranslateCTM(env, cg_context, -origin.x, -origin.y);
     CGContextClearRect(env, cg_context, CGRect { origin, size });
     () = msg![env; delegate drawLayer:this inContext:cg_context];
-    CGContextTranslateCTM(env, cg_context, origin.x, origin.y);
+    CGContextRestoreGState(env, cg_context);
 }
 
 - (id)contents { env.objc.borrow::<CALayerHostObject>(this).contents }

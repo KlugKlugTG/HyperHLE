@@ -1156,14 +1156,15 @@ fn make_icon_from_glyph(
     baseline_offset: CGFloat,
     bg_color: (CGFloat, CGFloat, CGFloat, CGFloat),
 ) -> id {
+    let ui_scale = env.options.ui_scale.get() as CGFloat;
     let color_space = CGColorSpaceCreateDeviceRGB(env);
     let context = CGBitmapContextCreate(
         env,
         Ptr::null(),
-        ICON_SIZE.width as u32,
-        ICON_SIZE.height as u32,
+        (ICON_SIZE.width as u32).saturating_mul(env.options.ui_scale.get()),
+        (ICON_SIZE.height as u32).saturating_mul(env.options.ui_scale.get()),
         8,
-        4 * (ICON_SIZE.width as u32),
+        4 * (ICON_SIZE.width as u32).saturating_mul(env.options.ui_scale.get()),
         color_space,
         kCGImageAlphaPremultipliedLast,
     );
@@ -1171,7 +1172,7 @@ fn make_icon_from_glyph(
 
     // Compensate for row order inversion
     CGContextTranslateCTM(env, context, 0.0, ICON_SIZE.height);
-    CGContextScaleCTM(env, context, 1.0, -1.0);
+    CGContextScaleCTM(env, context, ui_scale, -ui_scale);
 
     let (r, g, b, a) = bg_color;
     CGContextSetRGBFillColor(env, context, r, g, b, a);

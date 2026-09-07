@@ -32,6 +32,18 @@ View options:
 
         This is a natural number that is at least 1.
 
+    --ui-scale=...
+        Set a resolution multiplier for the user interface that touchHLE
+        itself renders (the app picker and UIKit-based app UIs). Layer
+        bitmaps (including text) are rasterized at N times their logical
+        size and composited into a proportionally larger framebuffer, which
+        makes them sharp on high-resolution displays. This is a hack and
+        there's no guarantee it will work correctly for all apps.
+
+        The default is a value of 2 (i.e. a scale of 2×).
+
+        This is a natural number that is at least 1.
+
 Device options:
     --device-family=...
         Specifies which device family should be emulated: iPhone or iPad.

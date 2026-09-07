@@ -49,6 +49,10 @@ pub struct Options {
     /// iOS version reported to guest applications. `None` uses the latest compatibility version.
     pub ios_version: Option<(i32, i32, i32)>,
     pub scale_hack: NonZeroU32,
+    /// `--ui-scale=N`: resolution multiplier for UIKit/Core Animation UI
+    /// (app picker, in-game UIKit HUDs). Layer bitmaps and the compositor
+    /// framebuffer are rendered at N times their point size.
+    pub ui_scale: NonZeroU32,
     pub deadzone: f32,
     pub analog_stick_tilt_controls: bool,
     pub x_tilt_range: f32,
@@ -128,6 +132,7 @@ impl Default for Options {
             initial_orientation: DeviceOrientation::Portrait,
             ios_version: None,
             scale_hack: NonZeroU32::new(1).unwrap(),
+            ui_scale: NonZeroU32::new(2).unwrap(),
             analog_stick_tilt_controls: true,
             deadzone: 0.1,
             x_tilt_range: 60.0,
@@ -250,6 +255,10 @@ impl Options {
             self.scale_hack = value
                 .parse()
                 .map_err(|_| "Invalid scale hack factor".to_string())?;
+        } else if let Some(value) = arg.strip_prefix("--ui-scale=") {
+            self.ui_scale = value
+                .parse()
+                .map_err(|_| "Invalid UI scale factor".to_string())?;
         } else if arg == "--disable-analog-stick-tilt-controls" {
             self.analog_stick_tilt_controls = false;
         } else if let Some(value) = arg.strip_prefix("--deadzone=") {
