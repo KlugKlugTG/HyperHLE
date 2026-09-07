@@ -118,6 +118,7 @@ Compatibility:
 
 Usability:
 
+- The app picker now has an iOS-style “+” tile (the first icon in the grid) for adding a game. Tapping it lets the user pick an .ipa file, which is simply copied into the touchHLE_apps directory, and the grid then refreshes automatically. (@KlugKlugTG)
 - Default options for various games have been added or improved. (@celerizer, @nighto)
 - The app picker now has a “Quick options” feature. This provides a quicker and easier way to set some common options. (@hikari-no-yume)
 - App icons in the app picker are now sorted by the display name of the app, case-insensitively. (@hikari-no-yume)

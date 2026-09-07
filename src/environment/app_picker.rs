@@ -119,9 +119,38 @@ fn enumerate_apps(apps_dir: &Path) -> Result<Vec<AppInfo>, std::io::Error> {
     Ok(apps)
 }
 
+/// URL that Android maps to the .ipa file picker activity (see
+/// android/app/src/main/java/org/touchhle/android/AddIpaActivity.java and
+/// AndroidManifest.xml).
+const ADD_IPA_URL: &str = "touchhle://add-ipa";
+
+/// List the file names of the .ipa files directly inside the apps directory.
+///
+/// This is cheap enough to poll every run-loop iteration, unlike a full
+/// [enumerate_apps], which opens every app bundle.
+fn list_top_level_ipa_files(apps_dir: &Path) -> Vec<String> {
+    let mut names = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(apps_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension() == Some(OsStr::new("ipa")) {
+                names.push(
+                    path.file_name()
+                        .unwrap_or_default()
+                        .to_string_lossy()
+                        .into_owned(),
+                );
+            }
+        }
+    }
+    names.sort();
+    names
+}
+
 #[derive(Default)]
 struct AppPickerDelegateHostObject {
     icon_tapped: id,
+    add_ipa: bool,
     copyright_show: bool,
     copyright_hide: bool,
     copyright_prev: bool,
@@ -177,6 +206,9 @@ const CLASSES: ClassExports = objc_classes! {
     host_obj.icon_tapped = sender;
 }
 
+- (())addIpa {
+    env.objc.borrow_mut::<AppPickerDelegateHostObject>(this).add_ipa = true;
+}
 - (())copyrightInfoShow {
     env.objc.borrow_mut::<AppPickerDelegateHostObject>(this).copyright_show = true;
 }
@@ -534,10 +566,7 @@ fn app_picker_inner(
         main_view,
         app_frame.size,
         buttons_row_center,
-        &[
-            ("Add game folder", "openFileManager"),
-            ("Quick options", "quickOptionsShow"),
-        ],
+        &[("Quick options", "quickOptionsShow")],
         None,
     );
     make_button_row(
@@ -619,6 +648,12 @@ fn app_picker_inner(
 
     () = msg![env; window makeKeyAndVisible];
 
+    let apps_dir = paths::user_data_base_path().join(paths::APPS_DIR);
+    let mut current_page = 0;
+    // If the user taps the "+" tile, this records the .ipa files that existed
+    // at that moment; once a new one shows up, the app list is re-enumerated.
+    let mut awaited_ipa: Option<Vec<String>> = None;
+
     let main_run_loop: id = msg_class![env; NSRunLoop mainRunLoop];
     // If an app is picked, this loop returns. If the user quits touchHLE, the
     // process exits.
@@ -647,6 +682,7 @@ fn app_picker_inner(
                     break app_path.clone();
                 }
                 Some(&TappedIcon::ChangePage(page_idx)) => {
+                    current_page = page_idx;
                     update_icon_grid(
                         env,
                         icon_grid_stuff.as_mut().unwrap(),
@@ -654,11 +690,40 @@ fn app_picker_inner(
                         page_idx,
                     );
                 }
+                Some(&TappedIcon::AddIpa) => {
+                    // Handled by the main loop body below (next iteration).
+                    env.objc
+                        .borrow_mut::<AppPickerDelegateHostObject>(delegate)
+                        .add_ipa = true;
+                }
                 None => (), // Tapped on a black space
             }
             continue;
         }
-        if std::mem::take(&mut host_obj.copyright_show) {
+        if std::mem::take(&mut host_obj.add_ipa) {
+            // Snapshot the .ipa files that exist right now, so that when the
+            // system file picker finishes, we can detect the new file and
+            // refresh the app grid.
+            awaited_ipa = Some(list_top_level_ipa_files(&apps_dir));
+            if std::env::consts::OS == "android" {
+                // AddIpaActivity handles this URL: it opens the system file
+                // picker and copies the picked file into the apps directory.
+                if let Err(e) = crate::window::open_url(env, ADD_IPA_URL) {
+                    echo!("Couldn't open IPA picker: {}", e);
+                }
+            } else {
+                // On desktop, fall back to opening the apps directory in the
+                // file manager so .ipa files can be added manually.
+                match paths::url_for_opening_apps_dir() {
+                    Ok(url) => {
+                        if let Err(e) = crate::window::open_url(env, &url) {
+                            echo!("Couldn't open file manager at {:?}: {}", url, e);
+                        }
+                    }
+                    Err(e) => echo!("Couldn't open file manager: {}", e),
+                }
+            }
+        } else if std::mem::take(&mut host_obj.copyright_show) {
             copyright_info_page_idx = 0;
             change_copyright_page(
                 env,
@@ -828,6 +893,29 @@ fn app_picker_inner(
                 true => Some(()),
             };
         }
+
+        // Detect .ipa files copied in by the "+" tile flow and refresh the
+        // grid once the new file appears.
+        if let Some(old_listing) = &mut awaited_ipa {
+            let new_listing = list_top_level_ipa_files(&apps_dir);
+            if *old_listing != new_listing {
+                *old_listing = new_listing;
+                if let Ok(new_apps) = enumerate_apps(&apps_dir) {
+                    if let Some(grid) = icon_grid_stuff.as_mut() {
+                        let mut new_apps = new_apps;
+                        grid.pages = compute_pages(
+                            grid.icon_buttons_and_labels.len(),
+                            new_apps.len(),
+                        );
+                        if current_page >= grid.pages.len() {
+                            current_page = grid.pages.len() - 1;
+                        }
+                        update_icon_grid(env, grid, &mut new_apps, current_page);
+                        apps = Ok(new_apps);
+                    }
+                }
+            }
+        }
     };
 
     // Apply user-specified overrides
@@ -895,6 +983,7 @@ const ICON_IMAGE_INSET: CGFloat = 10.0;
 enum TappedIcon {
     App(usize),
     ChangePage(usize),
+    AddIpa,
 }
 
 struct IconGridStuff {
@@ -902,6 +991,7 @@ struct IconGridStuff {
     placeholder_icon: Option<id>,
     prev_icon: Option<id>,
     next_icon: Option<id>,
+    plus_icon: Option<id>,
     pages: Vec<std::ops::Range<usize>>,
     icon_map: HashMap<id, TappedIcon>,
 }
@@ -1007,15 +1097,36 @@ fn make_icon_grid(
     }
 
     // TODO: Use UIScrollView pagination and UIPageControl once available.
+    let total_slots = icon_buttons_and_labels.len();
+    let pages = compute_pages(total_slots, total_app_count);
+
+    IconGridStuff {
+        icon_buttons_and_labels,
+        placeholder_icon: None,
+        prev_icon: None,
+        next_icon: None,
+        plus_icon: None,
+        pages,
+        icon_map: HashMap::new(),
+    }
+}
+
+/// Work out which apps go on each page of the icon grid.
+///
+/// Page 0 reserves its first slot for the "add IPA" (+) tile; the remaining
+/// slots are used for the prev/next arrows (when relevant) and the apps.
+fn compute_pages(total_slots: usize, total_app_count: usize) -> Vec<std::ops::Range<usize>> {
     let mut pages = Vec::new();
     if total_app_count == 0 {
         pages.push(0..0);
+        return pages;
     }
-    let total_slots = icon_buttons_and_labels.len();
     let mut start = 0;
     while start < total_app_count {
+        let page_idx = pages.len();
         let has_prev = start != 0;
-        let mut app_slots = total_slots - usize::from(has_prev);
+        let has_plus = page_idx == 0;
+        let mut app_slots = total_slots - usize::from(has_prev) - usize::from(has_plus);
         let remaining = total_app_count - start;
         if remaining > app_slots {
             app_slots -= 1;
@@ -1024,15 +1135,7 @@ fn make_icon_grid(
         pages.push(start..end);
         start = end;
     }
-
-    IconGridStuff {
-        icon_buttons_and_labels,
-        placeholder_icon: None,
-        prev_icon: None,
-        next_icon: None,
-        pages,
-        icon_map: HashMap::new(),
-    }
+    pages
 }
 
 fn make_icon_from_glyph(
@@ -1120,6 +1223,18 @@ fn update_icon_grid(
         icon_grid_stuff
             .icon_map
             .insert(icon_button, TappedIcon::ChangePage(page_idx - 1));
+    }
+
+    // The iOS-style "+" tile on the first page lets the user add a new app
+    // by picking an .ipa file, which then gets copied into the apps folder.
+    if page_idx == 0 {
+        let &(icon_button, label) = icon_iter.next().unwrap();
+        let image = *icon_grid_stuff.plus_icon.get_or_insert_with(|| {
+            make_icon_from_glyph(env, '+', 50.0, -6.0, (0.25, 0.25, 0.25, 1.0))
+        });
+        () = msg![env; icon_button setImage:image forState:UIControlStateNormal];
+        () = msg![env; label setText:(ns_string::get_static_str(env, ""))];
+        icon_grid_stuff.icon_map.insert(icon_button, TappedIcon::AddIpa);
     }
 
     for app_idx in app_idx_range.clone() {
