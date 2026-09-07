@@ -739,9 +739,9 @@ fn gai_strerror(env: &mut Environment, ecode: i32) -> ConstPtr<u8> {
 /// `gethostent` iterates the hosts database. We don't model one, so signal
 /// end-of-database (NULL) immediately, matching how `gethostbyname` reports an
 /// unresolved host.
-fn gethostent(_env: &mut Environment) -> MutPtr<hostent_guest> {
-    log!("TODO: gethostent() => NULL");
-    // TODO: set h_errno
+fn gethostent(env: &mut Environment) -> MutPtr<hostent_guest> {
+    log_dbg!("gethostent() => NULL (no hosts database)");
+    set_h_errno(env, H_ERRNO_HOST_NOT_FOUND);
     Ptr::null()
 }
 

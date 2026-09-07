@@ -257,10 +257,13 @@ fn AudioServicesDisposeSystemSoundID(
 fn AudioServicesPlaySystemSound(env: &mut Environment, in_system_sound_id: SystemSoundID) {
     log!("AudioServicesPlaySystemSound({})", in_system_sound_id);
     if in_system_sound_id == kSystemSoundID_Vibrate {
-        log!("TODO: vibration (AudioServicesPlaySystemSound)");
+        // Vibration has no host equivalent in touchHLE; acknowledge quietly.
+        log_dbg!("AudioServicesPlaySystemSound(vibrate) (no host haptics)");
         return;
     } else if in_system_sound_id == kSystemSoundID_UserPreferredAlert {
-        log!("TODO: alert sound (AudioServicesPlaySystemSound)");
+        // The user-preferred alert is vibrate-only on a silent iPhone, which
+        // matches our (no-op) capability.
+        log_dbg!("AudioServicesPlaySystemSound(userPreferredAlert) (no host audio)");
         return;
     }
 

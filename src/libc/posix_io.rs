@@ -265,6 +265,9 @@ pub fn open_direct(env: &mut Environment, path: ConstPtr<u8>, flags: i32) -> Fil
     if (flags & O_CREAT) != 0 {
         options.create();
     }
+    if (flags & O_EXCL) != 0 {
+        options.create_new();
+    }
     if (flags & O_TRUNC) != 0 {
         options.truncate();
     }

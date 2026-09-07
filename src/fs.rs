@@ -368,13 +368,14 @@ pub fn resolve_path<'a>(path: &'a GuestPath, relative_to: Option<&'a GuestPath>)
 }
 
 /// Like [std::fs::OpenOptions] but for the guest filesystem.
-/// TODO: `create_new`.
 #[derive(Debug)]
 pub struct GuestOpenOptions {
     read: bool,
     write: bool,
     append: bool,
     create: bool,
+    /// `O_CREAT|O_EXCL` semantics: the file must not already exist.
+    create_new: bool,
     truncate: bool,
 }
 impl GuestOpenOptions {
@@ -384,6 +385,7 @@ impl GuestOpenOptions {
             write: false,
             append: false,
             create: false,
+            create_new: false,
             truncate: false,
         }
     }
@@ -401,6 +403,11 @@ impl GuestOpenOptions {
     }
     pub fn create(&mut self) -> &mut Self {
         self.create = true;
+        self
+    }
+    /// Open only if the file does not already exist (`O_CREAT|O_EXCL`).
+    pub fn create_new(&mut self) -> &mut Self {
+        self.create_new = true;
         self
     }
     pub fn truncate(&mut self) -> &mut Self {
@@ -1440,13 +1447,14 @@ impl Fs {
             mut write, // ИСПРАВЛЕНИЕ: Разрешаем менять переменную
             append,
             create,
+            create_new,
             truncate,
         } = options;
 
         // ИСПРАВЛЕНИЕ: Мягкий перехват вместо вызова panic!.
         // Если запрашивается создание или очистка файла без права записи,
         // принудительно даем право на запись.
-        if (truncate || create) && !write && !append {
+        if (truncate || create || create_new) && !write && !append {
             log!("Warning: App tried to create/truncate file without write permissions. Forcing write = true.");
             write = true;
         }
@@ -1496,6 +1504,11 @@ impl Fs {
                 } => children,
                 _ => return Err(()),
             };
+            if create_new && children.contains_key(&new_filename) {
+                // O_CREAT|O_EXCL semantics: opening an existing file with
+                // O_EXCL must fail (EEXIST), not open or truncate it.
+                return Err(());
+            }
         let action: OpenAction = if let Some(existing_file) = children.get(&new_filename) {
             match existing_file {
                 &FsNode::File {
@@ -1645,7 +1658,7 @@ impl Fs {
         }
 
         // Create a new file: re-borrow the parent directory.
-        if !create {
+        if !create && !create_new {
             return Err(());
         }
 
@@ -1678,7 +1691,7 @@ impl Fs {
                 .read(read)
                 .write(write)
                 .append(append)
-                .create(create)
+                .create(create || create_new)
                 .truncate(truncate)
                 .open(&host_path),
             &host_path,

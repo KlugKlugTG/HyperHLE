@@ -65,6 +65,10 @@ pub struct State {
     /// returns the documented iPhone OS default of
     /// `ALC_IPHONE_SPATIAL_RENDERING_QUALITY_HIGH` (2).
     pub macosx_rendering_quality: ALint,
+    /// Pending ALC error (per OpenAL 1.1, errors are sticky until queried).
+    /// Set when a call cannot reach a valid context, e.g. after context
+    /// destruction; `alcGetError` returns and clears it.
+    last_alc_error: Option<ALCint>,
 }
 impl State {
     fn get(env: &mut Environment) -> &mut Self {
@@ -112,7 +116,7 @@ macro_rules! try_get_context {
                 "Попытка получить контекст, но текущий активный контекст {:?} недействителен, пропускаем!",
                 State::get($env).current_ctx
             );
-            // TODO: установить ошибку
+            State::get($env).last_alc_error = Some(ALC_INVALID_CONTEXT);
             return;
         };
     };
@@ -127,7 +131,7 @@ macro_rules! try_get_context {
                 "Попытка получить контекст, но текущий активный контекст {:?} недействителен, пропускаем!",
                 State::get($env).current_ctx
             );
-            // TODO: установить ошибку
+            State::get($env).last_alc_error = Some(ALC_INVALID_CONTEXT);
             return $rval;
         };
     };
@@ -215,6 +219,9 @@ fn alcCloseDevice(env: &mut Environment, device: MutPtr<GuestALCdevice>) -> bool
 fn alcGetError(env: &mut Environment, device: MutPtr<GuestALCdevice>) -> i32 {
     // Per OpenAL spec, alcGetError on an invalid device returns
     // ALC_INVALID_DEVICE rather than a host-level crash.
+    if let Some(err) = State::get(env).last_alc_error.take() {
+        return err;
+    }
     let Some(&host_device) = State::get(env).devices.get(&device) else {
         log!(
             "Warning: alcGetError({:?}) called with unknown/NULL device, returning ALC_INVALID_DEVICE",
@@ -304,6 +311,9 @@ fn alcGetString(
     State::get(env).strings_cache.insert(cache_key, guest_ptr);
     guest_ptr
 }
+
+// ALC_INVALID_CONTEXT = 0xA004, per the OpenAL 1.1 specification.
+const ALC_INVALID_CONTEXT: ALCint = 0xA004;
 
 const ALLOWED_CONTEXT_ATTRIBUTES: [ALCint; 5] = [
     ALC_FREQUENCY,

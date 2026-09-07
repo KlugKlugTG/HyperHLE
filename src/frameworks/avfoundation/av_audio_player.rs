@@ -145,7 +145,10 @@ pub const CLASSES: ClassExports = objc_classes! {
             if !outError.is_null() {
                 let domain = ns_string::get_static_str(env, NSOSStatusErrorDomain);
                 let error = msg_class![env; NSError alloc];
-                let code: NSInteger = -1; // TODO: set a proper code
+                // kAudioFileUnsupportedFileTypeError ('typ?') from
+                // AudioToolbox's AudioFile error codes, which is what
+                // AVFoundation surfaces for undecodable inputs.
+                let code: NSInteger = 0x7479_703F;
                 let error = msg![env; error initWithDomain:domain code:code userInfo:nil];
                 autorelease(env, error);
                 env.mem.write(outError, error);

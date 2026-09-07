@@ -25,16 +25,21 @@ use crate::objc::{
 };
 use crate::Environment;
 
-// TODO: There are many members of this enum missing.
 pub type UIControlEvents = NSUInteger;
 const UIControlEventTouchDown: UIControlEvents = 1 << 0;
+const UIControlEventTouchDownRepeat: UIControlEvents = 1 << 1;
 const UIControlEventTouchDragInside: UIControlEvents = 1 << 2;
 const UIControlEventTouchDragOutside: UIControlEvents = 1 << 3;
 const UIControlEventTouchDragEnter: UIControlEvents = 1 << 4;
 const UIControlEventTouchDragExit: UIControlEvents = 1 << 5;
 pub const UIControlEventTouchUpInside: UIControlEvents = 1 << 6;
 const UIControlEventTouchUpOutside: UIControlEvents = 1 << 7;
+const UIControlEventTouchCancel: UIControlEvents = 1 << 8;
 pub const UIControlEventValueChanged: UIControlEvents = 1 << 12;
+pub const UIControlEventEditingDidBegin: UIControlEvents = 1 << 16;
+pub const UIControlEventEditingChanged: UIControlEvents = 1 << 17;
+pub const UIControlEventEditingDidEnd: UIControlEvents = 1 << 18;
+const UIControlEventEditingDidEndOnExit: UIControlEvents = 1 << 19;
 
 pub type UIControlContentVerticalAlignment = NSInteger;
 const UIControlContentVerticalAlignmentCenter: UIControlContentVerticalAlignment = 0;

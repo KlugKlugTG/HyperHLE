@@ -194,16 +194,33 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())setHidden:(bool)is_hidden {
     () = msg_super![env; this setHidden:is_hidden];
 
-    // TODO: post UIWindowDidBecomeVisibleNotification,
-    //            UIWindowDidBecomeHiddenNotification
+    let notif_name = ns_string::get_static_str(
+        env,
+        if is_hidden {
+            UIWindowDidBecomeHiddenNotification
+        } else {
+            UIWindowDidBecomeVisibleNotification
+        },
+    );
+    let center: id = msg_class![env; NSNotificationCenter defaultCenter];
+    () = msg![env; center postNotificationName:notif_name object:this userInfo:nil];
+
     log_dbg!("[(UIWindow*){:?} setHidden:{:?}]", this, is_hidden);
 }
 
 - (())makeKeyWindow {
-    // TODO: post UIWindowDidResignKeyNotification for previous key window
+    let center: id = msg_class![env; NSNotificationCenter defaultCenter];
+
+    if let Some(previous) = env.framework_state.uikit.ui_view.ui_window.key_window {
+        if previous != this {
+            let notif_name =
+                ns_string::get_static_str(env, UIWindowDidResignKeyNotification);
+            () = msg![env; center postNotificationName:notif_name object:previous userInfo:nil];
+        }
+    }
+
     env.framework_state.uikit.ui_view.ui_window.key_window = Some(this);
 
-    let center: id = msg_class![env; NSNotificationCenter defaultCenter];
     let notif_name = ns_string::get_static_str(env, UIWindowDidBecomeKeyNotification);
     () = msg![env; center postNotificationName:notif_name object:this userInfo:nil];
 }
@@ -219,8 +236,6 @@ pub const CLASSES: ClassExports = objc_classes! {
     // FIXME: This should also bump the window to the top of the list.
 
     () = msg![env; this makeKeyWindow];
-
-    // TODO: post UIWindowDidBecomeVisibleNotification
     () = msg![env; this setHidden:false];
 }
 

@@ -258,8 +258,10 @@ fn thread_policy_set(
             let _policy: thread_background_policy = env.mem.read(policy_info.cast());
         }
         _ => {
-            log!(
-                "TODO: thread_policy_set({}, {}, {:?}, {}) (ignored)",
+            // Scheduling/affinity hints have no guest-visible effect; accept
+            // them silently (KERN_SUCCESS) at debug level.
+            log_dbg!(
+                "thread_policy_set({}, {}, {:?}, {}) (hint ignored)",
                 thread,
                 flavor,
                 policy_info,

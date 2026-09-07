@@ -73,7 +73,39 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)userInfo {
     env.objc.borrow::<NSNotificationHostObject>(this).user_info
 }
-// TODO: setters
+- (())setName:(NSNotificationName)name {
+    let (name, old) = {
+        let host = env.objc.borrow_mut::<NSNotificationHostObject>(this);
+        if name == host.name {
+            return;
+        }
+        (name, std::mem::replace(&mut host.name, name))
+    };
+    retain(env, name);
+    release(env, old);
+}
+- (())setObject:(id)object {
+    let (object, old) = {
+        let host = env.objc.borrow_mut::<NSNotificationHostObject>(this);
+        if object == host.object {
+            return;
+        }
+        (object, std::mem::replace(&mut host.object, object))
+    };
+    if object != nil {
+        retain(env, object);
+    }
+    release(env, old);
+}
+- (())setUserInfo:(id)user_info {
+    // Like initWithName:object:userInfo:, the new dictionary is copied.
+    let user_info: id = msg![env; user_info copy];
+    let old = {
+        let host = env.objc.borrow_mut::<NSNotificationHostObject>(this);
+        std::mem::replace(&mut host.user_info, user_info)
+    };
+    release(env, old);
+}
 
 @end
 
