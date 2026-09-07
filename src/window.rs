@@ -2241,22 +2241,30 @@ extern "C" {
 /// Unlike [open_url], this never opens a URL, so it is safe to call from the
 /// app picker without risking a failed system intent.
 pub fn launch_ipa_picker(env: &mut Environment) -> Result<(), String> {
-    #[cfg(target_os = "android")]
-    {
-        let _ = env;
-        let result = unsafe { SDL_AndroidSendMessage(ADD_IPA_COMMAND, 0) };
-        if result == 0 {
-            Ok(())
-        } else {
-            Err("SDL error".to_string())
+    // Like other SDL calls from the app picker, this must run on the main
+    // stack (see on_parent_stack_in_coroutine), otherwise Android can
+    // misbehave or crash.
+    let result = env.on_parent_stack_in_coroutine(|_, _| {
+        #[cfg(target_os = "android")]
+        {
+            unsafe { SDL_AndroidSendMessage(ADD_IPA_COMMAND, 0) }
         }
+        #[cfg(not(target_os = "android"))]
+        {
+            -1
+        }
+    });
+    if result == 0 {
+        return Ok(());
     }
-    #[cfg(not(target_os = "android"))]
-    {
-        match crate::paths::url_for_opening_apps_dir() {
-            Ok(url) => open_url(env, &url),
-            Err(e) => Err(e),
-        }
+    // Fall back to opening the apps directory in the file manager, so a
+    // .ipa file can still be added manually.
+    match crate::paths::url_for_opening_apps_dir() {
+        Ok(url) => open_url(env, &url),
+        Err(e) => Err(format!(
+            "SDL_AndroidSendMessage returned {result}, and opening the \
+             apps directory failed too: {e}"
+        )),
     }
 }
 
