@@ -342,3 +342,265 @@ trdismount[0] WWW error: The network connection was lost. (touchHLE: networking 
 
 touchHLE::window: Received app-will-resign-active event.
 touchHLE::window: Received app-did-enter-background event.
+
+
+
+im here
+
+touchHLE UNOFFICIAL v0.2.3 (47a3927-dirty) — https://touchhle.org/
+Built from branch "trunk" of "KlugKlugTG/HyperHLE-Fork" by GitHub Actions workflow run https://github.com/KlugKlugTG/HyperHLE-Fork/actions/runs/34129384929.
+
+touchHLE: Base path for touchHLE files: /storage/emulated/0/Android/data/org.touchhle.android.unofficial/files
+No app specified, opening app picker. Use the --help flag to see command-line usage.
+touchHLE::window: Accelerometer detected: lsm6dsv LSM6DSV Accelerometer Non-wakeup.
+touchHLE::gles: Creating an OpenGL ES 1.1 context:
+touchHLE::gles: Trying: Native OpenGL ES 1.1
+touchHLE::gles: => Success!
+touchHLE::gles::gles1_native: GLES1Native: GL_IMG_texture_compression_pvrtc NOT advertised by host driver (PVRTC textures will be software-decoded to RGBA before upload on this driver)
+touchHLE::window: Driver info: OpenGL ES 1.1.0 (ANGLE 2.1 git hash: ab6a82e0ed1425316da0ba9a0b1c715a58a0b725) / Google Inc. (Qualcomm) / ANGLE (Qualcomm, Vulkan 1.3.128 (Adreno (TM) 750 (0x43051401)), Qualcomm Technologies Inc. Adreno Vulkan Driver-512.762.41)
+touchHLE::window: GPU backend: Qualcomm Adreno via ANGLE (recommended). ANGLE's lenient ES emulation avoids the native Adreno driver's black-screen issues.
+touchHLE::frameworks::uikit::ui_view::ui_control: UIControl 0x19b30 dispatching 1 action(s) for control event mask 0x40
+Picked: /storage/emulated/0/Android/data/org.touchhle.android.unofficial/files/touchHLE_apps/com.gameloft.asphalt8-iOS5.0-(Clutch-2.0.4).ipa
+App bundle info:
+- Display name: Asphalt 8
+- Version: 1.0.0
+- Identifier: com.gameloft.asphalt8
+- Internal name (canonical): Asphalt8.app
+- Minimum OS version: 5.0
+- Required device capabilities: opengles-2, armv7, gyroscope
+- Device family: iPhone, iPad
+
+Using options from touchHLE_default_options.txt for this app: --landscape-right --screen-size=480x320 --force-composition
+No options found for this app in /storage/emulated/0/Android/data/org.touchhle.android.unofficial/files/touchHLE_options.txt
+
+touchHLE::environment: iPhone3GS device family is chosen.
+touchHLE::bundle: Using launch image: Default@2x.png
+touchHLE::window: Accelerometer detected: lsm6dsv LSM6DSV Accelerometer Non-wakeup.
+touchHLE::gles: Creating an OpenGL ES 1.1 context:
+touchHLE::gles: Trying: Native OpenGL ES 1.1
+touchHLE::gles: => Success!
+touchHLE::gles::gles1_native: GLES1Native: GL_IMG_texture_compression_pvrtc NOT advertised by host driver (PVRTC textures will be software-decoded to RGBA before upload on this driver)
+touchHLE::window: Driver info: OpenGL ES 1.1.0 (ANGLE 2.1 git hash: ab6a82e0ed1425316da0ba9a0b1c715a58a0b725) / Google Inc. (Qualcomm) / ANGLE (Qualcomm, Vulkan 1.3.128 (Adreno (TM) 750 (0x43051401)), Qualcomm Technologies Inc. Adreno Vulkan Driver-512.762.41)
+touchHLE::window: GPU backend: Qualcomm Adreno via ANGLE (recommended). ANGLE's lenient ES emulation avoids the native Adreno driver's black-screen issues.
+touchHLE::mach_o: Loading armv7 slice for "Asphalt8"
+touchHLE::mach_o: Loading armv7 slice for "libz.1.dylib"
+touchHLE::mach_o: Loading armv7 slice for "libsqlite3.dylib"
+touchHLE::mach_o: Loading armv7 slice for "libstdc++.6.dylib"
+touchHLE::objc::classes: Note: substituting fake class for FBRequest to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBLoginDialog to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBDialog to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSBJSON to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSBJsonBase to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSBJsonParser to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSBJsonWriter to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBRequestBody to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBRequestMetadata to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBRequestConnection to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBURLConnection to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSession to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSessionTokenCachingStrategyNoOpInstance to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSessionTokenCachingStrategy to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBCacheIndex to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBCacheEntityInfo to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBDataDiskCache to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSessionManualTokenCachingStrategy to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBGraphObject to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBGraphObjectArray to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBUtility to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBLogger to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSettings to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBNativeDialogs to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBErrorUtility to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSystemAccountStoreAdapter to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBInsights to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBSessionInsightsState to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBAccessTokenData to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBFetchedAppSettings to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBWebDialogInternalDelegate to improve compatibility
+touchHLE::objc::classes: Note: substituting fake class for FBWebDialogs to improve compatibility
+touchHLE::dyld: Patched 11 libstdc++ std::__throw_* helpers to return instead of throwing (avoids host-process abort when guest C++ code hits soft failures like std::string(NULL)).
+touchHLE::dyld: Patched libstdc++ std::string _S_construct in libstdc++.6.dylib so std::string((char*)NULL) yields an empty string instead of looping/corrupting (b 0xe7d8 -> 0xe7d3).
+CPU emulation begins now.
+Asphalt8[0] set didBecomeActive notification
+Asphalt8[0] set didBecomeActive notification
+Asphalt8[0] didFinishLsdsaunchingNotificationReceived
+touchHLE::environment: Found sorted order ["libsqlite3.dylib", "libstdc++.6.dylib", "libz.1.dylib", "Asphalt8"]
+Asphalt8[0] 
+Asphalt startup
+
+
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500910 missing, Unity Data fallback 0x36500950 exists=false
+touchHLE::frameworks::foundation::ns_locale: The app requested your preferred languages. ["ru"] will be reported based on your system language preferences.
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365009d0 missing, Unity Data fallback 0x365009f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500a30 missing, Unity Data fallback 0x36500a50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500a90 missing, Unity Data fallback 0x36500ab0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500af0 missing, Unity Data fallback 0x36500b10 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500b50 missing, Unity Data fallback 0x36500b70 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500b90 missing, Unity Data fallback 0x36500bb0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500be0 missing, Unity Data fallback 0x36500c00 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500c30 missing, Unity Data fallback 0x36500c50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500c80 missing, Unity Data fallback 0x36500ca0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500cd0 missing, Unity Data fallback 0x36500cf0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500d20 missing, Unity Data fallback 0x36500d40 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500d60 missing, Unity Data fallback 0x36500d80 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500db0 missing, Unity Data fallback 0x36500dd0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500e00 missing, Unity Data fallback 0x36500e20 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500e50 missing, Unity Data fallback 0x36500e70 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500ea0 missing, Unity Data fallback 0x36500ec0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500ef0 missing, Unity Data fallback 0x36500f10 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500f30 missing, Unity Data fallback 0x36500f50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500f80 missing, Unity Data fallback 0x36500fa0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36500fd0 missing, Unity Data fallback 0x36500ff0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501020 missing, Unity Data fallback 0x36501040 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501070 missing, Unity Data fallback 0x36501090 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365010c0 missing, Unity Data fallback 0x365010e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501100 missing, Unity Data fallback 0x36501120 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501150 missing, Unity Data fallback 0x36501170 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365011a0 missing, Unity Data fallback 0x365011c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365011f0 missing, Unity Data fallback 0x36501210 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501240 missing, Unity Data fallback 0x36501260 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501290 missing, Unity Data fallback 0x365012b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365012d0 missing, Unity Data fallback 0x365012f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501320 missing, Unity Data fallback 0x36501340 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501370 missing, Unity Data fallback 0x36501390 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365013c0 missing, Unity Data fallback 0x365013e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501410 missing, Unity Data fallback 0x36501430 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501460 missing, Unity Data fallback 0x36501480 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365014a0 missing, Unity Data fallback 0x365014c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365014f0 missing, Unity Data fallback 0x36501510 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501540 missing, Unity Data fallback 0x36501560 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501590 missing, Unity Data fallback 0x365015b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365015e0 missing, Unity Data fallback 0x36501600 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501630 missing, Unity Data fallback 0x36501650 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501670 missing, Unity Data fallback 0x36501690 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365016c0 missing, Unity Data fallback 0x365016e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501710 missing, Unity Data fallback 0x36501730 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501760 missing, Unity Data fallback 0x36501780 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365017b0 missing, Unity Data fallback 0x365017d0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501800 missing, Unity Data fallback 0x36501820 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501840 missing, Unity Data fallback 0x36501860 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501890 missing, Unity Data fallback 0x365018b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365018e0 missing, Unity Data fallback 0x36501900 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501930 missing, Unity Data fallback 0x36501950 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501980 missing, Unity Data fallback 0x365019a0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365019d0 missing, Unity Data fallback 0x365019f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501a10 missing, Unity Data fallback 0x36501a30 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501a60 missing, Unity Data fallback 0x36501a80 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501ab0 missing, Unity Data fallback 0x36501ad0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501b00 missing, Unity Data fallback 0x36501b20 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501b50 missing, Unity Data fallback 0x36501b70 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501ba0 missing, Unity Data fallback 0x36501bc0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501be0 missing, Unity Data fallback 0x36501c00 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501c30 missing, Unity Data fallback 0x36501c50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501c80 missing, Unity Data fallback 0x36501ca0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501cd0 missing, Unity Data fallback 0x36501cf0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501d20 missing, Unity Data fallback 0x36501d40 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501d70 missing, Unity Data fallback 0x36501d90 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501db0 missing, Unity Data fallback 0x36501dd0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501e00 missing, Unity Data fallback 0x36501e20 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501e50 missing, Unity Data fallback 0x36501e70 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501ea0 missing, Unity Data fallback 0x36501ec0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501ef0 missing, Unity Data fallback 0x36501f10 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501f40 missing, Unity Data fallback 0x36501f60 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501f80 missing, Unity Data fallback 0x36501fa0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36501fd0 missing, Unity Data fallback 0x36501ff0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502020 missing, Unity Data fallback 0x36502040 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502070 missing, Unity Data fallback 0x36502090 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365020c0 missing, Unity Data fallback 0x365020e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502110 missing, Unity Data fallback 0x36502130 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502150 missing, Unity Data fallback 0x36502170 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365021a0 missing, Unity Data fallback 0x365021c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365021f0 missing, Unity Data fallback 0x36502210 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502240 missing, Unity Data fallback 0x36502260 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502290 missing, Unity Data fallback 0x365022b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365022e0 missing, Unity Data fallback 0x36502300 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502330 missing, Unity Data fallback 0x36502350 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502380 missing, Unity Data fallback 0x365023a0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365023d0 missing, Unity Data fallback 0x365023f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502420 missing, Unity Data fallback 0x36502440 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502470 missing, Unity Data fallback 0x36502490 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365024c0 missing, Unity Data fallback 0x365024e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502500 missing, Unity Data fallback 0x36502520 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502550 missing, Unity Data fallback 0x36502570 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365025a0 missing, Unity Data fallback 0x365025c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365025f0 missing, Unity Data fallback 0x36502610 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502640 missing, Unity Data fallback 0x36502660 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502690 missing, Unity Data fallback 0x365026b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365026d0 missing, Unity Data fallback 0x365026f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502720 missing, Unity Data fallback 0x36502740 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502770 missing, Unity Data fallback 0x36502790 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365027c0 missing, Unity Data fallback 0x365027e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502810 missing, Unity Data fallback 0x36502830 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502860 missing, Unity Data fallback 0x36502880 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365028a0 missing, Unity Data fallback 0x365028c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365028f0 missing, Unity Data fallback 0x36502910 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502940 missing, Unity Data fallback 0x36502960 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502990 missing, Unity Data fallback 0x365029b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365029e0 missing, Unity Data fallback 0x36502a00 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502a30 missing, Unity Data fallback 0x36502a50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502a70 missing, Unity Data fallback 0x36502a90 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502ac0 missing, Unity Data fallback 0x36502ae0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502b10 missing, Unity Data fallback 0x36502b30 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502b60 missing, Unity Data fallback 0x36502b80 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502bb0 missing, Unity Data fallback 0x36502bd0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502c00 missing, Unity Data fallback 0x36502c20 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502c40 missing, Unity Data fallback 0x36502c60 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502c90 missing, Unity Data fallback 0x36502cb0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502ce0 missing, Unity Data fallback 0x36502d00 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502d30 missing, Unity Data fallback 0x36502d50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502d80 missing, Unity Data fallback 0x36502da0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502dd0 missing, Unity Data fallback 0x36502df0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502e10 missing, Unity Data fallback 0x36502e30 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502e60 missing, Unity Data fallback 0x36502e80 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502eb0 missing, Unity Data fallback 0x36502ed0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502f00 missing, Unity Data fallback 0x36502f20 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502f50 missing, Unity Data fallback 0x36502f70 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502fa0 missing, Unity Data fallback 0x36502fc0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36502fe0 missing, Unity Data fallback 0x36503000 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503030 missing, Unity Data fallback 0x36503050 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503080 missing, Unity Data fallback 0x365030a0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365030d0 missing, Unity Data fallback 0x365030f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503120 missing, Unity Data fallback 0x36503140 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503170 missing, Unity Data fallback 0x36503190 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365031b0 missing, Unity Data fallback 0x365031d0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503200 missing, Unity Data fallback 0x36503220 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503250 missing, Unity Data fallback 0x36503270 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365032a0 missing, Unity Data fallback 0x365032c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365032f0 missing, Unity Data fallback 0x36503310 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503340 missing, Unity Data fallback 0x36503360 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503380 missing, Unity Data fallback 0x365033a0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365033d0 missing, Unity Data fallback 0x365033f0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503420 missing, Unity Data fallback 0x36503440 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503470 missing, Unity Data fallback 0x36503490 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365034c0 missing, Unity Data fallback 0x365034e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503510 missing, Unity Data fallback 0x36503530 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503550 missing, Unity Data fallback 0x36503570 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365035a0 missing, Unity Data fallback 0x365035c0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365035f0 missing, Unity Data fallback 0x36503610 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503640 missing, Unity Data fallback 0x36503660 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503690 missing, Unity Data fallback 0x365036b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365036e0 missing, Unity Data fallback 0x36503700 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503720 missing, Unity Data fallback 0x36503740 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503770 missing, Unity Data fallback 0x36503790 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365037c0 missing, Unity Data fallback 0x365037e0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503810 missing, Unity Data fallback 0x36503830 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503860 missing, Unity Data fallback 0x36503880 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365038b0 missing, Unity Data fallback 0x365038d0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365038f0 missing, Unity Data fallback 0x36503910 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503940 missing, Unity Data fallback 0x36503960 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503990 missing, Unity Data fallback 0x365039b0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x365039e0 missing, Unity Data fallback 0x36503a00 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503a30 missing, Unity Data fallback 0x36503a50 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503a80 missing, Unity Data fallback 0x36503aa0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503ac0 missing, Unity Data fallback 0x36503ae0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503b10 missing, Unity Data fallback 0x36503b30 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503b60 missing, Unity Data fallback 0x36503b80 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503bb0 missing, Unity Data fallback 0x36503bd0 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503c00 missing, Unity Data fallback 0x36503c20 exists=false
+touchHLE::frameworks::foundation::ns_bundle: NSBundle resource lookup: 0x36503c50 missing, Unity Data fallback 0x36503c70 exists=false
+touchHLE::frameworks::uikit::ui_view_controller: [(UIViewController*)0x365007e0 viewDidLoad]
+touchHLE::frameworks::uikit::ui_view_controller: [(UIViewController*)0x365007e0 viewWillAppear:false]
+touchHLE::frameworks::uikit::ui_view_controller: [(UIViewController*)0x365007e0 viewDidAppear:false]
+touchHLE::frameworks::uikit::ui_view_controller: [(UIViewController*)0x365007e0 viewWillAppear:false]
+touchHLE::frameworks::uikit::ui_view_controller: [(UIViewController*)0x365007e0 viewDidAppear:false]
+touchHLE::libc::pthread::thread: First pthread_create (app spawned a worker thread via raw pthread) [this log will only be shown once]
