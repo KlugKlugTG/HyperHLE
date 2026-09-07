@@ -52,6 +52,10 @@ pub(crate) struct UIViewControllerHostObject {
     /// Lazily-created `UINavigationItem` returned by `-navigationItem`.
     /// Retained while it lives in this slot.
     navigation_item: id,
+    /// `UIRefreshControl*` from the iOS 6 `-refreshControl` property, or
+    /// `nil`. Stored for round-tripping only: pull-to-refresh gestures are
+    /// not simulated, so the control never fires.
+    refresh_control: id,
     // ---------------------------
     modal_transition_style: UIModalTransitionStyle,
     modal_presentation_style: UIModalPresentationStyle,
@@ -114,6 +118,23 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)navigationController {
     env.objc.borrow::<UIViewControllerHostObject>(this).navigation_controller
+}
+
+- (id)refreshControl {
+    env.objc.borrow::<UIViewControllerHostObject>(this).refresh_control
+}
+
+- (())setRefreshControl:(id)refresh_control {
+    let old = std::mem::replace(
+        &mut env.objc.borrow_mut::<UIViewControllerHostObject>(this).refresh_control,
+        refresh_control,
+    );
+    if refresh_control != nil {
+        retain(env, refresh_control);
+    }
+    if old != nil {
+        release(env, old);
+    }
 }
 
 - (id)parentViewController {
