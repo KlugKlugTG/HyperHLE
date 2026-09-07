@@ -39,6 +39,7 @@ use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 
 struct AppInfo {
     path: PathBuf,
@@ -119,28 +120,42 @@ fn enumerate_apps(apps_dir: &Path) -> Result<Vec<AppInfo>, std::io::Error> {
     Ok(apps)
 }
 
-/// List the file names of the .ipa files directly inside the apps directory.
+/// Watch state for detecting a newly copied-in .ipa file.
+struct IpaWatch {
+    last_seen: Vec<(String, u64)>,
+    dirty: bool,
+    last_change: Option<Instant>,
+}
+
+/// List the .ipa files directly inside the apps directory, as (name, size).
 ///
-/// This is cheap enough to poll every run-loop iteration, unlike a full
-/// [enumerate_apps], which opens every app bundle.
-fn list_top_level_ipa_files(apps_dir: &Path) -> Vec<String> {
-    let mut names = Vec::new();
+/// The size matters: a file that is still being copied grows, and must not
+/// be opened until it is complete. This is cheap enough to poll every
+/// run-loop iteration, unlike a full [enumerate_apps], which opens every
+/// app bundle.
+fn list_top_level_ipa_files(apps_dir: &Path) -> Vec<(String, u64)> {
+    let mut files = Vec::new();
     if let Ok(entries) = std::fs::read_dir(apps_dir) {
         for entry in entries.flatten() {
             let path = entry.path();
             if path.extension() == Some(OsStr::new("ipa")) {
-                names.push(
-                    path.file_name()
-                        .unwrap_or_default()
-                        .to_string_lossy()
-                        .into_owned(),
-                );
+                let name = path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned();
+                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                files.push((name, size));
             }
         }
     }
-    names.sort();
-    names
+    files.sort();
+    files
 }
+
+/// How long the .ipa listing must stay unchanged before the app grid is
+/// refreshed, so that a file that is still being copied is left alone.
+const IPA_COPY_SETTLE_TIME: Duration = Duration::from_millis(500);
 
 #[derive(Default)]
 struct AppPickerDelegateHostObject {
@@ -647,7 +662,7 @@ fn app_picker_inner(
     let mut current_page = 0;
     // If the user taps the "+" tile, this records the .ipa files that existed
     // at that moment; once a new one shows up, the app list is re-enumerated.
-    let mut awaited_ipa: Option<Vec<String>> = None;
+    let mut awaited_ipa: Option<IpaWatch> = None;
 
     let main_run_loop: id = msg_class![env; NSRunLoop mainRunLoop];
     // If an app is picked, this loop returns. If the user quits touchHLE, the
@@ -699,7 +714,11 @@ fn app_picker_inner(
             // Snapshot the .ipa files that exist right now, so that when the
             // system file picker finishes, we can detect the new file and
             // refresh the app grid.
-            awaited_ipa = Some(list_top_level_ipa_files(&apps_dir));
+            awaited_ipa = Some(IpaWatch {
+                last_seen: list_top_level_ipa_files(&apps_dir),
+                dirty: false,
+                last_change: None,
+            });
             // MainActivity (Android) opens the system file picker and copies
             // the picked file into the apps directory. On other platforms,
             // the apps directory is opened in the file manager instead.
@@ -878,11 +897,20 @@ fn app_picker_inner(
         }
 
         // Detect .ipa files copied in by the "+" tile flow and refresh the
-        // grid once the new file appears.
-        if let Some(old_listing) = &mut awaited_ipa {
+        // grid once the new file has finished copying (its size stops
+        // changing and has stayed stable for a moment).
+        if let Some(watch) = &mut awaited_ipa {
             let new_listing = list_top_level_ipa_files(&apps_dir);
-            if *old_listing != new_listing {
-                *old_listing = new_listing;
+            if new_listing != watch.last_seen {
+                watch.last_seen = new_listing;
+                watch.dirty = true;
+                watch.last_change = Some(Instant::now());
+            } else if watch.dirty
+                && watch
+                    .last_change
+                    .is_some_and(|t| t.elapsed() >= IPA_COPY_SETTLE_TIME)
+            {
+                watch.dirty = false;
                 if let Ok(new_apps) = enumerate_apps(&apps_dir) {
                     if let Some(grid) = icon_grid_stuff.as_mut() {
                         let mut new_apps = new_apps;
