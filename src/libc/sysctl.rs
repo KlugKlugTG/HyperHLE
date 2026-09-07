@@ -14,7 +14,7 @@ use crate::libc::sysctl::SysInfoType::String;
 use crate::mem::{guest_size_of, ConstPtr, GuestUSize, MutPtr, MutVoidPtr, PAGE_SIZE};
 use crate::Environment;
 
-static SYSCTL_VALUES: [((i32, i32), &str, SysInfoType); 37] = [
+static SYSCTL_VALUES: [((i32, i32), &str, SysInfoType); 38] = [
     // Generic CPU, I/O
     ((6,1), "hw.machine" , String(b"iPhone2,1")), // overridden dynamically below
     ((6,2), "hw.model" , String(b"N88AP")),
@@ -64,6 +64,11 @@ static SYSCTL_VALUES: [((i32, i32), &str, SysInfoType); 37] = [
     // kern.proc.pid is a node for process information. Some games probe
     // it with sysctl([CTL_KERN, KERN_PROC, ...]) and only need success.
     ((1,65), "kern.proc.pid", SysInfoType::Bytes(b"")),
+    // CTL_NET with PF_ROUTE (17): routing-table/interface dumps (used by
+    // Mono/.NET NetworkInterface via getifaddrs, hence by Unity games).
+    // Callers only need the call to succeed; an empty table means "no
+    // network interfaces", which is fine for an offline emulator.
+    ((4,17), "net.route", SysInfoType::Bytes(b"")),
 ];
 
 static STRING_MAP: LazyLock<HashMap<&str, SysInfoType>> = LazyLock::new(|| {
