@@ -143,6 +143,28 @@ pub const CLASSES: ClassExports = objc_classes! {
     crate::objc::autorelease(env, new)
 }
 
+// `- (NSArray<ACAccount *> *)accountsWithAccountType:
+//                                    (ACAccountType *)accountType;`
+//
+// Always empty, there is no account database.
+- (id)accountsWithAccountType:(id)_account_type {
+    let empty = ns_array::from_vec(env, Vec::new());
+    crate::objc::autorelease(env, empty)
+}
+
+// `- (BOOL)saveAccount:(ACAccount *)account error:(NSError **)error;`
+//
+// Nothing can be saved: report failure, like the real store does when
+// the request is missing required properties.
+- (bool)saveAccount:(id)_account error:(id)_error {
+    false
+}
+
+// `- (BOOL)removeAccount:(ACAccount *)account error:(NSError **)error;`
+- (bool)removeAccount:(id)_account error:(id)_error {
+    false
+}
+
 // `- (void)requestAccessToAccountsWithType:
 //               (ACAccountType *)accountType
 //               options:(NSDictionary *)options
