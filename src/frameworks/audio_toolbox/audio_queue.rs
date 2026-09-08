@@ -74,6 +74,14 @@ struct AudioQueueHostObject {
     al_unused_buffers: Vec<ALuint>,
     aq_is_running_proc: Option<AudioQueuePropertyListenerProc>,
     aq_is_running_user_data: Option<MutVoidPtr>,
+    /// Listeners registered via `AudioQueueAddPropertyListener` for
+    /// properties other than `kAudioQueueProperty_IsRunning` (which uses
+    /// dedicated storage above, matching historical touchHLE behaviour).
+    property_listeners: Vec<(
+        AudioQueuePropertyID,
+        AudioQueuePropertyListenerProc,
+        MutVoidPtr,
+    )>,
     is_running_handler: bool,
     is_input: bool,
     input_delay: u32,
@@ -237,6 +245,7 @@ pub fn AudioQueueNewOutput(
         al_unused_buffers: Vec::new(),
         aq_is_running_proc: None,
         aq_is_running_user_data: None,
+        property_listeners: Vec::new(),
         is_running_handler: false,
         is_input: false,
         input_delay: 0,
@@ -505,25 +514,19 @@ fn AudioQueueAddPropertyListener(
 ) -> OSStatus {
     return_if_null!(in_aq);
 
-    if in_id == kAudioQueueProperty_IsRunning {
-        let host_object = match State::get(&mut env.framework_state)
-            .audio_queues
-            .get_mut(&in_aq)
-        {
-            Some(obj) => obj,
-            None => return 0,
-        };
+    let host_object = match State::get(&mut env.framework_state)
+        .audio_queues
+        .get_mut(&in_aq)
+    {
+        Some(obj) => obj,
+        None => return 0,
+    };
 
+    if in_id == kAudioQueueProperty_IsRunning {
         host_object.aq_is_running_proc = Some(in_proc);
         host_object.aq_is_running_user_data = Some(in_user_data);
     } else {
-        log!(
-            "TODO: AudioQueueAddPropertyListener({:?}, {}, {:?}, {:?})",
-            in_aq,
-            debug_fourcc(in_id),
-            in_proc,
-            in_user_data
-        );
+        host_object.property_listeners.push((in_id, in_proc, in_user_data));
     }
     0 // success
 }
@@ -555,13 +558,23 @@ fn AudioQueueRemovePropertyListener(
         host_object.aq_is_running_proc = None;
         host_object.aq_is_running_user_data = None;
     } else {
-        log!(
-            "TODO: AudioQueueRemovePropertyListener({:?}, {}, {:?}, {:?})",
-            in_aq,
-            debug_fourcc(in_id),
-            in_proc,
-            in_user_data
-        );
+        let host_object = match State::get(&mut env.framework_state)
+            .audio_queues
+            .get_mut(&in_aq)
+        {
+            Some(obj) => obj,
+            None => return kAudioQueueErr_InvalidProperty,
+        };
+        // Apple's API has no way to disambiguate listeners registered with
+        // the same proc/user-data pair, so remove the first match, matching
+        // the registration order behaviour of AudioQueueAddPropertyListener.
+        if let Some(pos) = host_object
+            .property_listeners
+            .iter()
+            .position(|&(_, proc, user_data)| proc == in_proc && user_data == in_user_data)
+        {
+            host_object.property_listeners.remove(pos);
+        }
     }
     0 // success
 }
@@ -1549,21 +1562,35 @@ fn AudioQueuePrime(
 }
 
 fn notify_aq_is_running(env: &mut Environment, in_aq: AudioQueueRef) {
-    let Some(host_object) = State::get(&mut env.framework_state)
-        .audio_queues
-        .get_mut(&in_aq)
-    else {
+    // Snapshot everything the queue holds before invoking any callbacks: a
+    // listener may register or remove listeners re-entrantly, and the host
+    // object borrow must not outlive the state it came from.
+    let Some((is_running_proc, is_running_user_data, listeners)) = State::get(
+        &mut env.framework_state,
+    )
+    .audio_queues
+    .get_mut(&in_aq)
+    .map(|host_object| {
+        (
+            host_object.aq_is_running_proc,
+            host_object.aq_is_running_user_data,
+            host_object.property_listeners.clone(),
+        )
+    }) else {
         return;
     };
 
-    if let (Some(in_proc), Some(in_user_data)) = (
-        host_object.aq_is_running_proc,
-        host_object.aq_is_running_user_data,
-    ) {
+    if let (Some(in_proc), Some(in_user_data)) = (is_running_proc, is_running_user_data) {
         <GuestFunction as CallFromHost<(), (MutVoidPtr, Ptr<OpaqueAudioQueue, true>, u32)>>::
         call_from_host(
             &in_proc, env, (in_user_data, in_aq, kAudioQueueProperty_IsRunning)
         );
+    }
+
+    // Fire generic listeners registered for other properties.
+    for &(property_id, in_proc, in_user_data) in listeners.iter() {
+        <GuestFunction as CallFromHost<(), (MutVoidPtr, Ptr<OpaqueAudioQueue, true>, u32)>>::
+        call_from_host(&in_proc, env, (in_user_data, in_aq, property_id));
     }
 }
 
@@ -1878,6 +1905,7 @@ pub fn AudioQueueNewInput(
         al_unused_buffers: Vec::new(),
         aq_is_running_proc: None,
         aq_is_running_user_data: None,
+        property_listeners: Vec::new(),
         is_running_handler: false,
         is_input: true,
         input_delay: 0,

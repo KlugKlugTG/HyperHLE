@@ -433,12 +433,27 @@ locale; treating it as 'C'."
                 let _ = prepend_sign;
                 // Убрали assert!(length_modifier.is_none());
                 let object: id = args.next(env);
-                // TODO: use localized description if available?
+                // %@ uses `description`; apps can override it with a
+                // localized variant via `descriptionWithLocale:`, which we do
+                // not implement, so plain `description` is used for all
+                // locales.
                 let description: id = msg![env; object description];
                 if description != nil {
-                    // TODO: avoid copy
-                    // TODO: what if the description isn't valid UTF-16?
-                    let description = ns_string::to_rust_string(env, description);
+                    // Copy the code units and decode lossily ourselves so a
+                    // description with lone surrogates can't panic.
+                    let description_len: crate::mem::GuestUSize =
+                        msg![env; description length];
+                    // Fetch each code unit individually rather than
+                    // borrowing a buffer.
+                    let mut units_vec = Vec::with_capacity(
+                        description_len as usize,
+                    );
+                    for idx in 0..description_len {
+                        let unit: u16 = msg![env; description
+                            characterAtIndex:idx];
+                        units_vec.push(unit);
+                    }
+                    let description = String::from_utf16_lossy(&units_vec);
                     write!(&mut res, "{description}").unwrap();
                 } else {
                     write!(&mut res, "(null)").unwrap();

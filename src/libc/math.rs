@@ -91,34 +91,76 @@ fn fabs(_env: &mut Environment, arg: f64) -> f64 {
 // 64-bit IEEE 754, identical to `double`.
 
 fn sin(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.sin()
+    let res = arg.sin();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn sinf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.sin()
+    let res = arg.sin();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn cos(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.cos()
+    let res = arg.cos();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn cosf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.cos()
+    let res = arg.cos();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn tan(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.tan()
+    let res = arg.tan();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn tanf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.tan()
+    let res = arg.tan();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 // `void sincos(double x, double *sin, double *cos);`
@@ -173,109 +215,249 @@ fn __sincos_stret(env: &mut Environment, x: f64) -> Double2 {
 }
 
 fn asin(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.asin()
+    let res = arg.asin();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn asinf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.asin()
+    let res = arg.asin();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn acos(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.acos()
+    let res = arg.acos();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn acosf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.acos()
+    let res = arg.acos();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn atan(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.atan()
+    let res = arg.atan();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn atanf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.atan()
+    let res = arg.atan();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 fn atan2f(env: &mut Environment, arg1: f32, arg2: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg1.atan2(arg2)
+    let res = arg1.atan2(arg2);
+    let input_is_nan = arg1.is_nan() || arg2.is_nan();
+    let input_is_inf = arg1.is_infinite() || arg2.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn atan2(env: &mut Environment, arg1: f64, arg2: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg1.atan2(arg2)
+    let res = arg1.atan2(arg2);
+    let input_is_nan = arg1.is_nan() || arg2.is_nan();
+    let input_is_inf = arg1.is_infinite() || arg2.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 // Hyperbolic functions
 
 fn sinh(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.sinh()
+    let res = arg.sinh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn sinhf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.sinh()
+    let res = arg.sinh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn cosh(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.cosh()
+    let res = arg.cosh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn coshf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.cosh()
+    let res = arg.cosh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn tanh(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.tanh()
+    let res = arg.tanh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn tanhf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.tanh()
+    let res = arg.tanh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 fn asinh(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.asinh()
+    let res = arg.asinh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn asinhf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.asinh()
+    let res = arg.asinh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn acosh(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.acosh()
+    let res = arg.acosh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn acoshf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.acosh()
+    let res = arg.acosh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn atanh(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.atanh()
+    let res = arg.atanh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn atanhf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.atanh()
+    let res = arg.atanh();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 // `long double` variants. These all alias the `double` implementations:
@@ -411,74 +593,172 @@ fn logbl(env: &mut Environment, arg: f64) -> f64 {
 
 // Exponential and logarithmic functions
 fn log(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.ln()
+    let res = arg.ln();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn logf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.ln()
+    let res = arg.ln();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn log1p(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.ln_1p()
+    let res = arg.ln_1p();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn log1pf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.ln_1p()
+    let res = arg.ln_1p();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn log2(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.log2()
+    let res = arg.log2();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn log2f(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.log2()
+    let res = arg.log2();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn log10(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.log10()
+    let res = arg.log10();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn log10f(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.log10()
+    let res = arg.log10();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn exp(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.exp()
+    let res = arg.exp();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn expf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.exp()
+    let res = arg.exp();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn expm1(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.exp_m1()
+    let res = arg.exp_m1();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn expm1f(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.exp_m1()
+    let res = arg.exp_m1();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn exp2(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.exp2()
+    let res = arg.exp2();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn exp2f(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.exp2()
+    let res = arg.exp2();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 // ilogb extracts the unbiased exponent of x as an int. Degenerate inputs
 // use the FP_ILOGB0 / FP_ILOGBNAN sentinels from Darwin's <math.h>.
@@ -580,24 +860,52 @@ fn frexp(env: &mut Environment, arg: f64, exp: MutPtr<i32>) -> f64 {
 
 // Power functions
 fn pow(env: &mut Environment, arg1: f64, arg2: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg1.powf(arg2)
+    let res = arg1.powf(arg2);
+    let input_is_nan = arg1.is_nan() || arg2.is_nan();
+    let input_is_inf = arg1.is_infinite() || arg2.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn powf(env: &mut Environment, arg1: f32, arg2: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg1.powf(arg2)
+    let res = arg1.powf(arg2);
+    let input_is_nan = arg1.is_nan() || arg2.is_nan();
+    let input_is_inf = arg1.is_infinite() || arg2.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn sqrt(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.sqrt()
+    let res = arg.sqrt();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn sqrtf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.sqrt()
+    let res = arg.sqrt();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 // fma computes a * b + c with a single rounding. Rust's mul_add maps to
@@ -612,42 +920,82 @@ fn fmaf(_env: &mut Environment, a: f32, b: f32, c: f32) -> f32 {
 
 // Nearest integer functions
 fn ceil(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.ceil()
+    let res = arg.ceil();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn ceilf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.ceil()
+    let res = arg.ceil();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn floor(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.floor()
+    let res = arg.floor();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn floorf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.floor()
+    let res = arg.floor();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn round(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.round()
+    let res = arg.round();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn roundf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg.round()
+    let res = arg.round();
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn lround(env: &mut Environment, arg: f64) -> i32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
     arg.max(i32::MIN as f64).min(i32::MAX as f64).round() as i32
 }
 fn lroundf(env: &mut Environment, arg: f32) -> i32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
     arg.max(i32::MIN as f32).min(i32::MAX as f32).round() as i32
 }
@@ -668,10 +1016,8 @@ fn modff(env: &mut Environment, val: f32, iptr: MutPtr<f32>) -> f32 {
     val - ivalue
 }
 fn rint(env: &mut Environment, arg: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-
-    match env.libc_state.math.rounding_direction {
+    let res = match env.libc_state.math.rounding_direction {
         FE_TONEAREST => {
             // As tested on both macOS and iOS Simulator, by default it
             // rounds to the nearest integer with ties on even
@@ -687,10 +1033,17 @@ fn rint(env: &mut Environment, arg: f64) -> f64 {
             );
             arg.round_ties_even()
         }
+    };
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
     }
+    res
 }
 fn lrint(env: &mut Environment, arg: f64) -> i32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
     let clamped = arg.clamp(i32::MIN as f64, i32::MAX as f64);
     match env.libc_state.math.rounding_direction {
@@ -771,14 +1124,28 @@ fn fesetround(env: &mut Environment, round: i32) -> i32 {
 
 // Remainder functions
 fn fmod(env: &mut Environment, arg1: f64, arg2: f64) -> f64 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg1 % arg2
+    let res = arg1 % arg2;
+    let input_is_nan = arg1.is_nan() || arg2.is_nan();
+    let input_is_inf = arg1.is_infinite() || arg2.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 fn fmodf(env: &mut Environment, arg1: f32, arg2: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-    arg1 % arg2
+    let res = arg1 % arg2;
+    let input_is_nan = arg1.is_nan() || arg2.is_nan();
+    let input_is_inf = arg1.is_infinite() || arg2.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
+    }
+    res
 }
 
 // IEEE remainder: x - y*n where n is the integer nearest x/y (ties to
@@ -945,10 +1312,8 @@ fn llround_impl(arg: f64) -> i64 {
 }
 
 fn rintf(env: &mut Environment, arg: f32) -> f32 {
-    // TODO: handle errno properly
     set_errno(env, 0);
-
-    match env.libc_state.math.rounding_direction {
+    let res = match env.libc_state.math.rounding_direction {
         FE_TONEAREST => arg.round_ties_even(),
         FE_TOWARDZERO => arg.trunc(),
         FE_UPWARD => arg.ceil(),
@@ -960,7 +1325,15 @@ fn rintf(env: &mut Environment, arg: f32) -> f32 {
             );
             arg.round_ties_even()
         }
+    };
+    let input_is_nan = arg.is_nan();
+    let input_is_inf = arg.is_infinite();
+    if res.is_nan() && !input_is_nan {
+        set_errno(env, crate::libc::errno::EDOM);
+    } else if res.is_infinite() && !input_is_inf && !input_is_nan {
+        set_errno(env, crate::libc::errno::ERANGE);
     }
+    res
 }
 
 // Other

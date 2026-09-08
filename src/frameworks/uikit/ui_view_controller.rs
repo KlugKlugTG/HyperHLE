@@ -56,6 +56,11 @@ pub(crate) struct UIViewControllerHostObject {
     /// `nil`. Stored for round-tripping only: pull-to-refresh gestures are
     /// not simulated, so the control never fires.
     refresh_control: id,
+    /// `-hidesBottomBarWhenPushed` flag, stored for round-tripping.
+    hides_bottom_bar_when_pushed: bool,
+    /// Lazily-created `UITabBarItem` returned by `-tabBarItem`, or `nil`.
+    /// Retained while it lives in this slot.
+    tab_bar_item: id,
     // ---------------------------
     modal_transition_style: UIModalTransitionStyle,
     modal_presentation_style: UIModalPresentationStyle,
@@ -92,6 +97,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     let mut host_object = Box::<UIViewControllerHostObject>::default();
     host_object.edges_for_extended_layout = UI_RECT_EDGE_ALL;
+    host_object.tab_bar_item = crate::objc::nil;
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
 
@@ -755,19 +761,42 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)hidesBottomBarWhenPushed {
-    false
+    env.objc
+        .borrow::<UIViewControllerHostObject>(this)
+        .hides_bottom_bar_when_pushed
 }
 
-- (())setHidesBottomBarWhenPushed:(bool)_value {
-    // TODO
+- (())setHidesBottomBarWhenPushed:(bool)value {
+    env.objc
+        .borrow_mut::<UIViewControllerHostObject>(this)
+        .hides_bottom_bar_when_pushed = value;
 }
 
 - (id)tabBarItem {
-    msg_class![env; UITabBarItem new]
+    let item = env.objc.borrow::<UIViewControllerHostObject>(this).tab_bar_item;
+    if item != crate::objc::nil {
+        return item;
+    }
+    // Like UIKit, create the item lazily on first access and keep it around
+    // for subsequent queries.
+    let new_item: id = msg_class![env; UITabBarItem new];
+    env.objc.borrow_mut::<UIViewControllerHostObject>(this).tab_bar_item = new_item;
+    retain(env, new_item);
+    new_item
 }
 
-- (())setTabBarItem:(id)_item {
-    // TODO
+- (())setTabBarItem:(id)item {
+    let slot = &mut env
+        .objc
+        .borrow_mut::<UIViewControllerHostObject>(this)
+        .tab_bar_item;
+    let old = std::mem::replace(slot, item);
+    if old != crate::objc::nil {
+        release(env, old);
+    }
+    if item != crate::objc::nil {
+        retain(env, item);
+    }
 }
 
 - (id)tabBarController {
@@ -843,20 +872,55 @@ pub const CLASSES: ClassExports = objc_classes! {
     log_dbg!("[(UIViewController*){:?} removeFromParentViewController]", this);
 }
 
-- (())willMoveToParentViewController:(id)_parent {
-    // TODO
+- (())willMoveToParentViewController:(id)parent {
+    // UIKit only allows nil (removal) or an actual view controller here.
+    if parent != nil {
+        let class: Class = env.objc.class_of(parent);
+        let host_class: Class = env
+            .objc
+            .lookup_class(env, "UIViewController", &mut env.mem)
+            .unwrap();
+        assert!(
+            env.objc.class_is_subclass_of(class, host_class),
+            "willMoveToParentViewController: with a non-view-controller"
+        );
+    }
+    env.objc
+        .borrow_mut::<UIViewControllerHostObject>(this)
+        .parent_view_controller = parent;
 }
 
-- (())didMoveToParentViewController:(id)_parent {
-    // TODO
+- (())didMoveToParentViewController:(id)parent {
+    // Per Apple's docs the parent pointer passed here is informational;
+    // -willMoveToParentViewController: already stored it. If a container
+    // skips the will-move call, honour the parent given here instead.
+    if parent != crate::objc::nil {
+        let current = env
+            .objc
+            .borrow::<UIViewControllerHostObject>(this)
+            .parent_view_controller;
+        if current == crate::objc::nil {
+            env.objc
+                .borrow_mut::<UIViewControllerHostObject>(this)
+                .parent_view_controller = parent;
+        }
+    }
 }
 
-- (())beginAppearanceTransition:(bool)_appearing animated:(bool)_animated {
-    // TODO
+- (())beginAppearanceTransition:(bool)appearing animated:(bool)_animated {
+    // Forward the transition to the view's `isHidden` state, which drives
+    // the appearance callbacks elsewhere in touchHLE's UIView
+    // implementation. `appearing == true` means the views are about to
+    // become visible.
+    let view: id = env.objc.borrow::<UIViewControllerHostObject>(this).view;
+    if view != crate::objc::nil {
+        () = msg![env; view setHidden:!appearing];
+    }
 }
 
 - (())endAppearanceTransition {
-    // TODO
+    // The transition was already applied in
+    // -beginAppearanceTransition:animated:, so nothing to do here.
 }
 
 - (bool)automaticallyForwardAppearanceAndRotationMethodsToChildViewControllers {
