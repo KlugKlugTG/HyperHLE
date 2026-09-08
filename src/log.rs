@@ -16,6 +16,7 @@ use std::sync::{LazyLock, Mutex};
 pub fn get_log_file() -> &'static Mutex<File> {
     static LOG_FILE: LazyLock<Mutex<File>> = LazyLock::new(|| {
         let file = File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap();
+        #[cfg(unix)]
         crate::crash_handler::set_log_fd(std::os::fd::AsRawFd::as_raw_fd(&file));
         Mutex::new(file)
     });
