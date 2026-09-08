@@ -126,6 +126,92 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 }
 
+// Apple: "Returns a Boolean value that indicates whether a given set is
+// equal to the receiving set." Two sets are equal when they have the same
+// number of members and every member of one is a member of the other.
+- (bool)isEqualToSet:(id)other { // NSSet*
+    if this == other {
+        return true;
+    }
+    if other == nil {
+        return false;
+    }
+    let count: NSUInteger = msg![env; this count];
+    let other_count: NSUInteger = msg![env; other count];
+    if count != other_count {
+        return false;
+    }
+    let objects: id = msg![env; this allObjects];
+    let count: NSUInteger = msg![env; objects count];
+    for i in 0..count {
+        let object: id = msg![env; objects objectAtIndex:i];
+        let contains: bool = msg![env; other containsObject:object];
+        if !contains {
+            return false;
+        }
+    }
+    true
+}
+
+// Apple: "Returns a Boolean value that indicates whether a given set shares
+// at least one object with the receiving set."
+- (bool)intersectsSet:(id)other { // NSSet*
+    if other == nil {
+        return false;
+    }
+    let objects: id = msg![env; this allObjects];
+    let count: NSUInteger = msg![env; objects count];
+    for i in 0..count {
+        let object: id = msg![env; objects objectAtIndex:i];
+        let contains: bool = msg![env; other containsObject:object];
+        if contains {
+            return true;
+        }
+    }
+    false
+}
+
+// Apple: "Returns a Boolean value that indicates whether every object in
+// the receiving set is also present in another given set."
+- (bool)isSubsetOfSet:(id)other { // NSSet*
+    if other == nil {
+        return false;
+    }
+    let objects: id = msg![env; this allObjects];
+    let count: NSUInteger = msg![env; objects count];
+    for i in 0..count {
+        let object: id = msg![env; objects objectAtIndex:i];
+        let contains: bool = msg![env; other containsObject:object];
+        if !contains {
+            return false;
+        }
+    }
+    true
+}
+
+// Apple: "Returns a new set containing the objects of the receiving set and
+// a given set." The result is always an immutable, autoreleased set; the
+// receiver and the other set are not modified.
+- (id)setByAddingObjectsFromSet:(id)other { // NSSet*
+    let new: id = msg_class![env; NSSet alloc];
+    if new == nil {
+        return nil;
+    }
+    env.objc.borrow_mut::<SetHostObject>(new).dict = set_union(env, this, other);
+    autorelease(env, new)
+}
+
+// Apple: "Returns a new set containing the objects of the receiving set and
+// a given array." See setByAddingObjectsFromSet: for mutability rules.
+- (id)setByAddingObjectsFromArray:(id)other { // NSArray*
+    let new: id = msg_class![env; NSSet alloc];
+    if new == nil {
+        return nil;
+    }
+    env.objc.borrow_mut::<SetHostObject>(new).dict = set_union(env, this, other);
+    autorelease(env, new)
+}
+
 // Apple: "Sends a message specified by a given selector to each object in
 // the set." (NSSet makeObjectsPerformSelector:). The order in which the
 // objects receive the message is not defined.
@@ -286,9 +372,6 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.dealloc_object(this, &mut env.mem)
 }
 
-// TODO: more init methods, etc
-
-// TODO: accessors
 - (NSUInteger)count {
     env.objc.borrow_mut::<SetHostObject>(this).dict.count
 }
@@ -418,8 +501,6 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.dealloc_object(this, &mut env.mem)
 }
 
-// TODO: init methods etc
-
 - (NSUInteger)count {
     env.objc.borrow_mut::<SetHostObject>(this).dict.count
 }
@@ -462,9 +543,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (NSUInteger)countByEnumeratingWithState:(MutPtr<NSFastEnumerationState>)state
                                   objects:(MutPtr<id>)stackbuf
                                     count:(NSUInteger)len {
-    // TODO: check that set wasn't mutated!
-    // We assume that order in which objects are reported is consistent
-    // between calls!
+    // Apple raises NSGenericException when the set is mutated during
+    // enumeration. We deliberately tolerate it instead: batches come from a
+    // snapshot (allObjects), so an exception would only break games whose
+    // (buggy) enumeration loops we would otherwise survive. We assume that
+    // the order in which objects are reported is consistent between calls!
     let objects: id = msg![env; this allObjects];
     let count: NSUInteger = msg![env; objects count];
     fast_enumeration_helper(env, this, |env, idx| {
@@ -476,7 +559,35 @@ pub const CLASSES: ClassExports = objc_classes! {
     }, state, stackbuf, len)
 }
 
-// TODO: more mutation methods
+// Apple: "Adds to the receiving set each object contained in a given set
+// that is not already a member." (NSMutableSet addObjectsFromSet:). Tolerates
+// nil like addObjectsFromArray: below.
+- (())addObjectsFromSet:(id)other { // NSSet *
+    if other == nil {
+        return;
+    }
+    let enumerator: id = msg![env; other objectEnumerator];
+    loop {
+        let next: id = msg![env; enumerator nextObject];
+        if next == nil {
+            break;
+        }
+        () = msg![env; this addObject:next];
+    }
+}
+
+// Apple: "Removes from the receiving set each object that is present in a
+// given array."
+- (())removeObjectsInArray:(id)other { // NSArray *
+    if other == nil {
+        return;
+    }
+    let count: NSUInteger = msg![env; other count];
+    for i in 0..count {
+        let object: id = msg![env; other objectAtIndex:i];
+        () = msg![env; this removeObject:object];
+    }
+}
 
 - (())addObject:(id)object {
     let null: id = msg_class![env; NSNull null];
@@ -611,6 +722,23 @@ fn set_from_array(env: &mut Environment, array: id) -> DictionaryHostObject {
     let count: NSUInteger = msg![env; array count];
     for i in 0..count {
         let object: id = msg![env; array objectAtIndex:i];
+        dict.insert(env, object, null, /* copy_key: */ false);
+    }
+    dict
+}
+
+/// Build a [DictionaryHostObject] containing the objects of `set` plus the
+/// objects of `other` (which may be an NSSet or an NSArray, or nil). Shared
+/// by `setByAddingObjectsFromSet:`/`setByAddingObjectsFromArray:`.
+fn set_union(env: &mut Environment, set: id, other: id) -> DictionaryHostObject {
+    let mut dict = set_from_set(env, set, false);
+    if other == nil {
+        return dict;
+    }
+    let null: id = msg_class![env; NSNull null];
+    let count: NSUInteger = msg![env; other count];
+    for i in 0..count {
+        let object: id = msg![env; other objectAtIndex:i];
         dict.insert(env, object, null, /* copy_key: */ false);
     }
     dict

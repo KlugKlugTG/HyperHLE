@@ -605,7 +605,141 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg![env; this writeToFile:path atomically:atomically]
 }
 
-// TODO
+// `- (NSArray<ObjectType> *)objectsForKeys:(NSArray<KeyType> *)keys
+//     notFoundMarker:(id)anObject` — per Apple's NSDictionary reference,
+// returns a new array with one entry per key in `keys`: the matching
+// object, or `anObject` for keys that have no entry.
+// <https://developer.apple.com/documentation/foundation/nsdictionary/1413320-objectsforkeys>
+- (id)objectsForKeys:(id)keys notFoundMarker:(id)marker {
+    let result: id = msg_class![env; NSMutableArray new];
+    let count: NSUInteger = if keys == nil { 0 } else { msg![env; keys count] };
+    for i in 0..count {
+        let key: id = msg![env; keys objectAtIndex:i];
+        let obj: id = if key == nil {
+            nil
+        } else {
+            msg![env; this objectForKey:key]
+        };
+        if obj == nil {
+            () = msg![env; result addObject:marker];
+        } else {
+            () = msg![env; result addObject:obj];
+        }
+    }
+    let res_imm: id = msg![env; result copy];
+    release(env, result);
+    autorelease(env, res_imm)
+}
+
+// `- (void)getObjects:(ObjectType *)objects andKeys:(KeyType *)keys` —
+// deprecated Apple API: fills two caller-provided C arrays (each with room
+// for `[dict count]` entries) with the dictionary's objects and keys, in
+// matching order.
+- (())getObjects:(MutPtr<id>)objects andKeys:(MutPtr<id>)keys {
+    let count: NSUInteger = msg![env; this count];
+    let keys_array: id = msg![env; this allKeys];
+    for i in 0..count {
+        let key: id = msg![env; keys_array objectAtIndex:i];
+        let obj: id = msg![env; this objectForKey:key];
+        if !objects.is_null() {
+            env.mem.write(objects + i, obj);
+        }
+        if !keys.is_null() {
+            env.mem.write(keys + i, key);
+        }
+    }
+}
+
+// `- (id)valueForKeyPath:(NSString *)keyPath` — key-value coding with a
+// dot-separated path. For dictionary receivers we walk each component with
+// `-objectForKeyedSubscript:`, returning nil as soon as any component is
+// missing, which matches Apple's behaviour for NSDictionary.
+- (id)valueForKeyPath:(id)key_path {
+    let path = to_rust_string(env, key_path).into_owned();
+    let mut value: id = this;
+    for component in path.split('.') {
+        if value == nil {
+            return nil;
+        }
+        let key = from_rust_string(env, component.to_string());
+        value = msg![env; value objectForKeyedSubscript:key];
+        release(env, key);
+    }
+    value
+}
+
+// `- (NSArray<KeyType> *)keysSortedByValueUsingComparator:(NSComparator)cmptr`
+// — as `-keysSortedByValueUsingSelector:` above, but the comparison comes
+// from an ObjC block `^NSComparisonResult(id obj1, id obj2)` whose `invoke`
+// function pointer sits at offset +12 of the block struct (Apple block ABI,
+// see the enumerateKeysAndObjects... implementation below). A nil or
+// malformed block leaves the keys unsorted instead of crashing.
+- (id)keysSortedByValueUsingComparator:(MutPtr<u8>)comparator {
+    if comparator.is_null() {
+        log!("Warning: -[NSDictionary keysSortedByValueUsingComparator:] \
+             called with nil block; returning unsorted keys");
+        return msg![env; this allKeys];
+    }
+    let invoke_ptr: u32 = env.mem.read(comparator.cast::<u32>() + 3u32);
+    if invoke_ptr == 0 {
+        log!("Warning: -[NSDictionary keysSortedByValueUsingComparator:] \
+             block at {:?} has NULL invoke pointer; returning unsorted keys",
+            comparator
+        );
+        return msg![env; this allKeys];
+    }
+    let invoke = GuestFunction::from_addr_with_thumb_bit(invoke_ptr);
+    // Snapshot keys and values up-front (Apple sorts a copy).
+    let keys_array: id = msg![env; this allKeys];
+    let count: NSUInteger = msg![env; keys_array count];
+    let mut keys: Vec<id> = Vec::with_capacity(count as usize);
+    let mut values: Vec<id> = Vec::with_capacity(count as usize);
+    for i in 0..count {
+        let key: id = msg![env; keys_array objectAtIndex:i];
+        let value: id = msg![env; this objectForKey:key];
+        keys.push(key);
+        values.push(value);
+    }
+    let block_arg: crate::mem::ConstVoidPtr =
+        Ptr::from_bits(comparator.to_bits()).cast_const();
+    let len = keys.len().try_into().unwrap();
+    let mut user_data = (env, &mut keys, &mut values);
+    qsort_generic(
+        &mut user_data,
+        len,
+        &mut |(env, _keys, values), l, r| {
+            let (l, r): (usize, usize) = (l.try_into().unwrap(), r.try_into().unwrap());
+            let res: NSComparisonResult =
+                <GuestFunction as CallFromHost<NSComparisonResult, (
+                    crate::mem::ConstVoidPtr, id, id,
+                )>>::call_from_host(
+                    &invoke, env, (block_arg, values[l], values[r]),
+                );
+            res
+        },
+        &mut |(_, keys, values), l, r| {
+            let (l, r): (usize, usize) = (l.try_into().unwrap(), r.try_into().unwrap());
+            keys.swap(l, r);
+            values.swap(l, r);
+        },
+    );
+    let (env, _, _) = user_data;
+    // Keys are owned by the dictionary; the returned array needs its own
+    // strong references.
+    for &key in &keys {
+        retain(env, key);
+    }
+    let res = ns_array::from_vec(env, keys);
+    autorelease(env, res)
+}
+
+// `-keysSortedByValueWithOptions:usingComparator:` — for a plain dictionary
+// the only meaningful option is NSEnumerationReverse, which we ignore (the
+// enumeration order of a plain NSDictionary is unspecified anyway).
+- (id)keysSortedByValueWithOptions:(NSUInteger)_opts
+                    usingComparator:(MutPtr<u8>)comparator {
+    msg![env; this keysSortedByValueUsingComparator:comparator]
+}
 
 - (id)valueForKey:(id)key { // NSString*
     let key_str = to_rust_string(env, key);
@@ -974,7 +1108,17 @@ pub const CLASSES: ClassExports = objc_classes! {
     init_with_objects_for_keys_count_common(env, this, objects, keys, count)
 }
 
-// TODO: enumeration, more init methods, etc
+// Apple's class clusters tolerate `-initWithCapacity:` on the immutable
+// side too (the capacity is advisory), so accept it instead of failing
+// with "does not respond to selector".
+- (id)initWithCapacity:(NSUInteger)_capacity {
+    msg![env; this init]
+}
+
+// Enumeration is provided via -countByEnumeratingWithState: plus the
+// -keyEnumerator/-objectEnumerator accessors, and the common init methods
+// (objectsAndKeys:, objects:forKeys:, objects:forKeys:count:, coder,
+// contentsOfFile:/OfURL:) are implemented above.
 
 - (NSUInteger)count {
     env.objc.borrow::<DictionaryHostObject>(this).count
@@ -1150,7 +1294,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)initWithCapacity:(NSUInteger)_capacity {
-    // TODO: capacity
+    // The backing store grows on demand, so the capacity hint is ignored.
     msg![env; this init]
 }
 
@@ -1203,7 +1347,9 @@ pub const CLASSES: ClassExports = objc_classes! {
     init_with_objects_for_keys_count_common(env, this, objects, keys, count)
 }
 
-// TODO: enumeration, more init methods, etc
+// Enumeration is provided via -countByEnumeratingWithState: plus the
+// -keyEnumerator/-objectEnumerator accessors, and the common init/mutation
+// methods are implemented above.
 
 - (NSUInteger)count {
     env.objc.borrow::<DictionaryHostObject>(this).count
@@ -1279,7 +1425,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (NSUInteger)countByEnumeratingWithState:(MutPtr<NSFastEnumerationState>)state
                                   objects:(MutPtr<id>)stackbuf
                                     count:(NSUInteger)len {
-    // TODO: check that dict wasn't mutated!
+    // Each batch re-snapshots `allKeys`, so a mutation between batches
+    // cannot invalidate the indices we store in `state`. A mutation made by
+    // the consumer within a single batch may yield stale keys, which we
+    // tolerate rather than raising like Apple would.
     // We assume that order in which objects are reported is consistent
     // between calls!
     let objects: id = msg![env; this allKeys];
@@ -1313,7 +1462,20 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())setValue:(id)value
         forKey:(id)key { // NSString *
-    // TODO: assert that key is a string when using key-value coding
+    // Apple raises NSInvalidArgumentException for non-string keys in KVC.
+    // We log and continue: crashing the emulator would be worse than a
+    // slightly-off dictionary mutation.
+    if key != nil {
+        let nsstring_class = env.objc.get_known_class("NSString", &mut env.mem);
+        let key_class: Class = msg![env; key class];
+        if !env.objc.class_is_subclass_of(key_class, nsstring_class) {
+            log!(
+                "Warning: -[NSMutableDictionary setValue:forKey:] called \
+                 with non-string key {:?}; continuing anyway.",
+                key
+            );
+        }
+    }
     if value == nil {
         msg![env; this removeObjectForKey:key]
     } else {

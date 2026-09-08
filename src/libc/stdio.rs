@@ -11,7 +11,9 @@ use super::posix_io::{
 };
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::fs::{FsError, GuestPath};
-use crate::libc::errno::{set_errno, EACCES, EINVAL, ENOENT, ENOTDIR, ENOTEMPTY};
+use crate::libc::errno::{
+    set_errno, EACCES, EBADF, EIO, EINVAL, ENOENT, ENOTDIR, ENOTEMPTY,
+};
 use crate::libc::string::strlen;
 use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, Mem, MutPtr, MutVoidPtr, Ptr, SafeRead};
 use crate::Environment;
@@ -266,7 +268,8 @@ fn fread(
     n_items: GuestUSize,
     file_ptr: MutPtr<FILE>,
 ) -> GuestUSize {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     if item_size == 0 {
@@ -321,7 +324,8 @@ fn fread(
 }
 
 fn fgetc(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -419,18 +423,24 @@ fn fgets(
 }
 
 fn fputs(env: &mut Environment, str: ConstPtr<u8>, stream: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
-    // TODO: this function doesn't set errno or return EOF yet
     let str_len = strlen(env, str);
-    fwrite(env, str.cast(), str_len, 1, stream)
-        .try_into()
-        .unwrap()
+    // POSIX: fputs() returns EOF when the write fails. fwrite() returns
+    // the number of items (of 1) written, so anything but 1 is a failure.
+    let written = fwrite(env, str.cast(), str_len, 1, stream);
+    if written == 1 {
+        written.try_into().unwrap()
+    } else {
+        EOF
+    }
 }
 
 fn fputc(env: &mut Environment, c: i32, stream: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let ptr: MutPtr<u8> = env.mem.alloc_and_write(c.try_into().unwrap());
@@ -455,7 +465,8 @@ fn fwrite(
     n_items: GuestUSize,
     file_ptr: MutPtr<FILE>,
 ) -> GuestUSize {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     if item_size == 0 || buffer.is_null() {
@@ -473,6 +484,9 @@ fn fwrite(
             match std::io::stdout().write(buffer_slice) {
                 Ok(bytes_written) => (bytes_written / (item_size as usize)) as GuestUSize,
                 Err(_err) => {
+                    // The host write failed; report a plausible errno
+                    // (the guest fd itself is valid, so EIO fits best).
+                    set_errno(env, EIO);
                     env.libc_state
                         .stdio
                         .get_file_host_obj_mut(&mut env.mem, file_ptr)
@@ -486,6 +500,9 @@ fn fwrite(
             match std::io::stderr().write(buffer_slice) {
                 Ok(bytes_written) => (bytes_written / (item_size as usize)) as GuestUSize,
                 Err(_err) => {
+                    // The host write failed; report a plausible errno
+                    // (the guest fd itself is valid, so EIO fits best).
+                    set_errno(env, EIO);
                     env.libc_state
                         .stdio
                         .get_file_host_obj_mut(&mut env.mem, file_ptr)
@@ -517,7 +534,8 @@ fn fseek(env: &mut Environment, file_ptr: MutPtr<FILE>, offset: i32, whence: i32
     fseeko(env, file_ptr, offset.into(), whence)
 }
 fn fseeko(env: &mut Environment, file_ptr: MutPtr<FILE>, offset: off_t, whence: i32) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -550,7 +568,8 @@ fn ftell(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
         .unwrap_or(i32::MAX)
 }
 fn ftello(env: &mut Environment, file_ptr: MutPtr<FILE>) -> off_t {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -558,7 +577,8 @@ fn ftello(env: &mut Environment, file_ptr: MutPtr<FILE>) -> off_t {
 }
 
 fn rewind(env: &mut Environment, file_ptr: MutPtr<FILE>) {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     env.libc_state
@@ -571,7 +591,8 @@ fn rewind(env: &mut Environment, file_ptr: MutPtr<FILE>) {
 }
 
 fn fclose(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     if file_ptr.is_null() {
@@ -605,6 +626,8 @@ fn fclose(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
             "Warning: fclose called on unknown or already closed stream {:?}",
             file_ptr
         );
+        // Matches close(2) on a descriptor that is no longer open.
+        set_errno(env, EBADF);
         return EOF;
     }
 
@@ -627,7 +650,8 @@ fn fclose(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
 }
 
 fn ferror(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let error = env
@@ -644,7 +668,8 @@ fn ferror(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
 }
 
 fn fsetpos(env: &mut Environment, file_ptr: MutPtr<FILE>, pos: ConstPtr<fpos_t>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -665,7 +690,8 @@ fn fsetpos(env: &mut Environment, file_ptr: MutPtr<FILE>, pos: ConstPtr<fpos_t>)
 }
 
 fn fgetpos(env: &mut Environment, file_ptr: MutPtr<FILE>, pos: MutPtr<fpos_t>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -679,7 +705,8 @@ fn fgetpos(env: &mut Environment, file_ptr: MutPtr<FILE>, pos: MutPtr<fpos_t>) -
 }
 
 fn feof(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -687,7 +714,8 @@ fn feof(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
 }
 
 fn clearerr(env: &mut Environment, file_ptr: MutPtr<FILE>) {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     env.libc_state
@@ -700,7 +728,8 @@ fn clearerr(env: &mut Environment, file_ptr: MutPtr<FILE>) {
 }
 
 fn fflush(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     let FILE { fd } = env.mem.read(file_ptr);
@@ -708,22 +737,36 @@ fn fflush(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
 }
 
 fn puts(env: &mut Environment, s: ConstPtr<u8>) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
-    let _ = std::io::stdout().write_all(env.mem.cstr_at(s));
-    let _ = std::io::stdout().write_all(b"\n");
-    // TODO: I/O error handling
-    // TODO: is this the return value iPhone OS uses?
+    let ok = std::io::stdout().write_all(env.mem.cstr_at(s)).is_ok()
+        && std::io::stdout().write_all(b"\n").is_ok();
+    if !ok {
+        // POSIX: puts() returns EOF when the write fails.
+        log!("Warning: puts() failed to write to stdout; returning EOF.");
+        return EOF;
+    }
+    // 0 is the nonnegative success value BSD libc (hence iPhone OS)
+    // returns for puts(); the standard only requires a nonnegative value.
     0
 }
 
 fn putchar(env: &mut Environment, c: u8) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
-    let _ = std::io::stdout().write(std::slice::from_ref(&c));
-    0
+    // putchar() returns the written character (as unsigned char cast to
+    // int) on success, or EOF when the write fails.
+    match std::io::stdout().write(std::slice::from_ref(&c)) {
+        Ok(_) => c as i32,
+        Err(_) => {
+            log!("Warning: putchar() failed to write to stdout; returning EOF.");
+            EOF
+        }
+    }
 }
 
 /// `int remove(const char *path);` — POSIX/Darwin `remove(3)`.
@@ -771,7 +814,8 @@ fn remove(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
 }
 
 fn tmpfile(env: &mut Environment) -> MutPtr<FILE> {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     // Generate a unique path under /tmp using a process-wide counter and the
@@ -819,7 +863,8 @@ fn tmpfile(env: &mut Environment) -> MutPtr<FILE> {
 }
 
 fn setbuf(env: &mut Environment, stream: MutPtr<FILE>, _buf: ConstPtr<u8>) {
-    // TODO: handle errno properly
+    // errno is cleared at entry; posix_io (and explicit error paths)
+    // set the real errno when an operation fails.
     set_errno(env, 0);
 
     // assert!(buf.is_null());

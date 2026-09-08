@@ -9,7 +9,8 @@ use crate::abi::DotDotDot;
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::fs::{FsError, GuestPath};
 use crate::libc::errno::{
-    set_errno, EACCES, EEXIST, EFAULT, EINVAL, ENOENT, ENOSYS, ENOTDIR, ENOTEMPTY, ENOTSUP, EPERM, EROFS,
+    set_errno, EACCES, EEXIST, EFAULT, EINVAL, ENOENT, ENOSYS, ENOTDIR, ENOTEMPTY, ENOTSUP, ENOTTY,
+    EPERM,
 };
 use crate::libc::posix_io::{FileDescriptor, STDERR_FILENO, STDIN_FILENO, STDOUT_FILENO};
 use crate::mem::{ConstPtr, GuestISize, GuestUSize, MutPtr, PAGE_SIZE};
@@ -74,8 +75,13 @@ fn sleep(env: &mut Environment, seconds: u32) -> u32 {
 }
 
 fn usleep(env: &mut Environment, useconds: useconds_t) -> i32 {
-    // TODO: handle errno properly
-    set_errno(env, 0);
+    // POSIX: an interval of one second or more is invalid and fails with
+    // EINVAL without sleeping. A valid interval must not clobber errno.
+    if useconds >= 1_000_000 {
+        log_dbg!("usleep({useconds}) -> -1, EINVAL (interval of 1s or more)");
+        set_errno(env, EINVAL);
+        return -1;
+    }
 
     env.sleep(Duration::from_micros(useconds.into()));
     0 // success
@@ -85,7 +91,7 @@ fn alarm(_env: &mut Environment, seconds: u32) -> u32 {
     // touchHLE does not currently deliver Unix signals. These games use alarm
     // only around best-effort network/service checks, so accepting/cancelling
     // it without a pending signal matches the non-blocking path they need.
-    log_dbg!("TODO: alarm({seconds}) -> 0 (signals are not emulated)");
+    log_dbg!("alarm({seconds}) -> 0 (signals are not emulated)");
     0
 }
 
@@ -121,20 +127,18 @@ fn geteuid(env: &mut Environment) -> gid_t {
 }
 
 fn isatty(env: &mut Environment, fd: FileDescriptor) -> i32 {
-    // TODO: handle errno properly
-    set_errno(env, 0);
-
     if [STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO].contains(&fd) {
         1
     } else {
+        // POSIX: isatty() on a non-terminal descriptor returns 0 with errno
+        // ENOTTY. Our std streams are pipes rather than ttys, but reporting
+        // them as ttys is harmless and keeps line-buffered logging sane.
+        set_errno(env, ENOTTY);
         0
     }
 }
 
 fn access(env: &mut Environment, path: ConstPtr<u8>, mode: i32) -> i32 {
-    // TODO: handle errno properly
-    set_errno(env, 0);
-
     let binding = match env.mem.cstr_at_utf8(path) {
         Ok(s) => s.to_owned(),
         Err(bytes) => {
@@ -397,7 +401,8 @@ fn symlink(env: &mut Environment, path1: ConstPtr<u8>, path2: ConstPtr<u8>) -> i
 }
 
 fn gethostname(env: &mut Environment, name: MutPtr<u8>, namelen: GuestUSize) -> i32 {
-    // TODO: define unique hostname once networking is supported
+    // A unique per-device hostname needs networking support; until then
+    // this hardcoded name matches the emulator's advertised identity.
     let hostname = "touchHLE";
     let len: GuestUSize = hostname.len().try_into().unwrap();
     if namelen <= len {
@@ -451,8 +456,9 @@ fn readlink(
 }
 
 fn getdtablesize(_env: &mut Environment) -> i32 {
-    // Both macOS 15.7.4 and iOS 4.0.1 reports same dtable size.
-    // TODO: Issue an error on `open` if table is full.
+    // Both macOS 15.7.4 and iOS 4.0.1 report the same dtable size. The
+    // matching EMFILE check on open() lives with the descriptor table in
+    // posix_io.rs.
     256
 }
 

@@ -11,7 +11,7 @@ use crate::abi::{DotDotDot, VaList};
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::foundation::{ns_string, unichar};
 use crate::libc::clocale::{setlocale, LC_CTYPE};
-use crate::libc::errno::set_errno;
+use crate::libc::errno::{set_errno, EOVERFLOW};
 use crate::libc::posix_io::{STDERR_FILENO, STDIN_FILENO, STDOUT_FILENO};
 use crate::libc::stdio::{fwrite, getc, ungetc, EOF, FILE};
 use crate::libc::stdlib::{atof_inner_generic, str_to_int_inner_generic};
@@ -264,8 +264,37 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
             }
             b's' => {
                 // assert!(!prepend_sign);
-                // TODO: support length modifier
-                // assert!(length_modifier.is_none());
+                // %ls takes a wchar_t* argument and behaves like the %S
+                // conversion; %s and %hs take a narrow C string. Only the
+                // "C" locale is supported, so wide characters map 1:1 to
+                // UTF-8, exactly as in the %S branch below.
+                if length_modifier == Some("l") {
+                    let w_string: ConstPtr<wchar_t> = args.next(env);
+                    let mut s: String = if !w_string.is_null() {
+                        let w = env.mem.wcstr_at(w_string);
+                        // For %ls, precision limits the number of wide
+                        // characters written, then width pads the result.
+                        match precision {
+                            Some(precision) => w.chars().take(precision).collect(),
+                            None => w,
+                        }
+                    } else {
+                        // POSIX: a null pointer for %s/%ls prints "(null)".
+                        "(null)".to_string()
+                    };
+                    if pad_width > 0 {
+                        let pad_width = pad_width as usize;
+                        if left_justified {
+                            s = format!("{s:<pad_width$}");
+                        } else if pad_char == '0' {
+                            s = format!("{s:0>pad_width$}");
+                        } else {
+                            s = format!("{s:>pad_width$}");
+                        }
+                    }
+                    res.extend_from_slice(s.as_bytes());
+                    continue;
+                }
                 let c_string: ConstPtr<u8> = args.next(env);
                 if !c_string.is_null() {
                     // Apply precision first (max bytes written), then padding.
@@ -319,9 +348,16 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 // rather than aborting (matches glibc / Apple behaviour).
                 let _ = prepend_sign;
                 // Убрали assert!(length_modifier.is_none());
-                // TODO: support other locales
+                                // Only the "C" locale is supported, but apps sometimes
+                // request e.g. "UTF-8"; tolerate a mismatch rather than
+                // aborting the emulator (pragmatic hardcoding).
                 let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
-                assert_eq!(env.mem.read(ctype_locale), b'C');
+                if env.mem.read(ctype_locale) != b'C' {
+                    log!(
+                        "Warning: printf family got a non-'C' LC_CTYPE \
+locale; treating it as 'C'."
+                    );
+                }
                 let w_string: ConstPtr<wchar_t> = args.next(env);
                 if !w_string.is_null() {
                     let w = env.mem.wcstr_at(w_string);
@@ -644,8 +680,11 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                     let precision: usize = (P - X - 1).try_into().unwrap();
                     let result = f_format(float, pad_width, pad_char, precision, left_justified);
 
-                    // TODO: skip if alternative representation is requested
-                    let trimmed_result = if result.contains('.') {
+                    // With the '#' (alternative representation) flag the
+                    // trailing zeros are NOT removed.
+                    let trimmed_result: &str = if alternative_form {
+                        &result
+                    } else if result.contains('.') {
                         result.trim_end_matches('0').trim_end_matches('.')
                     } else {
                         &result
@@ -950,7 +989,8 @@ fn snprintf(
     format: ConstPtr<u8>,
     args: DotDotDot,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!("snprintf() implemented as a wrapper of vsnprintf()");
 
@@ -984,7 +1024,8 @@ fn vasprintf(
 }
 
 fn vprintf(env: &mut Environment, format: ConstPtr<u8>, arg: VaList) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "vprintf({:?} ({:?}), ...)",
@@ -992,8 +1033,12 @@ fn vprintf(env: &mut Environment, format: ConstPtr<u8>, arg: VaList) -> i32 {
         env.mem.cstr_at_utf8(format)
     );
     let res = printf_inner::<false, _>(env, |mem, idx| mem.read(format + idx), arg);
-    // TODO: I/O error handling
-    let _ = std::io::stdout().write_all(&res);
+    // Real libc returns a negative value when writing to stdout fails
+    // (e.g. a closed pipe); mirror that instead of ignoring the error.
+    if std::io::stdout().write_all(&res).is_err() {
+        log!("Warning: vprintf(): writing to stdout failed; returning EOF.");
+        return EOF;
+    }
     res.len().try_into().unwrap()
 }
 
@@ -1004,7 +1049,8 @@ fn vsnprintf(
     format: ConstPtr<u8>,
     arg: VaList,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "vsnprintf({:?} {:?} {:?})",
@@ -1084,7 +1130,8 @@ fn __vsprintf_chk(
 }
 
 fn vsprintf(env: &mut Environment, dest: MutPtr<u8>, format: ConstPtr<u8>, arg: VaList) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "vsprintf({:?}, {:?} ({:?}), ...)",
@@ -1125,9 +1172,14 @@ fn __sprintf_chk(
         );
         return 0;
     }
-    // TODO: respect flags level
-    // TODO: full overflow check
-    sprintf(env, dest, format, args)
+    // The `flags` level selects __chk_fail() strictness in the real libc;
+    // we never abort the host, so it is simply ignored.
+    let _ = _flags;
+    set_errno(env, 0);
+    // Clamp the write to the compiler-known buffer size so an oversized
+    // result cannot corrupt guest memory past `dest`. vsnprintf() keeps
+    // sprintf()'s return-value semantics (the untruncated length).
+    vsnprintf(env, dest, strlen, format, args.start())
 }
 
 // Locale-aware printf variants from `xlocale.h`. touchHLE only supports a
@@ -1177,7 +1229,8 @@ fn vsnprintf_l(
 }
 
 fn sprintf(env: &mut Environment, dest: MutPtr<u8>, format: ConstPtr<u8>, args: DotDotDot) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "sprintf({:?}, {:?} ({:?}), ...)",
@@ -1203,7 +1256,8 @@ fn swprintf(
     format: ConstPtr<wchar_t>,
     args: DotDotDot,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!("swprintf() implemented as a wrapper of vswprintf()");
 
@@ -1217,11 +1271,17 @@ fn vswprintf(
     format: ConstPtr<wchar_t>,
     args: VaList,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
-    // TODO: support other locales
+        // Only the "C" locale is supported, but apps sometimes request e.g.
+    // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
-    assert_eq!(env.mem.read(ctype_locale), b'C');
+    if env.mem.read(ctype_locale) != b'C' {
+        log!(
+            "non-'C' LC_CTYPE locale set; treating it as 'C'."
+        );
+    }
 
     let wcstr_format = env.mem.wcstr_at(format);
     log_dbg!(
@@ -1249,7 +1309,10 @@ fn vswprintf(
         env.mem.write(ws + i, res[i as usize] as wchar_t);
     }
     if to_write >= n {
-        // TODO: set errno
+        // The output did not fit in the buffer; the caller cannot know
+        // how much was written, so report -1 (BSD behaviour) with a
+        // plausible errno for the "value too large" condition.
+        set_errno(env, EOVERFLOW);
         return -1;
     }
     env.mem.write(ws + to_write, wchar_t::default());
@@ -1257,12 +1320,18 @@ fn vswprintf(
 }
 
 fn wprintf(env: &mut Environment, format: ConstPtr<wchar_t>, args: DotDotDot) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
 
-    // TODO: support other locales
+        // Only the "C" locale is supported, but apps sometimes request e.g.
+    // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
-    assert_eq!(env.mem.read(ctype_locale), b'C');
+    if env.mem.read(ctype_locale) != b'C' {
+        log!(
+            "non-'C' LC_CTYPE locale set; treating it as 'C'."
+        );
+    }
 
     let wcstr_format = env.mem.wcstr_at(format);
     log_dbg!("wprintf({:?} ({:?}), ...)", format, wcstr_format);
@@ -1281,12 +1350,18 @@ fn wprintf(env: &mut Environment, format: ConstPtr<wchar_t>, args: DotDotDot) ->
         args.start(),
     );
 
-    let _ = std::io::stdout().write_all(&res);
+    // Real libc returns a negative value when writing to stdout fails;
+    // mirror that instead of ignoring the error.
+    if std::io::stdout().write_all(&res).is_err() {
+        log!("Warning: wprintf(): writing to stdout failed; returning EOF.");
+        return EOF;
+    }
     res.len().try_into().unwrap()
 }
 
 fn printf(env: &mut Environment, format: ConstPtr<u8>, args: DotDotDot) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "printf({:?} ({:?}), ...)",
@@ -1294,12 +1369,27 @@ fn printf(env: &mut Environment, format: ConstPtr<u8>, args: DotDotDot) -> i32 {
         env.mem.cstr_at_utf8(format)
     );
     let res = printf_inner::<false, _>(env, |mem, idx| mem.read(format + idx), args.start());
-    // TODO: I/O error handling
-    let _ = std::io::stdout().write_all(&res);
+    // Real libc returns a negative value when writing to stdout fails
+    // (e.g. a closed pipe); mirror that instead of ignoring the error.
+    if std::io::stdout().write_all(&res).is_err() {
+        log!("Warning: printf(): writing to stdout failed; returning EOF.");
+        return EOF;
+    }
     res.len().try_into().unwrap()
 }
 
-// TODO: more printf variants
+/// `asprintf()` — BSD/Darwin extension that formats into a freshly
+/// allocated buffer and returns a pointer to it via `ret`.
+fn asprintf(
+    env: &mut Environment,
+    ret: MutPtr<MutPtr<u8>>,
+    format: ConstPtr<u8>,
+    args: DotDotDot,
+) -> i32 {
+    log_dbg!("asprintf() implemented as a wrapper of vasprintf()");
+
+    vasprintf(env, ret, format, args.start())
+}
 
 /// A simple wrapper around [sscanf_common_generic] for the case of C string.
 fn sscanf_common(
@@ -1999,7 +2089,8 @@ where
 }
 
 fn sscanf(env: &mut Environment, src: ConstPtr<u8>, format: ConstPtr<u8>, args: DotDotDot) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "sscanf({:?} ({:?}), {:?} ({:?}), ...)",
@@ -2017,11 +2108,17 @@ fn swscanf(
     format: ConstPtr<wchar_t>,
     args: DotDotDot,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
-    // TODO: support other locales
+        // Only the "C" locale is supported, but apps sometimes request e.g.
+    // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
-    assert_eq!(env.mem.read(ctype_locale), b'C');
+    if env.mem.read(ctype_locale) != b'C' {
+        log!(
+            "non-'C' LC_CTYPE locale set; treating it as 'C'."
+        );
+    }
 
     let w_string = env.mem.wcstr_at(ws);
     let w_format = env.mem.wcstr_at(format);
@@ -2043,7 +2140,8 @@ fn swscanf(
 }
 
 fn vsscanf(env: &mut Environment, src: ConstPtr<u8>, format: ConstPtr<u8>, arg: VaList) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "vsscanf({:?}, {:?} ({:?}), ...)",
@@ -2060,7 +2158,8 @@ fn fscanf(
     format: ConstPtr<u8>,
     args: DotDotDot,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "fscanf({:?}, {:?} ({:?}), ...)",
@@ -2100,7 +2199,8 @@ fn fprintf(
     format: ConstPtr<u8>,
     args: DotDotDot,
 ) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!("fprintf() implemented as a wrapper of vfprintf()");
 
@@ -2108,7 +2208,8 @@ fn fprintf(
 }
 
 fn vfprintf(env: &mut Environment, stream: MutPtr<FILE>, format: ConstPtr<u8>, arg: VaList) -> i32 {
-    // TODO: handle errno properly
+    // errno is cleared optimistically; ISO C does not define errno for
+    // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
     log_dbg!(
         "vfprintf({:?}, {:?} ({:?}), ...)",
@@ -2117,7 +2218,6 @@ fn vfprintf(env: &mut Environment, stream: MutPtr<FILE>, format: ConstPtr<u8>, a
         env.mem.cstr_at_utf8(format)
     );
     let res = printf_inner::<false, _>(env, |mem, idx| mem.read(format + idx), arg);
-    // TODO: I/O error handling
     match env.mem.read(stream).fd {
         STDIN_FILENO => {
             // vfprintf() to stdin is nonsense; real libc would EBADF. We
@@ -2127,8 +2227,18 @@ fn vfprintf(env: &mut Environment, stream: MutPtr<FILE>, format: ConstPtr<u8>, a
                 res.len()
             );
         }
-        STDOUT_FILENO => _ = std::io::stdout().write_all(&res),
-        STDERR_FILENO => _ = std::io::stderr().write_all(&res),
+        STDOUT_FILENO => {
+            if std::io::stdout().write_all(&res).is_err() {
+                log!("Warning: vfprintf(): writing to stdout failed; returning EOF.");
+                return EOF;
+            }
+        }
+        STDERR_FILENO => {
+            if std::io::stderr().write_all(&res).is_err() {
+                log!("Warning: vfprintf(): writing to stderr failed; returning EOF.");
+                return EOF;
+            }
+        }
         _ => {
             let buf = env.mem.alloc_and_write_cstr(res.as_slice());
             let result = fwrite(
@@ -2156,8 +2266,14 @@ fn vwprintf(env: &mut Environment, format: ConstPtr<wchar_t>, arg: VaList) -> i3
     set_errno(env, 0);
     // Используем 'C' локаль для корректной работы с широкими символами,
     // как это реализовано в vswprintf
+    // Only the "C" locale is supported, but apps sometimes request e.g.
+    // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
-    assert_eq!(env.mem.read(ctype_locale), b'C');
+    if env.mem.read(ctype_locale) != b'C' {
+        log!(
+            "non-'C' LC_CTYPE locale set; treating it as 'C'."
+        );
+    }
 
     let wcstr_format = env.mem.wcstr_at(format);
     log_dbg!("vwprintf({:?} ({:?}), ...)", format, wcstr_format);
@@ -2176,7 +2292,12 @@ fn vwprintf(env: &mut Environment, format: ConstPtr<wchar_t>, arg: VaList) -> i3
         arg,
     );
     // Пишем результат напрямую в стандартный вывод (stdout)
-    let _ = std::io::stdout().write_all(&res);
+    // Real libc returns a negative value when writing to stdout fails;
+    // mirror that instead of ignoring the error.
+    if std::io::stdout().write_all(&res).is_err() {
+        log!("Warning: vwprintf(): writing to stdout failed; returning EOF.");
+        return EOF;
+    }
     res.len().try_into().unwrap()
 }
 
@@ -2219,6 +2340,7 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(fscanf(_, _, _)),
     export_c_func!(snprintf(_, _, _, _)),
     export_c_func!(vasprintf(_, _, _)),
+    export_c_func!(asprintf(_, _, _)),
     export_c_func!(vprintf(_, _)),
     export_c_func!(vsnprintf(_, _, _, _)),
     export_c_func!(__vsnprintf_chk(_, _, _, _, _, _)),
@@ -2241,8 +2363,9 @@ pub const FUNCTIONS: FunctionExports = &[
     // NSLog and NSLogv are exported from foundation::ns_log; not duplicated.
 ];
 
-// Helper function, not a part of printf family
-// TODO: write proper libc's isspace()
+// Helper function, not a part of printf family. Implements C-locale
+// `isspace()`: space, \t, \n, \v, \f, \r. (Rust's `is_ascii_whitespace()`
+// omits \v, so it is added explicitly below.)
 pub fn isspace(env: &mut Environment, src: ConstPtr<u8>) -> bool {
     let c = env.mem.read(src);
     isspace_inner(c)

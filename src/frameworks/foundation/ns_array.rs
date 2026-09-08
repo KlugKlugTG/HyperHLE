@@ -853,7 +853,16 @@ pub const CLASSES: ClassExports = objc_classes! {
     }, state, stackbuf, len)
 }
 
-// TODO: more init methods, etc
+// Apple: "Initializes a newly allocated array by placing in it the objects
+// contained in a given array." When `flag` is true, each object is sent
+// -copyWithZone:nil and the copy is added instead of the original.
+- (id)initWithArray:(id)array copyItems:(bool)copy_items { // NSArray*
+    let new = msg![env; this initWithArray:array];
+    if copy_items {
+        () = msg![env; this _touchHLE_copyAllElements];
+    }
+    new
+}
 
 - (NSUInteger)count {
     env.objc.borrow::<ArrayHostObject>(this).array.len().try_into().unwrap()
@@ -884,6 +893,20 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())addObject:(id)object {
     retain(env, object);
     env.objc.borrow_mut::<ArrayHostObject>(this).array.push(object);
+}
+
+// Private helper: replaces every element with its -copyWithZone:nil result.
+// Only called on the immutable subclass from initWithArray:copyItems:.
+- (())_touchHLE_copyAllElements {
+    let host_object: &mut ArrayHostObject = env.objc.borrow_mut(this);
+    let mut array = std::mem::take(&mut host_object.array);
+    for object in &mut array {
+        let original: id = *object;
+        let copy: id = msg![env; original copy];
+        release(env, original);
+        *object = copy;
+    }
+    env.objc.borrow_mut::<ArrayHostObject>(this).array = array;
 }
 
 - (id)subarrayWithRange:(NSRange)range {
@@ -1162,7 +1185,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (NSUInteger)countByEnumeratingWithState:(MutPtr<NSFastEnumerationState>)state
                                   objects:(MutPtr<id>)stackbuf
                                     count:(NSUInteger)len {
-    // TODO: check that array wasn't mutated!
+    // Apple raises NSGenericException when the array is mutated between
+    // batches. We deliberately tolerate it instead: indexing past the new
+    // count already returns nil below, and an exception would crash games
+    // whose (buggy) enumeration loops we would otherwise survive.
     let count: NSUInteger = msg![env; this count];
     fast_enumeration_helper(env, this, |env, idx| {
         if idx < count {
@@ -1190,7 +1216,57 @@ pub const CLASSES: ClassExports = objc_classes! {
     build_description(env, this)
 }
 
-// TODO: more mutation methods
+// Apple: "Replaces the objects in the receiving array at specified locations
+// by the objects in another given array."
+- (())replaceObjectsInRange:(NSRange)range
+      withObjectsFromArray:(id)other { // NSArray*
+    let len = env.objc.borrow::<ArrayHostObject>(this).array.len();
+    let location = range.location as usize;
+    let mut length = range.length as usize;
+    if location > len {
+        log!("Warning: replaceObjectsInRange:withObjectsFromArray: location {} out of bounds (len {})", location, len);
+        return;
+    }
+    if location + length > len {
+        length = len - location;
+    }
+
+    let removed: Vec<id> = {
+        let host_object: &mut ArrayHostObject = env.objc.borrow_mut(this);
+        host_object.array.drain(location..location + length).collect()
+    };
+    for object in removed {
+        release(env, object);
+    }
+
+    // Collect the replacement objects before borrowing the Vec again.
+    let count: NSUInteger = msg![env; other count];
+    let mut objects = Vec::with_capacity(count as usize);
+    for i in 0..count {
+        let obj: id = msg![env; other objectAtIndex:i];
+        retain(env, obj);
+        objects.push(obj);
+    }
+    let host_object: &mut ArrayHostObject = env.objc.borrow_mut(this);
+    for (offset, object) in objects.into_iter().enumerate() {
+        host_object.array.insert(location + offset, object);
+    }
+}
+
+// Apple: "Removes the objects at the indexes specified by a given index set."
+// Indices are removed in descending order so earlier removals don't shift
+// the remaining ones.
+- (())removeObjectsAtIndexes:(id)indexes { // NSIndexSet*
+    let count: NSUInteger = msg![env; this count];
+    let mut i = count;
+    while i > 0 {
+        i -= 1;
+        let contains: bool = msg![env; indexes containsIndex:i];
+        if contains {
+            () = msg![env; this removeObjectAtIndex:i];
+        }
+    }
+}
 
 - (())insertObject:(id)object
            atIndex:(NSUInteger)index {
@@ -1209,19 +1285,22 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())removeObject:(id)object {
-    let mut to_remove = Vec::new();
-    let count: NSUInteger = msg![env; this count];
-    for i in 0..count {
-        let curr_object: id = msg![env; this objectAtIndex:i];
+    // Single pass: partition out every element that -isEqual:s the argument.
+    // Note this is O(n) — sending -isEqual: while rebuilding the Vec, not
+    // removing indices one by one (which was O(n^2)).
+    let mut host_object: ArrayHostObject = std::mem::take(env.objc.borrow_mut(this));
+    let mut old_array = std::mem::take(&mut host_object.array);
+    let mut new_array = Vec::with_capacity(old_array.len());
+    for curr_object in old_array.drain(..) {
         let equal: bool = msg![env; object isEqual:curr_object];
         if equal {
-            to_remove.push(i);
+            release(env, curr_object);
+        } else {
+            new_array.push(curr_object);
         }
     }
-    // TODO: runtime here is O(n^2), it could be O(n) instead
-    for i in to_remove {
-        () = msg![env; this removeObjectAtIndex:i];
-    }
+    host_object.array = new_array;
+    *env.objc.borrow_mut(this) = host_object;
 }
 
 - (())removeObjectAtIndex:(NSUInteger)index {
@@ -1390,10 +1469,17 @@ fn build_description(env: &mut Environment, arr: id) -> id {
     () = msg![env; desc appendString:prefix];
     release(env, prefix);
     let values: Vec<id> = env.objc.borrow_mut::<ArrayHostObject>(arr).array.clone();
-    for value in values {
+    let count = values.len();
+    for (i, value) in values.into_iter().enumerate() {
         let value_desc: id = msg![env; value description];
-        // TODO: respect nesting and padding
-        let format = format!("\t{},\n", ns_string::to_rust_string(env, value_desc));
+        let mut text = ns_string::to_rust_string(env, value_desc).into_owned();
+        // Indent nested multi-line descriptions so each level adds one
+        // 4-space step, matching Apple's plist-style output.
+        if text.contains('\n') {
+            text = text.replace('\n', "\n    ");
+        }
+        let comma = if i + 1 == count { "" } else { "," };
+        let format = format!("    {}{}\n", text, comma);
         let format = ns_string::from_rust_string(env, format);
         () = msg![env; desc appendString:format];
         release(env, format);

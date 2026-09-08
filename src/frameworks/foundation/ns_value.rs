@@ -30,7 +30,7 @@ use crate::frameworks::core_foundation::cf_number::{
     CFNumberType,
 };
 use crate::frameworks::core_animation::ca_transform3d::CATransform3D;
-use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
+use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::NSInteger;
 use crate::mem::{ConstPtr, ConstVoidPtr, MutVoidPtr};
 use crate::objc::{
@@ -137,17 +137,81 @@ impl NSNumberHostObject {
     impl_AsValue!(as_i128, i128);
 }
 
+/// Decode a scalar value described by a single-character ObjC type encoding.
+/// Mirrors the mapping used by NSNumber's `-initWithBytes:objCType:`.
+fn decode_scalar_number(
+    env: &Environment,
+    value: ConstVoidPtr,
+    type_ptr: ConstVoidPtr,
+) -> Option<NSNumberHostObject> {
+    let type_byte = env.mem.read(type_ptr.cast::<u8>());
+    Some(match type_byte {
+        b'i' | b'l' => NSNumberHostObject::Int(env.mem.read(value.cast::<i32>())),
+        b'I' | b'L' => {
+            NSNumberHostObject::UnsignedInt(env.mem.read(value.cast::<u32>()))
+        }
+        b'q' => NSNumberHostObject::LongLong(env.mem.read(value.cast::<i64>())),
+        b'Q' => {
+            NSNumberHostObject::UnsignedLongLong(env.mem.read(value.cast::<u64>()))
+        }
+        b'f' => NSNumberHostObject::Float(env.mem.read(value.cast::<f32>())),
+        b'd' => NSNumberHostObject::Double(env.mem.read(value.cast::<f64>())),
+        b's' => NSNumberHostObject::Short(env.mem.read(value.cast::<i16>())),
+        b'S' => {
+            NSNumberHostObject::UnsignedShort(env.mem.read(value.cast::<u16>()))
+        }
+        b'c' | b'C' | b'B' => {
+            NSNumberHostObject::Char(env.mem.read(value.cast::<i8>()))
+        }
+        _ => return None,
+    })
+}
+
+/// Decode a struct type encoding such as `{CGPoint=ff}` into a value for
+/// an `NSValueHostObject`. Returns `None` for types we don't model.
+fn decode_struct_value(
+    env: &Environment,
+    value: ConstVoidPtr,
+    type_ptr: ConstVoidPtr,
+) -> Option<NSValueHostObject> {
+    let enc = env.mem.cstr_at(type_ptr.cast::<u8>());
+    let enc = std::str::from_utf8(enc).ok()?;
+    // More specific encodings must be tested first, since `{CGRect=...}`
+    // also contains the substring "CGPoint".
+    if enc.contains("CATransform3D") {
+        let transform: CATransform3D = env.mem.read(value.cast::<CATransform3D>());
+        Some(NSValueHostObject::CATransform3D(transform))
+    } else if enc.contains("CGRect") {
+        let rect: CGRect = env.mem.read(value.cast::<CGRect>());
+        Some(NSValueHostObject::CGRect(rect))
+    } else if enc.contains("CGPoint") {
+        let point: CGPoint = env.mem.read(value.cast::<CGPoint>());
+        Some(NSValueHostObject::CGPoint(point))
+    } else if enc.contains("CGSize") {
+        let size: CGSize = env.mem.read(value.cast::<CGSize>());
+        Some(NSValueHostObject::CGSize(size))
+    } else if enc.contains("NSRange") {
+        let range: NSRange = env.mem.read(value.cast::<NSRange>());
+        Some(NSValueHostObject::NSRange(range))
+    } else {
+        None
+    }
+}
+
 pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
 
-// NSValue is an abstract class.
-// None of the things it should provide are
-// implemented here yet (TODO).
+// NSValue is an abstract class. Besides the struct-specific accessors
+// below it provides generic `objCType`, `getValue:` and the bytes-based
+// constructors for the struct kinds we model; scalar-typed values are
+// bridged to NSNumber.
 @implementation NSValue: NSObject
 
 + (id)valueWithPointer:(ConstVoidPtr)ptr {
-    // TODO: implement with `value:withObjCType:` instead
+    // Deliberately stored as an NSNumber holding the raw pointer bits:
+    // that round-trips losslessly through -pointerValue, which is all
+    // apps can rely on for a pointer-sized value anyway.
     msg_class![env; NSNumber numberWithUnsignedInt:(ptr.to_bits())]
 }
 
@@ -193,9 +257,29 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 + (id)valueWithBytes:(ConstVoidPtr)value objCType:(ConstVoidPtr)_type {
-    // Store as a pointer/uint — we don't model arbitrary ObjC types.
-    let bits = value.to_bits();
-    msg_class![env; NSNumber numberWithUnsignedInt:bits]
+    // Decode the common struct encodings into proper NSValue host objects
+    // (keyed unarchiving routes struct values through here). Scalars are
+    // bridged to NSNumber; unknown types fall back to storing the raw
+    // pointer bits, matching the old behaviour.
+    if let Some(host_object) = decode_struct_value(env, value, _type) {
+        let nsvalue_class = env.objc.get_known_class("NSValue", &mut env.mem);
+        let new = env
+            .objc
+            .alloc_object(nsvalue_class, Box::new(host_object), &mut env.mem);
+        autorelease(env, new)
+    } else if let Some(number) = decode_scalar_number(env, value, _type) {
+        let new: id = msg_class![env; NSNumber alloc];
+        *env.objc.borrow_mut(new) = number;
+        autorelease(env, new)
+    } else {
+        log!(
+            "Warning: +[NSValue valueWithBytes:objCType:] unsupported type \
+             {:?}; storing the pointer bits.",
+            env.mem.cstr_at(_type.cast::<u8>())
+        );
+        let bits = value.to_bits();
+        msg_class![env; NSNumber numberWithUnsignedInt:bits]
+    }
 }
 
 // MARK: - Additional NSValue accessors
@@ -366,6 +450,92 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 }
 
+// Generic `-objCType` for struct-valued NSValues. NSNumber overrides this
+// for scalar values, so this only runs for the struct kinds we model.
+// Apple returns strings such as `{CGPoint=ff}` from `@encode(CGPoint)`.
+- (ConstVoidPtr)objCType {
+    let enc: &[u8] = match env.objc.borrow::<NSValueHostObject>(this) {
+        NSValueHostObject::CGPoint(_) => b"{CGPoint=ff}",
+        NSValueHostObject::CGSize(_) => b"{CGSize=ff}",
+        NSValueHostObject::CGRect(_) => b"{CGRect={CGPoint=ff}{CGSize=ff}}",
+        NSValueHostObject::NSRange(_) => b"{NSRange=II}",
+        NSValueHostObject::CATransform3D(_) => {
+            b"{CATransform3D=ffffffffffffffff}"
+        }
+    };
+    env.mem.alloc_and_write_cstr(enc).cast_void().cast_const()
+}
+
+// Generic `-getValue:` for struct-valued NSValues; writes the raw struct
+// bytes into a caller-provided buffer. NSNumber overrides this for
+// scalar values.
+- (())getValue:(MutVoidPtr)buffer {
+    match env.objc.borrow::<NSValueHostObject>(this) {
+        NSValueHostObject::CGPoint(_) => {
+            let value = env.objc.borrow::<NSValueHostObject>(this);
+            if let NSValueHostObject::CGPoint(p) = value {
+                env.mem.write(buffer.cast::<CGPoint>(), *p);
+            }
+        }
+        NSValueHostObject::CGSize(_) => {
+            let value = env.objc.borrow::<NSValueHostObject>(this);
+            if let NSValueHostObject::CGSize(s) = value {
+                env.mem.write(buffer.cast::<CGSize>(), *s);
+            }
+        }
+        NSValueHostObject::CGRect(_) => {
+            let value = env.objc.borrow::<NSValueHostObject>(this);
+            if let NSValueHostObject::CGRect(r) = value {
+                env.mem.write(buffer.cast::<CGRect>(), *r);
+            }
+        }
+        NSValueHostObject::NSRange(_) => {
+            // NSRange is packed, so copy its fields out individually.
+            let value = env.objc.borrow::<NSValueHostObject>(this);
+            if let NSValueHostObject::NSRange(r) = value {
+                let (location, length) = (r.location, r.length);
+                env.mem.write(buffer.cast::<NSUInteger>(), location);
+                env.mem.write(buffer.cast::<NSUInteger>() + 1u32, length);
+            }
+        }
+        NSValueHostObject::CATransform3D(_) => {
+            let value = env.objc.borrow::<NSValueHostObject>(this);
+            if let NSValueHostObject::CATransform3D(t) = value {
+                env.mem.write(buffer.cast::<CATransform3D>(), *t);
+            }
+        }
+    }
+}
+
+// `-initWithBytes:objCType:` for struct values. NSValue's own +alloc does
+// not create a struct host object, so (like -initWithCoder: on NSNumber)
+// we release the receiver and return a freshly built value instead.
+- (id)initWithBytes:(ConstVoidPtr)value objCType:(ConstVoidPtr)_type {
+    if let Some(host_object) = decode_struct_value(env, value, _type) {
+        let nsvalue_class = env.objc.get_known_class("NSValue", &mut env.mem);
+        let new = env
+            .objc
+            .alloc_object(nsvalue_class, Box::new(host_object), &mut env.mem);
+        release(env, this);
+        new
+    } else if let Some(number) = decode_scalar_number(env, value, _type) {
+        let new: id = msg_class![env; NSNumber alloc];
+        *env.objc.borrow_mut(new) = number;
+        release(env, this);
+        new
+    } else {
+        log!(
+            "Warning: -[NSValue initWithBytes:objCType:] unsupported type \
+             {:?}; storing the pointer bits.",
+            env.mem.cstr_at(_type.cast::<u8>())
+        );
+        let bits = value.to_bits();
+        let new: id = msg_class![env; NSNumber numberWithUnsignedInt:bits];
+        release(env, this);
+        new
+    }
+}
+
 // NSCopying implementation
 - (id)copyWithZone:(NSZonePtr)_zone {
     retain(env, this)
@@ -373,9 +543,18 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (MutVoidPtr)pointerValue {
     let class: Class = msg![env; this class];
-    assert!(class == env.objc.get_known_class("NSNumber", &mut env.mem));
-    // According to the docs, `If the value object was not created to hold
-    // a pointer-sized data item, the result is undefined.`
+    let nsnumber_class = env.objc.get_known_class("NSNumber", &mut env.mem);
+    if class != nsnumber_class {
+        // Per the docs the result is undefined when the value was not
+        // created to hold a pointer-sized data item; return NULL instead
+        // of asserting so a struct-valued NSValue can't crash the guest.
+        log!(
+            "Warning: -[NSValue pointerValue] called on non-number {:?}; \
+             returning NULL.",
+            this
+        );
+        return MutVoidPtr::from_bits(0);
+    }
     let val = msg![env; this unsignedIntValue];
     MutVoidPtr::from_bits(val)
 }
@@ -502,6 +681,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 + (id)numberWithUnsignedLong:(u32)value {
     msg_class![env; NSNumber numberWithUnsignedInt:value]
+}
+
++ (id)numberWithCGFloat:(CGFloat)value {
+    let new: id = msg![env; this alloc];
+    let new: id = msg![env; new initWithFloat:value];
+    autorelease(env, new)
 }
 
 // MARK: - Additional NSNumber inits
@@ -964,7 +1149,20 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.mem.alloc_and_write(typ_val).cast_void().cast_const()
 }
 
-// TODO: accessors etc
+// MARK: - CGFloat accessors
+
+// On this 32-bit platform `CGFloat` is a 32-bit float, so these are
+// thin aliases of the float accessors. Core Animation and UIKit
+// key-value coding call these when animating geometry values.
+
+- (id)initWithCGFloat:(CGFloat)value {
+    *env.objc.borrow_mut(this) = NSNumberHostObject::Float(value);
+    this
+}
+
+- (f32)cgFloatValue {
+    env.objc.borrow::<NSNumberHostObject>(this).as_float()
+}
 
 @end
 

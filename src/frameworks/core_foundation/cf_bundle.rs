@@ -148,13 +148,20 @@ fn CFBundleCreate(
 }
 
 fn CFBundleCreateBundlesFromDirectory(
-    _env: &mut Environment,
+    env: &mut Environment,
     _allocator: CFTypeRef,
     _directory_url: CFURLRef,
     _bundle_type: CFStringRef,
 ) -> CFArrayRef {
-    log!("TODO: CFBundleCreateBundlesFromDirectory — returning nil");
-    nil
+    // Scanning a directory for nested bundles is not implemented. On iOS a
+    // directory without bundles yields an empty array and callers iterate
+    // the result unconditionally, so return an empty array instead of nil
+    // to keep that iteration safe.
+    log_dbg!(
+        "CFBundleCreateBundlesFromDirectory: scan not implemented, returning empty array"
+    );
+    let empty: CFArrayRef = msg_class![env; NSArray array];
+    empty
 }
 
 // =========================================================================
@@ -611,11 +618,11 @@ fn CFBundlePreflightExecutable(
 }
 
 fn CFBundleLoadExecutable(_env: &mut Environment, bundle: CFBundleRef) -> bool {
-    log!(
-        "TODO: CFBundleLoadExecutable({:?}) — returning false",
-        bundle
-    );
-    false
+    // The app binary is always "loaded"; other bundles have no code we could
+    // load, but reporting success matches CFBundleIsExecutableLoaded above
+    // and keeps callers out of their error-handling paths.
+    log_dbg!("CFBundleLoadExecutable({:?}) -> true (pretend success)", bundle);
+    true
 }
 
 fn CFBundleLoadExecutableAndReturnError(
@@ -627,7 +634,8 @@ fn CFBundleLoadExecutableAndReturnError(
 }
 
 fn CFBundleUnloadExecutable(_env: &mut Environment, bundle: CFBundleRef) {
-    log!("TODO: CFBundleUnloadExecutable({:?}) — ignored", bundle);
+    // There is no code to unload; treat as a successful no-op.
+    log_dbg!("CFBundleUnloadExecutable({:?}) -> ignored", bundle);
 }
 
 // =========================================================================
@@ -643,12 +651,25 @@ fn CFBundleGetFunctionPointerForName(
         return nil;
     }
     let name = ns_string::to_rust_string(env, function_name);
-    log!(
-        "TODO: CFBundleGetFunctionPointerForName({:?}, \"{}\") — returning NULL",
-        bundle,
-        name
-    );
-    nil
+    // Resolve the symbol through dyld the same way `dlsym` does. Mach-O C
+    // symbols are prefixed with an underscore.
+    let mangled = format!("_{}", name);
+    match env
+        .dyld
+        .create_proc_address(&mut env.mem, &mut env.cpu, &mangled)
+    {
+        Ok(function) => MutVoidPtr::from_bits(function.addr_with_thumb_bit()).cast(),
+        Err(_) => {
+            // Unknown symbols legitimately return NULL (the documented
+            // failure result), so keep this quiet.
+            log_dbg!(
+                "CFBundleGetFunctionPointerForName({:?}, \"{}\") -> NULL (no host implementation)",
+                bundle,
+                name
+            );
+            nil
+        }
+    }
 }
 
 fn CFBundleGetFunctionPointersForNames(
@@ -661,14 +682,11 @@ fn CFBundleGetFunctionPointersForNames(
         return;
     }
     let count: NSUInteger = msg![env; function_names count];
-    log!(
-        "CFBundleGetFunctionPointersForNames({:?}, count={}) — writing NULL for all",
-        bundle,
-        count
-    );
-    let null_ptr: crate::mem::MutPtr<MutVoidPtr> = ftbl.cast();
+    let ftbl_ptr: crate::mem::MutPtr<MutVoidPtr> = ftbl.cast();
     for i in 0..count {
-        env.mem.write(null_ptr + i, crate::mem::Ptr::null());
+        let name: CFStringRef = msg![env; function_names objectAtIndex:i];
+        let resolved = CFBundleGetFunctionPointerForName(env, bundle, name);
+        env.mem.write(ftbl_ptr + i, resolved.cast());
     }
 }
 
@@ -681,8 +699,10 @@ fn CFBundleGetDataPointerForName(
         return nil;
     }
     let name = ns_string::to_rust_string(env, symbol_name);
-    log!(
-        "TODO: CFBundleGetDataPointerForName({:?}, \"{}\") — returning NULL",
+    // Host data constants cannot be resolved to guest pointers (they are
+    // materialised lazily by the linker), so NULL is all we can return.
+    log_dbg!(
+        "CFBundleGetDataPointerForName({:?}, \"{}\") -> NULL (not supported)",
         bundle,
         name
     );
@@ -699,7 +719,7 @@ fn CFBundleGetDataPointersForNames(
         return;
     }
     let count: NSUInteger = msg![env; symbol_names count];
-    log!(
+    log_dbg!(
         "CFBundleGetDataPointersForNames({:?}, count={}) — writing NULL for all",
         bundle,
         count

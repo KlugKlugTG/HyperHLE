@@ -29,12 +29,16 @@ fn __toupper(_env: &mut Environment, c: i32) -> i32 {
 }
 
 fn __maskrune(env: &mut Environment, rune: i32, mask: u32) -> i32 {
-    // TODO: do not re-create rune table on each call
     let default_rune_locale_ptr = get_default_rune_locale(env);
     let rune_locale: RuneLocale = env.mem.read(default_rune_locale_ptr.cast());
-    env.mem.free(default_rune_locale_ptr.cast_mut());
     (rune_locale.runetype[(rune & 0xFF) as usize] & mask) as i32
 }
+
+/// Guest address of the lazily-built `__DefaultRuneLocale` table, so it is
+/// only built (and allocated) once per process instead of on every
+/// `__maskrune()` call or constant lookup.
+static DEFAULT_RUNE_LOCALE_ADDR: std::sync::atomic::AtomicU32 =
+    std::sync::atomic::AtomicU32::new(0);
 
 #[allow(non_camel_case_types)]
 type darwin_rune_t = wchar_t;
@@ -67,6 +71,13 @@ struct RuneLocale {
 unsafe impl SafeRead for RuneLocale {}
 
 fn get_default_rune_locale(env: &mut Environment) -> ConstVoidPtr {
+    use std::sync::atomic::Ordering;
+
+    let cached = DEFAULT_RUNE_LOCALE_ADDR.load(Ordering::Relaxed);
+    if cached != 0 {
+        return MutVoidPtr::from_bits(cached).cast_const();
+    }
+
     let mut runetype = [0u32; LOOKUP_TABLE_SIZE];
     let mut map_lower = [0 as darwin_rune_t; LOOKUP_TABLE_SIZE];
     let mut map_upper = [0 as darwin_rune_t; LOOKUP_TABLE_SIZE];
@@ -75,7 +86,7 @@ fn get_default_rune_locale(env: &mut Environment) -> ConstVoidPtr {
         let c: u8 = idx.try_into().unwrap();
 
         let as_lower = c.to_ascii_lowercase();
-        let as_upper = c.to_ascii_lowercase();
+        let as_upper = c.to_ascii_uppercase();
 
         let mut as_runetype = 0u32;
         if c.is_ascii_alphabetic() {
@@ -126,14 +137,18 @@ fn get_default_rune_locale(env: &mut Environment) -> ConstVoidPtr {
     let mut encoding = [0u8; 32];
     encoding[0..4].copy_from_slice(b"NONE"); // this is the real value!
 
-    env.mem
+    let ptr: MutVoidPtr = env
+        .mem
         .alloc_and_write(RuneLocale {
             magic: *b"RuneMagA",
             encoding,
 
-            getrune: GuestFunction::null_ptr(), // TODO
-            putrune: GuestFunction::null_ptr(), // TODO
-            invalid_rune: -1,                   // probably not correct
+            // The rune I/O callbacks are only used by the locale-aware
+            // multi-byte functions, which are not implemented; null matches
+            // the ASCII encoding declared above.
+            getrune: GuestFunction::null_ptr(),
+            putrune: GuestFunction::null_ptr(),
+            invalid_rune: -1, // probably not correct
 
             runetype,
             map_lower,
@@ -145,8 +160,12 @@ fn get_default_rune_locale(env: &mut Environment) -> ConstVoidPtr {
             ncharclasses: 0,
             charclass: Ptr::null(),
         })
-        .cast()
-        .cast_const()
+        .cast();
+    DEFAULT_RUNE_LOCALE_ADDR.store(
+        ptr.to_bits(),
+        std::sync::atomic::Ordering::Relaxed,
+    );
+    ptr.cast_const()
 }
 
 pub const CONSTANTS: ConstantExports = &[(
