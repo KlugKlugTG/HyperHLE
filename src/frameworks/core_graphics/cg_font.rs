@@ -211,8 +211,8 @@ fn CGFontGetGlyphsForUnichars(
         return false;
     }
     if !is_data_provider_font(env, font) {
-        log!(
-            "TODO: CGFontGetGlyphsForUnichars on non-data-provider font {:?}",
+        log_dbg!(
+            "CGFontGetGlyphsForUnichars on non-data-provider font {:?} (hardcoded no-op)",
             font
         );
         return false;
@@ -859,8 +859,8 @@ fn CGFontCreatePostScriptSubset(
     _count: u32,
     _encoding: ConstPtr<CGGlyph>,
 ) -> CFTypeRef {
-    log!(
-        "TODO: CGFontCreatePostScriptSubset({:?}) — not yet implemented",
+    log_dbg!(
+        "CGFontCreatePostScriptSubset({:?}) — hardcoded to NULL",
         font
     );
     nil
@@ -871,8 +871,8 @@ fn CGFontCreatePostScriptEncoding(
     font: CGFontRef,
     _encoding: ConstPtr<CGGlyph>,
 ) -> CFTypeRef {
-    log!(
-        "TODO: CGFontCreatePostScriptEncoding({:?}) — not yet implemented",
+    log_dbg!(
+        "CGFontCreatePostScriptEncoding({:?}) — hardcoded to NULL",
         font
     );
     nil
