@@ -1147,7 +1147,18 @@ fn vsnprintf(
     } else {
         &res[..]
     };
-    let dest_slice = env.mem.bytes_at_mut(dest, n);
+    // Only write as many bytes as actually needed (formatted chars + NUL),
+    // which is always <= n. Some apps pass a bogus huge `n` (e.g. -1);
+    // using `n` directly for the slice would go out of bounds and either
+    // panic or silently discard the write.
+    let write_count: GuestUSize = (middle.len() + 1).try_into().unwrap();
+    let Some(dest_slice) = env.mem.get_bytes_fallible_mut(dest.cast().cast_const(), write_count) else {
+        log!(
+            "Warning: vsnprintf: destination {:?} out of range for {} bytes; skipping write.",
+            dest, write_count
+        );
+        return res.len().try_into().unwrap();
+    };
     for (i, &byte) in middle.iter().chain(b"\0".iter()).enumerate() {
         dest_slice[i] = byte;
     }

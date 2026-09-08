@@ -505,6 +505,14 @@ impl Mem {
             return;
         }
         set.insert(key);
+        if size > 0x1000_0000 {
+            // Huge size is almost always a corrupted/-1 length; capture a
+            // backtrace to identify the offending host function.
+            log!(
+                "touchHLE::mem: backtrace for huge-size NULL-PAGE/OOB access:\n{}",
+                std::backtrace::Backtrace::force_capture()
+            );
+        }
         let op_type = if is_write { "WRITE" } else { "READ" };
         // Provide helpful context: small offsets are typically field accesses
         // on a nil Objective-C object pointer (nil + ivar offset). This is
