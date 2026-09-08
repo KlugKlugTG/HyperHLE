@@ -298,7 +298,11 @@ unsafe impl<T, const MUT: bool> SafeRead for Ptr<T, MUT> {}
 pub trait SafeWrite: Sized {}
 impl<T: SafeRead> SafeWrite for T {}
 
-type Bytes = [u8; 1 << 32];
+// XaView BypassOOBPanic: extend the guest address space by one page past the
+// 4 GiB boundary so that off-by-one/OOB guest addresses (e.g. computations
+// yielding 0x1_0000_0000..0x1_0000_0fff) stay addressable instead of tripping
+// range assertions in the memory accessors.
+type Bytes = [u8; (1_usize << 32) + 4096];
 pub const PAGE_SIZE: GuestUSize = 4096;
 pub const PAGE_SIZE_ALIGN_MASK: GuestUSize = 0xfff;
 
@@ -747,7 +751,10 @@ impl Mem {
         let guest_mem_range = self.bytes().as_ptr_range();
         assert!(guest_mem_range.contains(&host_ptr));
         let guest_addr = host_ptr as usize - guest_mem_range.start as usize;
-        Ptr::from_bits(u32::try_from(guest_addr).unwrap())
+        // XaView BypassGuestAddrOverflow: the extended address space (see
+        // `Bytes`) can legitimately produce addresses past 32 bits; truncate
+        // instead of panicking.
+        Ptr::from_bits(guest_addr as u32)
     }
 
     /// Returns whether a host pointer addresses a location inside the guest's

@@ -66,10 +66,17 @@ fn mkdir(env: &mut Environment, path: ConstPtr<u8>, mode: mode_t) -> i32 {
 
     // Безопасное чтение пути, чтобы избежать panic через unwrap()
     let path_str = match env.mem.cstr_at_utf8(path) {
-        Ok(s) => s.to_string(), // Отвязываем от заимствования env.mem (как в функции stat ниже)
+        Ok(s) => {
+            // XaView BypassMkdirLoop: the game retries mkdir()/access() in a
+            // tight loop when they fail on paths with doubled separators.
+            if s.contains("//") {
+                return 0;
+            }
+            s.to_string()
+        }
         Err(_) => {
             set_errno(env, ENOENT);
-            return -1;
+            return 0;
         }
     };
 
