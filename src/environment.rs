@@ -16,9 +16,9 @@ use crate::abi::{CallFromHost, GuestFunction};
 use crate::audio::openal::OpenALManager;
 use crate::cpu::Cpu;
 use crate::libc::semaphore::sem_t;
-use crate::mem::{GuestUSize, MutPtr, MutVoidPtr};
+use crate::mem::{self, GuestUSize, MutPtr, MutVoidPtr};
 use crate::{
-    abi, bundle, cpu, dyld, frameworks, fs, gdb, image, libc, mach_o, mem, objc, options, stack,
+    abi, bundle, cpu, dyld, frameworks, fs, gdb, image, libc, mach_o, objc, options, stack,
     window,
 };
 use std::cell::Cell;
@@ -2222,6 +2222,129 @@ impl Environment {
                 let state = self
                     .cpu
                     .run_or_step(&mut self.mem, self.remaining_ticks.as_mut());
+
+                // Asphalt 8 (com.gameloft.asphalt8) v1.1.0 compatibility hacks,
+                // ported from the touchHLE-XaView fork. The game deliberately
+                // calls abort() when its DRM/network checks fail, which looks
+                // like a silent emulator crash. These unwinds skip the checks.
+                if self
+                    .bundle
+                    .bundle_identifier()
+                    .starts_with("com.gameloft.asphalt8")
+                {
+                    let pc = self.cpu.regs()[Cpu::PC];
+                    // BypassAsphaltDRM: deep stack unwind past the license check
+                    if pc == 0x00600ac4 {
+                        log!(
+                            "WARNING: Bypassing Asphalt DRM via deep stack unwind at {:#010x}!",
+                            pc
+                        );
+                        let fp0 = self.cpu.regs()[7];
+                        let fp1: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp0));
+                        let fp2: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp1));
+                        let target_lr: GuestUSize =
+                            self.mem.read(mem::ConstPtr::from_bits(fp2 + 4));
+                        self.cpu.regs_mut()[7] = fp2;
+                        self.cpu.regs_mut()[Cpu::SP] = fp1 + 8;
+                        self.cpu.regs_mut()[0] = 0;
+                        self.cpu
+                            .branch(abi::GuestFunction::from_addr_with_thumb_bit(target_lr));
+                    }
+                    // RestoreConditionalUnwinds: network module deadlocks
+                    if (pc == 0x00c3296c || pc == 0x00c32bfc) && self.current_thread != 0 {
+                        let fp0 = self.cpu.regs()[7];
+                        let prev_fp: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp0));
+                        let target_lr: GuestUSize =
+                            self.mem.read(mem::ConstPtr::from_bits(fp0 + 4));
+                        let current_lr = self.cpu.regs()[Cpu::LR];
+                        if (current_lr & 0xFFFF0000) == 0x005b0000
+                            || (target_lr & 0xFFFF0000) == 0x005b0000
+                        {
+                            log!(
+                                "WARNING: Asphalt network deadlock safely unwound at {:#010x}! LR: {:#010x}",
+                                pc,
+                                target_lr
+                            );
+                            self.cpu.regs_mut()[7] = prev_fp;
+                            self.cpu.regs_mut()[Cpu::SP] = fp0 + 8;
+                            self.cpu.regs_mut()[0] = 0;
+                            self.cpu
+                                .branch(abi::GuestFunction::from_addr_with_thumb_bit(target_lr));
+                        }
+                    } else if (pc == 0x00c3375c || pc == 0x00c3376c) && self.current_thread != 0 {
+                        let fp0 = self.cpu.regs()[7];
+                        let fp1: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp0));
+                        let prev_fp: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp1));
+                        let target_lr: GuestUSize =
+                            self.mem.read(mem::ConstPtr::from_bits(fp1 + 4));
+                        if (target_lr & 0xFFFF0000) == 0x005b0000 {
+                            log!(
+                                "WARNING: Asphalt deep unwind of infinite parser loop! LR: {:#010x}",
+                                target_lr
+                            );
+                            self.cpu.regs_mut()[7] = prev_fp;
+                            self.cpu.regs_mut()[Cpu::SP] = fp1 + 8;
+                            self.cpu.regs_mut()[0] = 0;
+                            self.cpu
+                                .branch(abi::GuestFunction::from_addr_with_thumb_bit(target_lr));
+                        }
+                    } else if pc == 0x00c32b3c {
+                        // TargetedDoubleUnwind: smashed stack frame repair
+                        log!(
+                            "WARNING: Unwinding smashed Asphalt stack frame at {:#010x}! Thread: {}",
+                            pc,
+                            self.current_thread
+                        );
+                        let fp0 = self.cpu.regs()[7];
+                        let fp1: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp0));
+                        if fp1 > fp0 && fp1.wrapping_sub(fp0) < 0x1000 {
+                            let saved_r4: GuestUSize =
+                                self.mem.read(mem::ConstPtr::from_bits(fp1 - 12));
+                            let saved_r5: GuestUSize =
+                                self.mem.read(mem::ConstPtr::from_bits(fp1 - 8));
+                            let saved_r6: GuestUSize =
+                                self.mem.read(mem::ConstPtr::from_bits(fp1 - 4));
+                            let saved_r7: GuestUSize =
+                                self.mem.read(mem::ConstPtr::from_bits(fp1));
+                            let saved_lr: GuestUSize =
+                                self.mem.read(mem::ConstPtr::from_bits(fp1 + 4));
+                            self.cpu.regs_mut()[4] = saved_r4;
+                            self.cpu.regs_mut()[5] = saved_r5;
+                            self.cpu.regs_mut()[6] = saved_r6;
+                            self.cpu.regs_mut()[7] = saved_r7;
+                            self.cpu.regs_mut()[Cpu::SP] = fp1 + 8;
+                            self.cpu.regs_mut()[0] = 0;
+                            self.cpu
+                                .branch(abi::GuestFunction::from_addr_with_thumb_bit(saved_lr | 1));
+                        } else {
+                            log!("FATAL: Asphalt stack chain corrupted beyond fp0!");
+                            self.cpu
+                                .branch(abi::GuestFunction::from_addr_with_thumb_bit(0x00a8a1bd | 1));
+                        }
+                    }
+                    // BypassAsphaltOverdriveDeadlocks
+                    let lr = self.cpu.regs()[Cpu::LR];
+                    if (pc == 0x009d7784 && (lr == 0x0039418f || lr == 0x0039419b))
+                        || (pc == 0x009d7464 && lr == 0x0078df65)
+                        || (pc == 0x009d8334 && lr == 0x001722e1)
+                    {
+                        log!(
+                            "WARNING: Unwinding Asphalt Overdrive deadlock at PC: {:#010x}, LR: {:#010x}",
+                            pc,
+                            lr
+                        );
+                        let fp0 = self.cpu.regs()[7];
+                        let prev_fp: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp0));
+                        let target_lr: GuestUSize =
+                            self.mem.read(mem::ConstPtr::from_bits(fp0 + 4));
+                        self.cpu.regs_mut()[7] = prev_fp;
+                        self.cpu.regs_mut()[Cpu::SP] = fp0 + 8;
+                        self.cpu.regs_mut()[0] = 0;
+                        self.cpu
+                            .branch(abi::GuestFunction::from_addr_with_thumb_bit(target_lr));
+                    }
+                }
+
                 match self.handle_cpu_state(state) {
                     ThreadNextAction::Continue => {}
                     ThreadNextAction::ReturnToHost => return,
