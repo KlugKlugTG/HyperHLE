@@ -15,7 +15,9 @@ use std::sync::{LazyLock, Mutex};
 /// who don't have access to ADB, so we also write to a log file.
 pub fn get_log_file() -> &'static Mutex<File> {
     static LOG_FILE: LazyLock<Mutex<File>> = LazyLock::new(|| {
-        Mutex::new(File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap())
+        let file = File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap();
+        crate::crash_handler::set_log_fd(std::os::fd::AsRawFd::as_raw_fd(&file));
+        Mutex::new(file)
     });
 
     &LOG_FILE

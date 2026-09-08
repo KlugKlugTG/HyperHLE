@@ -1188,6 +1188,10 @@ impl Environment {
         assert!(stack_high_addr.is_multiple_of(4));
 
         let thread_routine = Coroutine::new(move |yielder, mut env: Environment| {
+            log!(
+                "touchHLE: guest worker thread now running (start_routine={:#x})",
+                start_routine.addr_with_thumb_bit()
+            );
             let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                 env.with_yielder(yielder, move |env| {
                     let regs = env.cpu.regs_mut();

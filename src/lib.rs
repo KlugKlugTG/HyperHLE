@@ -26,6 +26,7 @@
 
 #[macro_use]
 mod log;
+mod crash_handler;
 mod abi;
 mod audio;
 mod bundle;
@@ -111,6 +112,8 @@ Special options:
         Print basic information about the app bundle without running the app.
 ";
 pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
+    crash_handler::install();
+
     echo!(
         "touchHLE {}{}{} — https://touchhle.org/",
         branding(),
