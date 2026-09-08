@@ -815,6 +815,28 @@ fn exit(env: &mut Environment, exit_code: i32) {
 }
 
 fn abort(env: &mut Environment) {
+    // Asphalt 8 calls abort() from its DRM/network checks; unwinding to the
+    // caller frame (XaView "BypassExceptionUnwind") lets the game survive.
+    // Fall back to the original fatal path if no valid frame is found.
+    let mut fp = env.cpu.regs()[7];
+    for _ in 0..30 {
+        if fp == 0 {
+            break;
+        }
+        let prev_fp: u32 = env.mem.read(crate::mem::ConstPtr::<u32>::from_bits(fp));
+        let lr: u32 = env.mem.read(crate::mem::ConstPtr::<u32>::from_bits(fp + 4));
+        if lr > 0 && lr < 0x10000000 {
+            echo!("App called abort(); unwinding to caller frame at {:#010x} instead of crashing.", lr);
+            env.stack_trace_current();
+            env.cpu.regs_mut()[7] = prev_fp;
+            env.cpu.regs_mut()[13] = fp + 8;
+            env.cpu.regs_mut()[0] = 0;
+            env.cpu
+                .branch(GuestFunction::from_addr_with_thumb_bit(lr));
+            return;
+        }
+        fp = prev_fp;
+    }
     echo!("App called abort(); the guest encountered a fatal error.");
     env.stack_trace_current();
     panic!("guest called abort()")
