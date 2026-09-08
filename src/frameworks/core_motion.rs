@@ -182,6 +182,22 @@ fn read_sdl_accelerometer(env: &Environment) -> Option<CMAcceleration> {
     })
 }
 
+/// Returns (x, y, z) in radians per second around the device axes, matching
+/// CMRotationRate's frame and units, or None if the host has no usable
+/// gyroscope sensor.
+fn read_sdl_gyroscope(env: &Environment) -> Option<CMRotationRate> {
+    // `Window::get_rotation_rate` already returns the host gyroscope reading
+    // in radians per second in the same device frame CMRotationRate uses, so
+    // we just forward those values.
+    let window = env.window.as_ref()?;
+    let (x, y, z) = window.get_rotation_rate()?;
+    Some(CMRotationRate {
+        x: x as f64,
+        y: y as f64,
+        z: z as f64,
+    })
+}
+
 const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
@@ -270,7 +286,7 @@ const CLASSES: ClassExports = objc_classes! {
 // =============================================================================
 // CMAttitude
 // Per Apple: describes the orientation of the device as roll/pitch/yaw
-// (radians), plus a rotation matrix and quaternion. With no real gyroscope on
+// (radians), plus a rotation matrix and quaternion. With no real host gyro
 // desktop/Android hosts, we derive roll/pitch from the gravity vector and
 // leave yaw at zero. This is enough for games that only read the property to
 // avoid the generic "does not respond to selector" path (which floods the log
@@ -410,7 +426,8 @@ const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 // Availability checks
 // Per Apple: These indicate whether the hardware sensor is available.
-// On the emulator: accelerometer can come from SDL; gyro/magnetometer cannot.
+// On the emulator: accelerometer and gyroscope come from SDL sensors (with a
+// stationary-device stub fallback); magnetometer is not emulated.
 // =========================================================================
 
 - (bool)isAccelerometerAvailable {
@@ -420,8 +437,12 @@ const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)isGyroAvailable {
-    // No gyroscope emulation available on desktop hosts.
-    false
+    // The gyroscope is always reported as available. If the host exposes a
+    // real gyro sensor via SDL its readings are used; otherwise readings fall
+    // back to a "stationary device" stub (zero rotation rate). Apps commonly
+    // gate their motion features on this flag, so a stubbed-but-available
+    // gyro is preferable to reporting the hardware as absent.
+    true
 }
 
 - (bool)isDeviceMotionAvailable {
@@ -480,6 +501,9 @@ const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())startGyroUpdates {
+    if env.window.as_ref().is_none_or(|w| !w.has_gyroscope()) {
+        log!("No host gyroscope sensor; reporting a stationary device (zero rotation rate).");
+    }
     env.objc.borrow_mut::<CMMotionManagerHostObject>(this).gyro_active = true;
 }
 
@@ -503,6 +527,9 @@ const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())startGyroUpdatesToQueue:(id)_queue withHandler:(id)_handler {
+    if env.window.as_ref().is_none_or(|w| !w.has_gyroscope()) {
+        log!("No host gyroscope sensor; reporting a stationary device (zero rotation rate).");
+    }
     env.objc.borrow_mut::<CMMotionManagerHostObject>(this).gyro_active = true;
 }
 
@@ -599,15 +626,18 @@ const CLASSES: ClassExports = objc_classes! {
         return nil;
     }
 
-    // No real gyroscope data available from desktop hosts.
-    // Return zero rotation rate (device is stationary).
+    // Read the host gyroscope via SDL when available; otherwise fall back to
+    // a "stationary device" stub (zero rotation rate) while still reporting
+    // the gyroscope as available.
+    let rotation_rate = read_sdl_gyroscope(env)
+        .unwrap_or(CMRotationRate { x: 0.0, y: 0.0, z: 0.0 });
     let timestamp = env.objc.borrow::<CMMotionManagerHostObject>(this)
         .start_time.unwrap_or_else(std::time::Instant::now).elapsed().as_secs_f64();
 
     let data: id = msg_class![env; CMGyroData new];
     {
         let data_host = env.objc.borrow_mut::<CMGyroDataHostObject>(data);
-        data_host.rotation_rate = CMRotationRate { x: 0.0, y: 0.0, z: 0.0 };
+        data_host.rotation_rate = rotation_rate;
         data_host.timestamp = timestamp;
     }
     autorelease(env, data)
@@ -619,12 +649,15 @@ const CLASSES: ClassExports = objc_classes! {
         return nil;
     }
 
-    // Without a real gyroscope we cannot do sensor fusion. We approximate:
+    // Without a magnetometer we cannot do full sensor fusion. We approximate:
     // - gravity = raw accelerometer reading (accurate when device is still)
-    // - userAcceleration = zero (can't separate without gyro)
-    // - rotationRate = zero
+    // - userAcceleration = zero (can't separate without additional filtering)
+    // - rotationRate = host gyroscope reading via SDL, or zero (stub) if the
+    //   host has no gyroscope
     let accel = read_sdl_accelerometer(env)
         .unwrap_or(CMAcceleration { x: 0.0, y: 0.0, z: -1.0 });
+    let rotation_rate = read_sdl_gyroscope(env)
+        .unwrap_or(CMRotationRate { x: 0.0, y: 0.0, z: 0.0 });
     let timestamp = env.objc.borrow::<CMMotionManagerHostObject>(this)
         .start_time.unwrap_or_else(std::time::Instant::now).elapsed().as_secs_f64();
 
@@ -633,7 +666,7 @@ const CLASSES: ClassExports = objc_classes! {
         let data_host = env.objc.borrow_mut::<CMDeviceMotionHostObject>(data);
         data_host.gravity = accel;
         data_host.user_acceleration = CMAcceleration { x: 0.0, y: 0.0, z: 0.0 };
-        data_host.rotation_rate = CMRotationRate { x: 0.0, y: 0.0, z: 0.0 };
+        data_host.rotation_rate = rotation_rate;
         data_host.timestamp = timestamp;
     }
     autorelease(env, data)

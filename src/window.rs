@@ -654,6 +654,7 @@ pub struct Window {
     stick_active: bool,
     _sensor_ctx: sdl2::SensorSubsystem,
     accelerometer: Option<sdl2::sensor::Sensor>,
+    gyroscope: Option<sdl2::sensor::Sensor>,
     virtual_cursor_last: Option<(f32, f32, bool, bool)>,
     virtual_cursor_last_unsticky: Option<(f32, f32, Instant)>,
     virtual_accelerometer_last: Option<(f32, f32, bool)>,
@@ -825,13 +826,29 @@ impl Window {
 
         let sensor_ctx = sdl_ctx.sensor().unwrap();
         let mut accelerometer: Option<sdl2::sensor::Sensor> = None;
+        let mut gyroscope: Option<sdl2::sensor::Sensor> = None;
         if let Ok(num_sensors) = sensor_ctx.num_sensors() {
             for sensor_idx in 0..num_sensors {
+                if accelerometer.is_some() && gyroscope.is_some() {
+                    break;
+                }
                 if let Ok(sensor) = sensor_ctx.open(sensor_idx) {
-                    if sensor.sensor_type() == sdl2::sensor::SensorType::Accelerometer {
-                        log!("Accelerometer detected: {}.", sensor.name());
-                        accelerometer = Some(sensor);
-                        break;
+                    match sensor.sensor_type() {
+                        sdl2::sensor::SensorType::Accelerometer => {
+                            if accelerometer.is_none() {
+                                log!("Accelerometer detected: {}.", sensor.name());
+                                accelerometer = Some(sensor);
+                            }
+                        }
+                        sdl2::sensor::SensorType::Gyroscope
+                        | sdl2::sensor::SensorType::LeftGyroscope
+                        | sdl2::sensor::SensorType::RightGyroscope => {
+                            if gyroscope.is_none() {
+                                log!("Gyroscope detected: {}.", sensor.name());
+                                gyroscope = Some(sensor);
+                            }
+                        }
+                        _ => {}
                     }
                 }
             }
@@ -878,6 +895,7 @@ impl Window {
             stick_active: false,
             _sensor_ctx: sensor_ctx,
             accelerometer,
+            gyroscope,
             virtual_cursor_last: None,
             virtual_cursor_last_unsticky: None,
             virtual_accelerometer_last: None,
@@ -1684,6 +1702,34 @@ impl Window {
         let [x, y, z] = matrix.transform(gravity);
 
         (x, y, z)
+    }
+
+    /// Returns [true] if the host device provides a gyroscope sensor.
+    pub fn has_gyroscope(&self) -> bool {
+        self.gyroscope.is_some()
+    }
+
+    /// Get the host gyroscope rotation rate, in radians per second, in the
+    /// device coordinate frame (+x right of the screen, +y top of the screen,
+    /// +z away from the screen), matching the axes of CMRotationRate.
+    /// SDL reports gyroscope data in radians per second relative to the
+    /// device axes, so no unit or axis conversion is needed.
+    /// See also [crate::frameworks::core_motion].
+    pub fn get_rotation_rate(&self) -> Option<(f32, f32, f32)> {
+        let gyroscope = self.gyroscope.as_ref()?;
+        let data = gyroscope.get_data().ok()?;
+        let sdl2::sensor::SensorData::Gyro(data) = data else {
+            // We asked SDL for the gyroscope sensor explicitly earlier; if
+            // SDL handed us a different sensor variant (driver bug, future
+            // SDL version, etc.), treat the sensor as unavailable.
+            log!(
+                "Warning: gyroscope sensor returned non-Gyro data ({:?}); ignoring.",
+                data
+            );
+            return None;
+        };
+        let [x, y, z] = data;
+        Some((x, y, z))
     }
 
     /// For use when redrawing the screen: Get the cached on-screen position and
