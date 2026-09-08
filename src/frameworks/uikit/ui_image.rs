@@ -194,6 +194,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (CGSize)size {
     let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
+    // An image created via bare -alloc/-init has no CGImage; Apple returns
+    // a zero size rather than crashing.
+    if image.is_null() {
+        return CGSize { width: 0.0, height: 0.0 };
+    }
     let (width, height) = cg_image::borrow_image(&env.objc, image).dimensions();
     CGSize {
         width: width as _,
@@ -241,6 +246,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let context = UIGraphicsGetCurrentContext(env);
     if context == nil { return; }
     let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
+    // Drawing a nil image is a no-op, not a crash.
+    if image == nil { return; }
     let rect = CGRect {
         origin: point,
         size: CGSize {
@@ -260,6 +267,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     // частей (nine-patch)
     // и отрисовывать через CGContextDrawImage кусками. Пока рисуем целиком.
     let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
+    // Drawing a nil image is a no-op, not a crash.
+    if image == nil { return; }
     CGContextDrawImage(env, context, rect, image);
 }
 
@@ -272,6 +281,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let context = UIGraphicsGetCurrentContext(env);
     if context == nil { return; }
     let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
+    // Drawing a nil image is a no-op, not a crash.
+    if image == nil { return; }
     CGContextDrawImage(env, context, rect, image);
 }
 
@@ -279,6 +290,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let context = UIGraphicsGetCurrentContext(env);
     if context == nil { return; }
     let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
+    // Drawing a nil image is a no-op, not a crash.
+    if image == nil { return; }
     let rect = CGRect {
         origin: point,
         size: CGSize {

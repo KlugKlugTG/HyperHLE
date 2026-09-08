@@ -12,7 +12,7 @@ use super::posix_io::{
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::fs::{FsError, GuestPath};
 use crate::libc::errno::{
-    set_errno, EACCES, EBADF, EIO, EINVAL, ENOENT, ENOTDIR, ENOTEMPTY,
+    set_errno, EACCES, EBADF, EIO, EINVAL, ENOENT, ENOTDIR, ENOTEMPTY, EOVERFLOW,
 };
 use crate::libc::string::strlen;
 use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, Mem, MutPtr, MutVoidPtr, Ptr, SafeRead};
@@ -279,7 +279,18 @@ fn fread(
     // Yes, the item_size/n_items split doesn't mean anything. The C standard
     // really does expect you to just multiply and divide like this, with no
     // attempt being made to ensure a whole number are read or written!
-    let mut total_size = item_size.checked_mul(n_items).unwrap();
+    let mut total_size = match item_size.checked_mul(n_items) {
+        Some(total_size) => total_size,
+        None => {
+            // item_size * n_items overflows 32 bits; report an error
+            // instead of wrapping (or panicking) and reading garbage.
+            log!(
+                "Warning: fread(): item_size * n_items overflows; returning 0.",
+            );
+            set_errno(env, EOVERFLOW);
+            return 0;
+        }
+    };
     let FILEHostObject {
         ref mut pushbacks, ..
     } = env
@@ -348,7 +359,7 @@ fn fgetc(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
 
     let buffer = env.mem.alloc(1);
 
-    match posix_io::read(env, fd, buffer, 1) {
+    let res = match posix_io::read(env, fd, buffer, 1) {
         -1 => {
             env.libc_state
                 .stdio
@@ -365,7 +376,11 @@ fn fgetc(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
                 env.mem.read(buf) as i32
             }
         }
-    }
+    };
+    // Free the temporary buffer on every path; it used to leak one
+    // allocation per fgetc()/getc() call.
+    env.mem.free(buffer);
+    res
 }
 
 fn getc(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
@@ -393,7 +408,9 @@ fn ungetc(env: &mut Environment, c: i32, file_ptr: MutPtr<FILE>) -> i32 {
         .libc_state
         .stdio
         .get_file_host_obj_mut(&mut env.mem, file_ptr);
-    pushbacks.push(c.try_into().unwrap());
+    // C converts the int argument to unsigned char; a value outside
+    // 0..=255 must not panic the host.
+    pushbacks.push(c as u8);
     log_dbg!("ungetc pushbacks: {:?}", pushbacks);
     c
 }
@@ -404,9 +421,16 @@ fn fgets(
     size: GuestUSize,
     stream: MutPtr<FILE>,
 ) -> MutPtr<u8> {
+    // C11 §7.21.7.7: fgets reads at most size - 1 characters so the
+    // terminating NUL always fits inside the caller's buffer. The old
+    // code could read size characters and then write the NUL one byte
+    // past the end of the buffer.
+    if size == 0 {
+        return Ptr::null();
+    }
     let mut read = 0;
     let mut tmp = str;
-    while read < size && fread(env, tmp.cast(), 1, 1, stream) != 0 {
+    while read < size - 1 && fread(env, tmp.cast(), 1, 1, stream) != 0 {
         tmp += 1;
         read += 1;
         if env.mem.read(tmp - 1) == b'\n' {
@@ -443,7 +467,9 @@ fn fputc(env: &mut Environment, c: i32, stream: MutPtr<FILE>) -> i32 {
     // set the real errno when an operation fails.
     set_errno(env, 0);
 
-    let ptr: MutPtr<u8> = env.mem.alloc_and_write(c.try_into().unwrap());
+    // C converts the int argument to unsigned char; a value outside
+    // 0..=255 must not panic the host.
+    let ptr: MutPtr<u8> = env.mem.alloc_and_write(c as u8);
     let res = fwrite(env, ptr.cast_const().cast(), 1, 1, stream)
         .try_into()
         .unwrap();
@@ -475,7 +501,18 @@ fn fwrite(
 
     let FILE { fd } = env.mem.read(file_ptr);
 
-    let total_size = item_size.checked_mul(n_items).unwrap();
+    let total_size = match item_size.checked_mul(n_items) {
+        Some(total_size) => total_size,
+        None => {
+            // item_size * n_items overflows 32 bits; report an error
+            // instead of wrapping (or panicking) and writing garbage.
+            log!(
+                "Warning: fwrite(): item_size * n_items overflows; returning 0.",
+            );
+            set_errno(env, EOVERFLOW);
+            return 0;
+        }
+    };
 
     // TODO: Refactor, use traits instead of this hack
     match fd {

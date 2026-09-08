@@ -318,7 +318,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (NSUInteger)indexOfObject:(id)object inRange:(NSRange)range {
-    for i in range.location..(range.location + range.length) {
+    // Use checked arithmetic so a hostile range (location + length
+    // overflowing NSUInteger) cannot panic the host.
+    let Some(end) = range.location.checked_add(range.length) else {
+        return NSNotFound as NSUInteger;
+    };
+    for i in range.location..end {
         let curr: id = msg![env; this objectAtIndex:i];
         let equal: bool = msg![env; object isEqual:curr];
         if equal {
@@ -340,7 +345,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (NSUInteger)indexOfObjectIdenticalTo:(id)object inRange:(NSRange)range {
-    for i in range.location..(range.location + range.length) {
+    // Use checked arithmetic so a hostile range cannot overflow.
+    let Some(end) = range.location.checked_add(range.length) else {
+        return NSNotFound as NSUInteger;
+    };
+    for i in range.location..end {
         let curr: id = msg![env; this objectAtIndex:i];
         if curr == object {
             return i;
@@ -382,8 +391,24 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)subarrayWithRange:(NSRange)range {
+    // Apple raises NSRangeException for an out-of-bounds range; we log and
+    // return an empty array so buggy/malicious guests don't crash the host.
+    // Copy range fields to locals first: NSRange is repr(packed), so log!
+    // would otherwise take misaligned references to its fields.
+    let (loc, len) = (range.location, range.length);
+    let count: NSUInteger = msg![env; this count];
+    let Some(end) = loc.checked_add(len) else {
+        log!("Warning: subarrayWithRange: range overflow (location {}, length {})", loc, len);
+        let res = from_vec(env, Vec::new());
+        return autorelease(env, res);
+    };
+    if loc > count || end > count {
+        log!("Warning: subarrayWithRange: range out of bounds (location {}, length {}, count {})", loc, len, count);
+        let res = from_vec(env, Vec::new());
+        return autorelease(env, res);
+    }
     let mut objects = Vec::with_capacity(range.length as usize);
-    for i in range.location..(range.location + range.length) {
+    for i in range.location..end {
         let obj: id = msg![env; this objectAtIndex:i];
         retain(env, obj);
         objects.push(obj);
@@ -642,10 +667,18 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())removeObjectsInRange:(NSRange)range {
-    // Remove in reverse order to preserve indices.
-    let end = range.location + range.length;
+    // Remove in reverse order to preserve indices. Clamp to the current
+    // count and guard against range overflow instead of panicking.
+    // Copy range fields to locals: NSRange is repr(packed).
+    let (loc, len) = (range.location, range.length);
+    let count: NSUInteger = msg![env; this count];
+    let Some(end) = loc.checked_add(len) else {
+        log!("Warning: removeObjectsInRange: range overflow (location {}, length {})", loc, len);
+        return;
+    };
+    let end = end.min(count);
     let mut i = end;
-    while i > range.location {
+    while i > loc {
         i -= 1;
         () = msg![env; this removeObjectAtIndex:i];
     }
@@ -666,6 +699,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())exchangeObjectAtIndex:(NSUInteger)idx1 withObjectAtIndex:(NSUInteger)idx2 {
+    // Apple raises NSRangeException for out-of-bounds indices; we log and
+    // ignore so a buggy guest doesn't panic the host.
+    let len = env.objc.borrow::<ArrayHostObject>(this).array.len();
+    if idx1 as usize >= len || idx2 as usize >= len {
+        log!("Warning: exchangeObjectAtIndex:withObjectAtIndex: index out of bounds ({}, {}, len {})", idx1, idx2, len);
+        return;
+    }
     env.objc
         .borrow_mut::<ArrayHostObject>(this)
         .array
@@ -910,10 +950,25 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)subarrayWithRange:(NSRange)range {
+    // Apple raises NSRangeException for an out-of-bounds range; log and
+    // return an empty array instead of panicking on the slice index.
+    // Copy range fields to locals first: NSRange is repr(packed), so log!
+    // would otherwise take misaligned references to its fields.
+    let (loc, range_len) = (range.location, range.length);
+    let array = env.objc.borrow::<ArrayHostObject>(this).array.clone();
+    let len = array.len();
+    let Some(end) = loc.checked_add(range_len) else {
+        log!("Warning: subarrayWithRange: range overflow (location {}, length {})", loc, range_len);
+        let res = from_vec(env, Vec::new());
+        return autorelease(env, res);
+    };
+    if loc as usize > len || end as usize > len {
+        log!("Warning: subarrayWithRange: range out of bounds (location {}, length {}, len {})", loc, range_len, len);
+        let res = from_vec(env, Vec::new());
+        return autorelease(env, res);
+    }
     let mut tmp = Vec::new();
-    tmp.extend_from_slice(
-        &env.objc.borrow::<ArrayHostObject>(this).array[range.location as usize..(range.location + range.length) as usize]
-    );
+    tmp.extend_from_slice(&array[loc as usize..end as usize]);
     for &obj in &tmp {
         retain(env, obj);
     }

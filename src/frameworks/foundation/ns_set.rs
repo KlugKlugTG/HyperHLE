@@ -697,6 +697,11 @@ fn set_from_objects(env: &mut Environment, first_obj: id, args: DotDotDot) -> Di
     let null: id = msg_class![env; NSNull null];
 
     let mut dict = <DictionaryHostObject as Default>::default();
+    // A nil first object (e.g. an empty nil-terminated C list) yields an
+    // empty set; never insert nil as a dictionary key.
+    if first_obj == nil {
+        return dict;
+    }
     dict.insert(env, first_obj, null, /* copy_key: */ false);
     let mut varargs = args.start();
     loop {

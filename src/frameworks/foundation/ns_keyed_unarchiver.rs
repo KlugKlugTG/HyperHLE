@@ -175,13 +175,30 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     let key_count = plist.get("$objects").and_then(|v| v.as_array()).map_or(0, |a| a.len());
 
-    // 4. Инициализация объекта (borrow_mut вызывается только ПОСЛЕ всех
-    // проверок)
-    let host_obj = env.objc.borrow_mut::<NSKeyedUnarchiverHostObject>(this);
-    assert!(host_obj.already_unarchived.is_empty());
-    assert!(host_obj.current_key.is_none());
-    assert!(host_obj.plist.is_empty());
+    // 4. Re-initialising an unarchiver instance is unusual but must not
+    // panic the host: reset any previous state instead of asserting.
+    {
+        // Take the state out first so the host-object borrow is not held
+        // across the `release()` calls (same pattern as `dealloc`).
+        let (already_unarchived, temporary_buffers) = {
+            let host_obj = env.objc.borrow_mut::<NSKeyedUnarchiverHostObject>(this);
+            (
+                std::mem::take(&mut host_obj.already_unarchived),
+                std::mem::take(&mut host_obj.temporary_buffers),
+            )
+        };
+        for &object in already_unarchived.iter().flatten() {
+            release(env, object);
+        }
+        for &buffer in temporary_buffers.iter() {
+            env.mem.free(buffer);
+        }
+        env.objc
+            .borrow_mut::<NSKeyedUnarchiverHostObject>(this)
+            .current_key = None;
+    }
 
+    let host_obj = env.objc.borrow_mut::<NSKeyedUnarchiverHostObject>(this);
     host_obj.already_unarchived = vec![None; key_count];
     host_obj.plist = plist;
 
@@ -325,12 +342,12 @@ pub const CLASSES: ClassExports = objc_classes! {
             env.mem.write(length, 0);
             return ConstPtr::null();
     };
-    let len: GuestUSize = match data.len().try_into() {
-        Ok(l) => l,
-        Err(_) => {
-            log!("Warning: decodeBytesForKey: data of length {} exceeds u32; truncating.", data.len());
-            GuestUSize::MAX
-        }
+    let Ok(len) = data.len().try_into() else {
+        // A >4 GiB entry cannot exist in guest memory; allocating a
+        // GuestUSize::MAX-sized buffer would only waste memory. Fail cleanly.
+        log!("Warning: decodeBytesForKey: data of length {} exceeds u32; returning NULL.", data.len());
+        env.mem.write(length, 0);
+        return ConstPtr::null();
     };
     let guest_bytes: MutVoidPtr = env.mem.alloc(len);
     env.objc.borrow_mut::<NSKeyedUnarchiverHostObject>(this)
@@ -688,9 +705,14 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
         Value::Data(data) => {
             let data = data.clone();
             let ns_data: id = msg_class![env; NSData alloc];
-            let len: GuestUSize = match data.len().try_into() {
-                Ok(l) => l,
-                Err(_) => GuestUSize::MAX,
+            let Ok(len) = data.len().try_into() else {
+                // A >4 GiB entry cannot exist in guest memory; return nil
+                // rather than attempting a GuestUSize::MAX-sized allocation.
+                log!(
+                    "Warning: unarchive_key: data at uid {} too large for guest memory; returning nil.",
+                    key.get()
+                );
+                return nil;
             };
             let bytes_ptr: MutVoidPtr = env.mem.alloc(len);
             let copy_len = std::cmp::min(len as usize, data.len());
@@ -766,10 +788,14 @@ pub fn decode_current_dict(env: &mut Environment, unarchiver: id) -> Vec<(id, id
 /// Shortcut for use by `[NSDate initWithCoder:]`.
 pub fn decode_current_date(env: &mut Environment, unarchiver: id) -> id {
     let key = get_static_str(env, "NS.time");
-    let timestamp = get_value_to_decode_for_key(env, unarchiver, key)
-        .unwrap()
-        .as_real()
-        .unwrap();
+    // A corrupt or missing NS.time entry must not panic the host; return nil
+    // so [NSDate initWithCoder:] fails gracefully.
+    let Some(timestamp) = get_value_to_decode_for_key(env, unarchiver, key)
+        .and_then(|value| value.as_real())
+    else {
+        log!("Warning: decode_current_date: NS.time missing or not a real; returning nil.");
+        return nil;
+    };
 
     let date: id = msg_class![env; NSDate alloc];
     msg![env; date initWithTimeIntervalSinceReferenceDate:timestamp]
@@ -779,12 +805,20 @@ pub fn decode_current_date(env: &mut Environment, unarchiver: id) -> id {
 pub fn decode_current_data(env: &mut Environment, unarchiver: id, is_mutable: bool) -> id {
     let key = get_static_str(env, "NS.data");
     // TODO: avoid copying (twice!)
-    let bytes = get_value_to_decode_for_key(env, unarchiver, key)
-        .unwrap()
-        .as_data()
-        .unwrap()
-        .to_vec();
-    let len: GuestUSize = bytes.len().try_into().unwrap();
+    // Missing or non-data entries occur in corrupt archives; return nil
+    // instead of panicking.
+    let Some(bytes) = get_value_to_decode_for_key(env, unarchiver, key)
+        .and_then(|value| value.as_data())
+        .map(|data| data.to_vec())
+    else {
+        log!("Warning: decode_current_data: NS.data missing or not data; returning nil.");
+        return nil;
+    };
+    let Ok(len) = bytes.len().try_into() else {
+        // A >4 GiB entry cannot exist in guest memory.
+        log!("Warning: decode_current_data: data of length {} exceeds u32; returning nil.", bytes.len());
+        return nil;
+    };
     let guest_bytes: MutVoidPtr = env.mem.alloc(len);
     env.mem
         .bytes_at_mut(guest_bytes.cast(), len)

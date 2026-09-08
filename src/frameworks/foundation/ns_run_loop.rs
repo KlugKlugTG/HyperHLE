@@ -460,12 +460,13 @@ pub fn run_run_loop(
             // (Apple's epoch is less convenient in Rust. And "pure"
             // Rust approach with Duration/Instant is just too troublesome
             // and not worthy to convert back and forth)
-            if SystemTime::now()
+            // The host clock could be set before the Unix epoch (or skew
+            // backwards); never panic on that, just treat it as "not yet".
+            let now_secs = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs_f64()
-                >= limit
-            {
+                .unwrap_or_default()
+                .as_secs_f64();
+            if now_secs >= limit {
                 break;
             }
         }

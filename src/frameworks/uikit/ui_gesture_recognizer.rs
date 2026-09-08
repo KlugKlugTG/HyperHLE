@@ -104,7 +104,14 @@ fn send_action(env: &mut Environment, recognizer: id) {
     match colon_count {
         0 => () = msg_send(env, (target, action)),
         1 => () = msg_send(env, (target, action, recognizer)),
-        _ => panic!("Unexpected gesture recognizer action {:?}", action),
+        // The selector comes straight from guest code; a malformed selector
+        // must not take down the host. Log and skip, like UIControl does.
+        _ => log!(
+            "Warning: gesture recognizer action {:?} has unsupported \
+             argument count {}; skipping.",
+            action.as_str(&env.mem),
+            colon_count
+        ),
     }
 }
 

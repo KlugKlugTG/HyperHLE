@@ -1086,15 +1086,33 @@ fn load_strings_as_standard_format(env: &mut Environment, dict_url: id) -> id {
     let res: id = msg_class![env; NSMutableDictionary new];
     // TODO: avoid loading whole file in memory
     let data: id = msg_class![env; NSData dataWithContentsOfURL:dict_url];
-    assert!(data != nil); // TODO
+    if data == nil {
+        // Guest-reachable: the .strings file may be missing or unreadable.
+        // Report failure to the caller instead of crashing the host.
+        log_dbg!("load_strings_as_standard_format: failed to read file");
+        return nil;
+    }
     let length: NSUInteger = msg![env; data length];
-    assert!(length > 2);
+    if length <= 2 {
+        // Too small to hold anything but a BOM: treat as an empty table.
+        log_dbg!("load_strings_as_standard_format: file too small ({} bytes)", length);
+        return res;
+    }
     let bytes: ConstVoidPtr = msg![env; data bytes];
     let maybe_bom = env.mem.bytes_at(bytes.cast(), 2);
-    assert!(maybe_bom[0..2] != [0xFE, 0xFF] && maybe_bom[0..2] != [0xFF, 0xFE]); // TODO: UTF-16 cases
+    if maybe_bom == [0xFE, 0xFF] || maybe_bom == [0xFF, 0xFE] {
+        // TODO: UTF-16 .strings files are not supported yet. Return an empty
+        // table instead of asserting (and crashing) on guest data.
+        log!("load_strings_as_standard_format: UTF-16 .strings not supported");
+        return res;
+    }
     let strings_str = msg_class![env; NSString alloc];
     let strings_str: id = msg![env; strings_str initWithData:data encoding:NSUTF8StringEncoding];
-    assert!(strings_str != nil); // TODO
+    if strings_str == nil {
+        // Guest-reachable: the file is not valid UTF-8.
+        log_dbg!("load_strings_as_standard_format: file is not valid UTF-8");
+        return res;
+    }
 
     let comment_start = ns_string::get_static_str(env, "/*");
     let comment_end = ns_string::get_static_str(env, "*/");
@@ -1111,7 +1129,11 @@ fn load_strings_as_standard_format(env: &mut Environment, dict_url: id) -> id {
             let _: bool = msg![env; scanner scanUpToString:comment_end intoString:null_ptr];
             let has_comment_end: bool =
                 msg![env; scanner scanString:comment_end intoString:null_ptr];
-            assert!(has_comment_end);
+            if !has_comment_end {
+                // Unterminated comment: scanUpToString consumed the rest of
+                // the file, so stop parsing instead of asserting.
+                break;
+            }
             if msg![env; scanner isAtEnd] {
                 break;
             }
@@ -1120,15 +1142,31 @@ fn load_strings_as_standard_format(env: &mut Environment, dict_url: id) -> id {
             break;
         }
         let key: id = scan_quoted_sanitized(env, scanner);
+        if key == nil {
+            // Malformed entry (or an unquoted key): stop parsing rather than
+            // asserting. Breaking also guards against a stuck scanner that
+            // could otherwise spin the loop forever.
+            break;
+        }
 
         let _: bool = msg![env; scanner scanUpToString:equal_sign intoString:null_ptr];
         let has_equal_sign: bool = msg![env; scanner scanString:equal_sign intoString:null_ptr];
-        assert!(has_equal_sign);
+        if !has_equal_sign {
+            // Malformed entry without '=': keep what we parsed so far.
+            break;
+        }
 
         let val: id = scan_quoted_sanitized(env, scanner);
+        if val == nil {
+            break;
+        }
 
         let has_semicolon: bool = msg![env; scanner scanString:semicolon intoString:null_ptr];
-        assert!(has_semicolon);
+        if !has_semicolon {
+            // Entry without a terminator: the pair itself parsed fine, keep
+            // it and stop parsing the (truncated) rest of the file.
+            break;
+        }
 
         log_dbg!(
             "Parsed strings: '{}' -> '{}'",
@@ -1152,18 +1190,31 @@ fn scan_quoted_sanitized(env: &mut Environment, scanner: id) -> id {
     retain(env, orig_skip_set);
 
     let has_open_quote: bool = msg![env; scanner scanString:quote intoString:null_ptr];
-    assert!(has_open_quote);
+    if !has_open_quote {
+        // Guest-reachable: the token is not a quoted string. Return nil so
+        // the caller skips this entry instead of crashing on the assert.
+        env.mem.free(res_ptr.cast());
+        return nil;
+    }
     // Should not skip chars at the beginning!
     () = msg![env; scanner setCharactersToBeSkipped:nil];
     let _: bool = msg![env; scanner scanUpToString:quote intoString:res_ptr];
     () = msg![env; scanner setCharactersToBeSkipped:orig_skip_set];
     release(env, orig_skip_set);
     let has_end_quote: bool = msg![env; scanner scanString:quote intoString:null_ptr];
-    assert!(has_end_quote);
+    if !has_end_quote {
+        // Unterminated quote: no valid token here, let the caller skip it.
+        env.mem.free(res_ptr.cast());
+        return nil;
+    }
 
-    let res = env.mem.read(res_ptr);
+    let mut res = env.mem.read(res_ptr);
     env.mem.free(res_ptr.cast());
-    assert!(res != nil); // TODO
+    if res == nil {
+        // scanUpToString found the closing quote immediately (empty token)
+        // and produced no string; treat as an empty value.
+        res = ns_string::from_rust_string(env, "".to_string());
+    }
 
     // TODO: implement generic parsing approach for unquoting
     let quoted_newline: id = ns_string::get_static_str(env, "\\n");
@@ -1172,6 +1223,10 @@ fn scan_quoted_sanitized(env: &mut Environment, scanner: id) -> id {
 
     let backslash = ns_string::get_static_str(env, "\\");
     let range: NSRange = msg![env; res rangeOfString:backslash];
-    assert!(range.location == NSNotFound as NSUInteger); // TODO
+    if range.location != NSNotFound as NSUInteger {
+        // TODO: implement unescaping. Log instead of asserting so a
+        // guest-provided .strings file cannot crash the host.
+        log_dbg!("scan_quoted_sanitized: unhandled backslash in token");
+    }
     res
 }

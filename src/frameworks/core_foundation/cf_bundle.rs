@@ -515,7 +515,8 @@ pub fn CFBundleCopyBundleLocalizations(env: &mut Environment, bundle: CFBundleRe
         .unwrap_or(&env.bundle)
         .bundle_localizations()
         .iter()
-        .map(|value| value.as_string().unwrap().to_string())
+        // A corrupt plist must not panic the host; skip non-string entries.
+        .filter_map(|value| value.as_string().map(|s| s.to_string()))
         .collect::<Vec<String>>();
 
     let guest_bundle_localizations = bundle_localizations

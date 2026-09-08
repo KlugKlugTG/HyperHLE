@@ -23,6 +23,17 @@ use crate::Environment;
 use std::collections::HashSet;
 use std::io::Write;
 
+/// Upper bound for a single field width or precision parsed from a format
+/// string. Real apps never use values this large; the cap stops a hostile
+/// or corrupt format string (e.g. "%99999999999d") from making the host
+/// allocate gigabytes of padding.
+const MAX_FIELD_WIDTH: u32 = 1 << 20;
+
+/// Upper bound on total formatted output. An allocation failure in Rust
+/// aborts the process, so cap the total to keep a hostile format string
+/// from taking down the emulator.
+const MAX_TOTAL_OUTPUT: usize = 64 * 1024 * 1024;
+
 // ALL_SPECIFIERS: d i o u x X f F e E g G a A c s p n C S % @ D U O = 25
 // + b'+' b'#' b'-' would be 28 but those are flags not specifiers — omit them.
 // Add b'A' which was missing from the original.
@@ -55,6 +66,15 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
         let c = get_format_char(&env.mem, format_char_idx);
         format_char_idx += 1;
 
+        if res.len() >= MAX_TOTAL_OUTPUT {
+            // Malicious or corrupt format string (e.g. huge widths repeated
+            // many times); stop rather than exhausting host memory.
+            log!(
+                "printf_inner: output exceeded {} bytes; truncating.",
+                MAX_TOTAL_OUTPUT
+            );
+            break;
+        }
         if c == b'\0' {
             break;
         }
@@ -96,7 +116,11 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
         } else {
             let mut pad_width: i32 = 0;
             while let c @ b'0'..=b'9' = get_format_char(&env.mem, format_char_idx) {
-                pad_width = pad_width * 10 + (c - b'0') as i32;
+                // Saturating: a long digit run in a corrupt format string
+                // must not overflow (panic in debug builds).
+                pad_width = pad_width
+                    .saturating_mul(10)
+                    .saturating_add((c - b'0') as i32);
                 format_char_idx += 1;
             }
             pad_width
@@ -109,7 +133,7 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
         } else {
             left_justified
         };
-        let pad_width = pad_width.unsigned_abs();
+        let pad_width = pad_width.unsigned_abs().min(MAX_FIELD_WIDTH);
 
         let precision = if get_format_char(&env.mem, format_char_idx) == b'.' {
             format_char_idx += 1;
@@ -120,14 +144,20 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 // treated as if the precision were omitted entirely.
                 precision.max(0) as usize
             } else {
-                let mut precision = 0;
+                let mut precision: usize = 0;
                 while let c @ b'0'..=b'9' = get_format_char(&env.mem, format_char_idx) {
-                    precision = precision * 10 + (c - b'0') as usize;
+                    // Saturating: a long digit run in a corrupt format
+                    // string must not overflow (panic in debug builds).
+                    precision = precision
+                        .saturating_mul(10)
+                        .saturating_add((c - b'0') as usize);
                     format_char_idx += 1;
                 }
                 precision
             };
-            Some(precision)
+            // Cap the precision so a hostile format string cannot make the
+            // host allocate absurd amounts of memory.
+            Some(precision.min(MAX_FIELD_WIDTH as usize))
         } else {
             None
         };
@@ -194,13 +224,9 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
             continue;
         }
 
-        if precision.is_some() {
-            assert!(
-                INTEGER_SPECIFIERS.contains(&specifier)
-                    || FLOAT_SPECIFIERS.contains(&specifier)
-                    || specifier == b's'
-            )
-        }
+        // Precision only applies to integer, float and string conversions;
+        // for anything else (e.g. %c, %p, %@) real libcs silently ignore it
+        // rather than aborting, so we do the same.
 
         match specifier {
             // Integer specifiers
@@ -673,7 +699,7 @@ locale; treating it as 'C'."
                     if precision == 0 {
                         1
                     } else {
-                        precision.try_into().unwrap()
+                        precision.try_into().unwrap_or(i32::MAX)
                     }
                 } else {
                     6
@@ -692,7 +718,10 @@ locale; treating it as 'C'."
                     X
                 );
                 if P > X && X >= -4 {
-                    let precision: usize = (P - X - 1).try_into().unwrap();
+                    // Saturating math: P and X are guest-influenced, and an
+                    // overflow here would panic in debug builds.
+                    let precision: usize =
+                        P.saturating_sub(X).saturating_sub(1).max(0) as usize;
                     let result = f_format(float, pad_width, pad_char, precision, left_justified);
 
                     // With the '#' (alternative representation) flag the
@@ -719,7 +748,7 @@ locale; treating it as 'C'."
                         apply_float_sign(&trimmed_result, float, prepend_sign);
                     res.extend_from_slice(trimmed_result.as_bytes());
                 } else {
-                    let precision: usize = (P - 1).try_into().unwrap();
+                    let precision: usize = P.saturating_sub(1).max(0) as usize;
                     let formatted = e_format(float, pad_width, pad_char, precision, left_justified);
                     let formatted = apply_float_sign(&formatted, float, prepend_sign);
                     res.extend_from_slice(formatted.as_bytes());
@@ -747,7 +776,13 @@ locale; treating it as 'C'."
                 let float: f64 = args.next(env);
                 let pad_width = pad_width as usize;
                 let p: i32 = precision
-                    .map(|p| if p == 0 { 1 } else { p as i32 })
+                    .map(|p| {
+                        if p == 0 {
+                            1
+                        } else {
+                            p.try_into().unwrap_or(i32::MAX)
+                        }
+                    })
                     .unwrap_or(6);
                 let x: i32 = if float == 0.0 {
                     0
@@ -755,12 +790,13 @@ locale; treating it as 'C'."
                     float.abs().log10().floor() as i32
                 };
                 let s = if p > x && x >= -4 {
-                    let prec = (p - x - 1) as usize;
+                    let prec = p.saturating_sub(x).saturating_sub(1).max(0) as usize;
                     let raw = f_format(float, 0, ' ', prec, false);
                     let trimmed = raw.trim_end_matches('0').trim_end_matches('.');
                     apply_pad(trimmed, pad_width, pad_char, left_justified)
                 } else {
-                    e_format(float, pad_width, pad_char, (p - 1) as usize, left_justified)
+                    let prec = p.saturating_sub(1).max(0) as usize;
+                    e_format(float, pad_width, pad_char, prec, left_justified)
                 };
                 let s = apply_float_sign(&s.to_uppercase(), float, prepend_sign);
                 res.extend_from_slice(s.as_bytes());
@@ -840,6 +876,17 @@ fn f_format(
     precision: usize,
     left_justified: bool,
 ) -> String {
+    if float.is_nan() {
+        // Rust's formatter prints "NaN"; C's printf prints "nan".
+        let s = "nan";
+        if left_justified {
+            return format!("{s:<pad_width$}");
+        } else if pad_char == '0' {
+            return format!("{s:0>pad_width$}");
+        } else {
+            return format!("{s:>pad_width$}");
+        }
+    }
     if left_justified {
         format!("{float:<pad_width$.precision$}")
     } else if pad_char == '0' {
@@ -863,6 +910,16 @@ fn e_format(
     precision: usize,
     left_justified: bool,
 ) -> String {
+    if !float.is_finite() {
+        let s = if float.is_nan() {
+            "nan"
+        } else if float.is_sign_negative() {
+            "-inf"
+        } else {
+            "inf"
+        };
+        return apply_pad(s, pad_width, pad_char, left_justified);
+    }
     let exponent = if float == 0.0 {
         0.0
     } else {
@@ -958,6 +1015,10 @@ fn apply_int_pad(
 ) -> String {
     let with_prec = if precision.is_some_and(|p| p > 0) {
         format!("{:01$}", int, precision.unwrap())
+    } else if precision.is_some() && int == 0 {
+        // C11 §7.21.6.1: a precision of 0 with a value of 0 produces no
+        // characters for d/i conversions.
+        String::new()
     } else {
         format!("{int}")
     };
@@ -991,6 +1052,10 @@ fn apply_uint_pad(
 ) -> String {
     let with_prec = if precision.is_some_and(|p| p > 0) {
         format!("{:01$}", uint, precision.unwrap())
+    } else if precision.is_some() && uint == 0 {
+        // C11 §7.21.6.1: a precision of 0 with a value of 0 produces no
+        // characters for unsigned conversions.
+        String::new()
     } else {
         format!("{uint}")
     };
@@ -1508,7 +1573,11 @@ where
         };
         let mut max_width: u32 = 0;
         while let c @ b'0'..=b'9' = env.mem.read(format + format_char_idx) {
-            max_width = max_width * 10 + (c - b'0') as u32;
+            // Saturating: a long digit run in a corrupt format string must
+            // not overflow (panic in debug builds).
+            max_width = max_width
+                .saturating_mul(10)
+                .saturating_add((c - b'0') as u32);
             format_char_idx += 1;
         }
 
@@ -1981,9 +2050,9 @@ where
                         env.mem.write(ptr, b'\0');
                     }
                 } else {
-                    if !suppress_assignment {
-                        matched_args -= 1;
-                    }
+                    // Matching failure: per C11 §7.21.6.2 scanning stops
+                    // here and the failed directive is not counted.
+                    break 'outer;
                 }
             }
             b'c' => {
@@ -2078,6 +2147,12 @@ where
                     }
                 }
 
+                if read_count == 0 {
+                    // Matching failure or input failure before any
+                    // character: nothing is assigned and scanning stops
+                    // (C11 §7.21.6.2).
+                    break 'outer;
+                }
                 if let Some(ptr) = dst_ptr {
                     env.mem.write(ptr, b'\0');
                     log_dbg!(
@@ -2185,8 +2260,13 @@ fn fscanf(
     let cc = getc(env, stream);
     if cc == EOF {
         return EOF;
-    } else {
-        assert_eq!(cc, ungetc(env, cc, stream));
+    }
+    // The pushback can fail on an unseekable stream (e.g. a pipe). Real
+    // libc scans via its internal buffer; we cannot, so report EOF rather
+    // than asserting (which would crash the host).
+    if ungetc(env, cc, stream) != cc {
+        log!("Warning: fscanf(): unable to push back first character; returning EOF.");
+        return EOF;
     }
 
     sscanf_common_generic(
@@ -2200,7 +2280,11 @@ fn fscanf(
             }
         },
         |env, file, c| {
-            assert_eq!(c as i32, ungetc(env, c as i32, file));
+            // Best effort: on an unseekable stream the pushback can fail;
+            // log and continue rather than panicking the host.
+            if ungetc(env, c as i32, file) != c as i32 {
+                log!("Warning: fscanf(): ungetc failed; input character lost.");
+            }
         },
         stream,
         format,

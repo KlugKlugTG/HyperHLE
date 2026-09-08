@@ -296,10 +296,18 @@ forControlEvents:(UIControlEvents)events {
     // the sender's responder chain when the control event is delivered.
     // The target is a *weak* reference!
 
-    // The selector must be for a method with zero to two arguments
+    // The selector must be for a method with zero to two arguments. A
+    // selector with more colons is malformed guest input; log it and ignore
+    // the registration instead of panicking the host.
     let sel_str = action.as_str(&env.mem);
     let colon_count = sel_str.bytes().filter(|&b| b == b':').count();
-    assert!([0, 1, 2].contains(&colon_count));
+    if ![0, 1, 2].contains(&colon_count) {
+        log!(
+            "Warning: addTarget: unsupported selector {:?} ({} colons); ignoring.",
+            sel_str, colon_count
+        );
+        return;
+    }
 
     env.objc.borrow_mut::<UIControlHostObject>(this).action_targets.push((target, action, events));
 }

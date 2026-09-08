@@ -216,8 +216,13 @@ pub const CLASSES: ClassExports = objc_classes! {
     if presented != nil { release(env, presented); }
     // presenting_view_controller is a non-retained back-pointer; do not
     // release.
-    let navigation_item = env.objc.borrow::<UIViewControllerHostObject>(this).navigation_item;
+    let (navigation_item, refresh_control, tab_bar_item) = {
+        let h = env.objc.borrow::<UIViewControllerHostObject>(this);
+        (h.navigation_item, h.refresh_control, h.tab_bar_item)
+    };
     if navigation_item != nil { release(env, navigation_item); }
+    if refresh_control != nil { release(env, refresh_control); }
+    if tab_bar_item != nil { release(env, tab_bar_item); }
     if storyboard != nil { release(env, storyboard); }
 
     env.objc.dealloc_object(this, &mut env.mem);
@@ -515,7 +520,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interface_orientation {
-    interface_orientation == 3 || interface_orientation == 4
+    // Apple's default implementation supports every orientation except
+    // upside-down portrait (UIDeviceOrientationPortraitUpsideDown == 2).
+    // Rejecting plain portrait here broke apps that query it directly.
+    interface_orientation != 2
 }
 
 - (id)nextResponder {
@@ -531,7 +539,10 @@ pub const CLASSES: ClassExports = objc_classes! {
         stored_title
     } else {
         let class: Class = msg![env; this class];
-        NSStringFromClass(env, class)
+        // The class-name string is newly created (+1); autorelease it so
+        // the getter respects the +0 return convention.
+        let class_name = NSStringFromClass(env, class);
+        autorelease(env, class_name)
     }
 }
 
@@ -780,8 +791,9 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Like UIKit, create the item lazily on first access and keep it around
     // for subsequent queries.
     let new_item: id = msg_class![env; UITabBarItem new];
+    // The slot owns the +1 from -new; the getter returns +0, matching
+    // Apple's autoreleased lazy item.
     env.objc.borrow_mut::<UIViewControllerHostObject>(this).tab_bar_item = new_item;
-    retain(env, new_item);
     new_item
 }
 

@@ -138,8 +138,12 @@ pub const CLASSES: ClassExports = objc_classes! {
         release(env, root_vc);
     }
     let list = &mut env.framework_state.uikit.ui_view.ui_window.windows;
-    let idx = list.iter().position(|&w| w == this).unwrap();
-    list.remove(idx);
+    // A window may be deallocated without ever being registered (e.g.
+    // `[[UIWindow alloc] init]`, which skips both designated initializers).
+    // Never panic on guest-driven paths.
+    if let Some(idx) = list.iter().position(|&w| w == this) {
+        list.remove(idx);
+    }
     log_dbg!(
         "Deallocating window {:?}. New list of all windows: {:?}",
         this,
@@ -399,13 +403,18 @@ pub const CLASSES: ClassExports = objc_classes! {
     //        three places (user/default options, setStatusBarOrientation: etc,
     //        Info.plist UIInterfaceOrientation etc). It's not clear if these
     //        are really equivalent and should all trigger autorotation.
-    if let Some(orientation) = match env.window.as_ref().unwrap().current_rotation() {
+    // `env.window` is `None` in headless mode; skip autorotation instead of
+    // unwrapping (which would panic the host).
+    let rotation = env.window.as_ref().map(|window| window.current_rotation());
+    if let Some(orientation) = rotation.and_then(|rotation| match rotation {
         crate::window::DeviceOrientation::LandscapeLeft => Some(UIDeviceOrientationLandscapeLeft),
         crate::window::DeviceOrientation::LandscapeRight => Some(UIDeviceOrientationLandscapeRight),
-        crate::window::DeviceOrientation::PortraitUpsideDown => Some(UIDeviceOrientationPortraitUpsideDown),
+        crate::window::DeviceOrientation::PortraitUpsideDown => {
+            Some(UIDeviceOrientationPortraitUpsideDown)
+        }
         // Portrait is the default so we don't do anything here.
         crate::window::DeviceOrientation::Portrait => None,
-    } {
+    }) {
         // (UIInterfaceOrientation and UIDeviceOrientation are compatible enums,
         //  here we use whichever is clearer contextually.)
         let should = msg![env; vc shouldAutorotateToInterfaceOrientation:orientation];

@@ -20,7 +20,7 @@ use crate::frameworks::foundation::ns_string::{
     from_rust_string, get_static_str, to_rust_string, NSUTF8StringEncoding,
 };
 use crate::frameworks::foundation::NSUInteger;
-use crate::mem::{ConstPtr, MutPtr};
+use crate::mem::{ConstPtr, GuestUSize, MutPtr};
 use crate::objc::{id, msg, msg_class, nil, release, retain};
 use crate::Environment;
 
@@ -818,26 +818,27 @@ fn CFURLGetBytes(
         return -1;
     }
 
-    // Calculate length
-    let mut length: CFIndex = 0;
-    loop {
-        // Приведение типа к u32
-        if env.mem.read(c_string + (length as u32)) == 0 {
-            break;
-        }
-        length += 1;
-    }
+    // Get the UTF-8 byte count from the string itself instead of scanning
+    // guest memory byte by byte for the NUL terminator, which could run away
+    // if the terminator were ever missing.
+    let length: NSUInteger =
+        msg![env; url_string lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+    // Keep room for the NUL terminator within CFIndex (i32) arithmetic.
+    let length: CFIndex = length.min((CFIndex::MAX - 1) as NSUInteger) as CFIndex;
 
-    if !buffer.is_null() && buffer_length > 0 {
-        let copy_length = length.min(buffer_length - 1);
-        for i in 0..copy_length {
-            // Разделение read/write во избежание двойного заимствования
-            let byte = env.mem.read(c_string + (i as u32));
-            env.mem.write(buffer + (i as u32), byte);
+    // Apple's CFURL.h: if `buffer` is non-NULL but too small to hold the
+    // bytes plus a NUL terminator, the function must return -1 rather than
+    // silently truncating. Callers pass a NULL buffer (or length 0) to query
+    // the required size.
+    if !buffer.is_null() {
+        if buffer_length < length + 1 {
+            return -1;
         }
-        // Приведение типа к u32
-        env.mem.write(buffer + (copy_length as u32), 0);
-        // Null terminate
+        let src = env.mem.bytes_at(c_string, length as GuestUSize).to_vec();
+        env.mem
+            .bytes_at_mut(buffer, length as GuestUSize)
+            .copy_from_slice(&src);
+        env.mem.write(buffer + length as GuestUSize, 0u8);
     }
 
     length

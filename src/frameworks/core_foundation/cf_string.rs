@@ -667,7 +667,12 @@ fn CFStringGetCharacters(
         None => return,
     };
     let length = CFStringGetLength(env, string);
-    if range.location + range.length > length {
+    // Use checked arithmetic so a hostile range cannot overflow CFIndex
+    // (which panics in debug builds).
+    let Some(range_end) = range.location.checked_add(range.length) else {
+        return;
+    };
+    if range_end > length {
         return;
     }
 
@@ -760,8 +765,9 @@ fn CFStringGetPascalString(
     );
     let len = CFStringGetLength(env, the_string);
 
-    // Pascal string needs length byte + content
-    if (len + 1) > buffer_size || len > 255 {
+    // Pascal string needs length byte + content. Use checked arithmetic
+    // so len + 1 cannot overflow CFIndex for a hostile string.
+    if len.checked_add(1).is_none_or(|needed| needed > buffer_size) || len > 255 {
         return false;
     }
 
@@ -792,7 +798,12 @@ fn CFStringGetBytes(
         None => return 0,
     };
     let length = CFStringGetLength(env, the_string);
-    if range.location + range.length > length {
+    // Use checked arithmetic so a hostile range cannot overflow CFIndex
+    // (which panics in debug builds).
+    let Some(range_end) = range.location.checked_add(range.length) else {
+        return 0;
+    };
+    if range_end > length {
         return 0;
     }
 
@@ -1258,7 +1269,12 @@ fn CFStringDelete(env: &mut Environment, string: CFMutableStringRef, range: CFRa
         None => return,
     };
     let length = CFStringGetLength(env, string);
-    if range.location + range.length > length {
+    // Use checked arithmetic so a hostile range cannot overflow CFIndex
+    // (which panics in debug builds).
+    let Some(range_end) = range.location.checked_add(range.length) else {
+        return;
+    };
+    if range_end > length {
         return;
     }
 
@@ -1280,7 +1296,12 @@ fn CFStringReplace(
         None => return,
     };
     let length = CFStringGetLength(env, string);
-    if range.location + range.length > length {
+    // Use checked arithmetic so a hostile range cannot overflow CFIndex
+    // (which panics in debug builds).
+    let Some(range_end) = range.location.checked_add(range.length) else {
+        return;
+    };
+    if range_end > length {
         return;
     }
 
@@ -1312,7 +1333,12 @@ fn CFStringFindAndReplace(
         None => return 0,
     };
     let length = CFStringGetLength(env, string);
-    if range_to_search.location + range_to_search.length > length {
+    // Use checked arithmetic so a hostile range cannot overflow CFIndex
+    // (which panics in debug builds).
+    let Some(range_end) = range_to_search.location.checked_add(range_to_search.length) else {
+        return 0;
+    };
+    if range_end > length {
         return 0;
     }
 
