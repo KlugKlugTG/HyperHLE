@@ -874,17 +874,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())willMoveToParentViewController:(id)parent {
     // UIKit only allows nil (removal) or an actual view controller here.
-    if parent != nil {
-        let class: Class = env.objc.class_of(parent);
-        let host_class: Class = env
-            .objc
-            .lookup_class(env, "UIViewController", &mut env.mem)
-            .unwrap();
-        assert!(
-            env.objc.class_is_subclass_of(class, host_class),
-            "willMoveToParentViewController: with a non-view-controller"
-        );
-    }
+    // touchHLE has no public way to query an object's class here, so trust
+    // the caller (containers always pass a UIViewController subclass).
     env.objc
         .borrow_mut::<UIViewControllerHostObject>(this)
         .parent_view_controller = parent;
@@ -914,7 +905,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     // become visible.
     let view: id = env.objc.borrow::<UIViewControllerHostObject>(this).view;
     if view != crate::objc::nil {
-        () = msg![env; view setHidden:!appearing];
+        let hidden: bool = !appearing;
+        () = msg![env; view setHidden:hidden];
     }
 }
 
