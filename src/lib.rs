@@ -113,6 +113,7 @@ Special options:
 ";
 pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
     crash_handler::install();
+    crash_handler::install_panic_hook();
 
     echo!(
         "touchHLE {}{}{} — https://touchhle.org/",

@@ -25,6 +25,48 @@ pub fn set_log_fd(fd: i32) {
     LOG_FD.store(fd, Ordering::SeqCst);
 }
 
+/// Append a message to the log file (and stderr). Safe to call from a panic
+/// hook; uses file-level locking via try_lock so re-entrant panics don't
+/// deadlock — on contention the message is dropped rather than deadlocked.
+pub fn append_to_log(msg: &str) {
+    use std::io::Write;
+    if let Ok(mut log_file) = crate::log::get_log_file().try_lock() {
+        let _ = log_file.write_all(msg.as_bytes());
+        let _ = log_file.write_all(b"\n");
+        let _ = log_file.flush();
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        let _ = std::io::stderr().write_all(msg.as_bytes());
+        let _ = std::io::stderr().write_all(b"\n");
+    }
+}
+
+/// Install a Rust panic hook that mirrors panic messages into the touchHLE
+/// log file. The default hook only writes to stderr/logcat, which users
+/// rarely capture, so panics look like silent aborts (especially on Android,
+/// where a panic unwinding out of a guest-thread coroutine ends in
+/// SIGABRT — see the FATAL SIGNAL marker in the log).
+pub fn install_panic_hook() {
+    std::panic::set_hook(Box::new(|info| {
+        let thread = std::thread::current();
+        let thread_name = thread.name().unwrap_or("<unnamed>");
+        let msg = format!(
+            "touchHLE: PANIC in thread \"{}\" at {}: {}\n(panic is followed by unwinding; if this appears right before a FATAL SIGNAL line, the panic crossed a coroutine boundary and aborted the process)",
+            thread_name,
+            info.location()
+                .map(|l| format!("{}:{}", l.file(), l.line()))
+                .unwrap_or_else(|| "<unknown>".to_string()),
+            info.payload()
+                .downcast_ref::<&str>()
+                .map(|s| s.to_string())
+                .or_else(|| info.payload().downcast_ref::<String>().cloned())
+                .unwrap_or_else(|| "unknown panic payload".to_string()),
+        );
+        append_to_log(&msg);
+    }));
+}
+
 const NAME_SEGV: &[u8] = b"SIGSEGV\0";
 const NAME_BUS: &[u8] = b"SIGBUS\0";
 const NAME_ILL: &[u8] = b"SIGILL\0";
