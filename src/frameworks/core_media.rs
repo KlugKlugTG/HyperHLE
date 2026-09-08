@@ -200,4 +200,27 @@ fn CMTimeMake(env: &mut Environment, out: MutPtr<u8>, value: i64, timescale: i32
     out
 }
 
-pub const FUNCTIONS: FunctionExports = &[export_c_func!(CMTimeMake(_, _, _))];
+pub const FUNCTIONS: FunctionExports = &[
+    export_c_func!(CMTimeMake(_, _, _)),
+    export_c_func!(CMFormatDescriptionGetMediaType(_)),
+];
+
+/// `CMMediaType CMFormatDescriptionGetMediaType(CMFormatDescriptionRef desc)`
+/// returns the media type FourCC ('vide', 'soun', 'muxed', ...) of a format
+/// description (see Apple's CMFormatDescription.h). touchHLE never creates
+/// real format descriptions (there is no CMSampleBuffer pipeline), but
+/// ad-SDK video players call this while parsing decoded metadata. Any valid
+/// pointer is assumed to describe a video track, which matches every guest
+/// call site we have seen (they compare against `kCMMediaType_Video`).
+/// NULL returns 0; the documentation defines no result for NULL and all
+/// callers guard anyway.
+const kCMMediaType_Video: u32 = 0x7669_6465; // 'vide'
+
+fn CMFormatDescriptionGetMediaType(env: &mut Environment, desc: MutPtr<u8>) -> u32 {
+    let _ = env;
+    if desc.to_bits() == 0 {
+        0
+    } else {
+        kCMMediaType_Video
+    }
+}

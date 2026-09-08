@@ -344,10 +344,7 @@ impl ClassHostObject {
                     class,
                     name,
                 );
-                format!(
-                    "_touchHLE_UnreadableClass_{:08x}",
-                    class.to_bits()
-                )
+                format!("_touchHLE_UnreadableClass_{:08x}", class.to_bits())
             }
         };
 
@@ -400,7 +397,8 @@ fn substitute_classes(
     };
     // Substitute classes that seem to be from various third-party advertising
     // or social network SDKs.
-    if !(name.starts_with("AdMob")
+    if !(
+        name.starts_with("AdMob")
         || name.starts_with("AltAds")
         || name.starts_with("Mobclix")
         || name.starts_with("FB") // Facebook
@@ -416,7 +414,8 @@ fn substitute_classes(
         || name.starts_with("ALEvent") // AppLovin events
         || name.starts_with("ALIncentivized") // AppLovin incentivized ads
         || name.starts_with("ALTargeting") // AppLovin targeting
-        || name.starts_with("ALPrivacy") // AppLovin privacy settings
+        || name.starts_with("ALPrivacy")
+        // AppLovin privacy settings
     )
     // <-- ДОБАВЛЕНО ЗДЕСЬ
     {
@@ -547,8 +546,7 @@ impl ObjC {
             let Some(host_object) = self.get_host_object(class) else {
                 continue;
             };
-            let Some(class_host_object) =
-                host_object.as_any().downcast_ref::<ClassHostObject>()
+            let Some(class_host_object) = host_object.as_any().downcast_ref::<ClassHostObject>()
             else {
                 continue;
             };
@@ -1438,7 +1436,11 @@ fn find_defining_class(env: &crate::Environment, cls: Class, sel: SEL) -> Class 
 
 /// Get-or-create the stable opaque `Method` handle for a (defining class,
 /// selector) pair.
-fn method_handle_for(env: &mut crate::Environment, defining_class: Class, sel: SEL) -> ConstVoidPtr {
+fn method_handle_for(
+    env: &mut crate::Environment,
+    defining_class: Class,
+    sel: SEL,
+) -> ConstVoidPtr {
     if let Some(&existing) = env.objc.method_handles.get(&(defining_class, sel)) {
         return existing.cast_const();
     }
@@ -1446,9 +1448,7 @@ fn method_handle_for(env: &mut crate::Environment, defining_class: Class, sel: S
     env.mem.write(handle, defining_class.to_bits());
     env.mem.write(handle + 1, sel.to_bits());
     let vp: MutVoidPtr = handle.cast();
-    env.objc
-        .method_handles
-        .insert((defining_class, sel), vp);
+    env.objc.method_handles.insert((defining_class, sel), vp);
     vp.cast_const()
 }
 
@@ -1521,9 +1521,9 @@ fn guest_ptr_to_imp(env: &crate::Environment, imp: ConstVoidPtr) -> Option<IMP> 
     if let Some(host_imp) = env.objc.imp_tokens.get(&imp.to_bits()) {
         return Some(*host_imp);
     }
-    Some(IMP::Guest(crate::abi::GuestFunction::from_addr_with_thumb_bit(
-        imp.to_bits(),
-    )))
+    Some(IMP::Guest(
+        crate::abi::GuestFunction::from_addr_with_thumb_bit(imp.to_bits()),
+    ))
 }
 
 /// `Method class_getInstanceMethod(Class cls, SEL name)`
@@ -1561,11 +1561,7 @@ pub fn class_getInstanceMethod(
 /// guests that use this entry point to gate optional behaviour
 /// (e.g. `class_respondsToSelector([NSString class], @selector(...))` for
 /// runtime-availability checks in older SDKs).
-pub fn class_respondsToSelector(
-    env: &mut crate::Environment,
-    cls: Class,
-    sel: SEL,
-) -> bool {
+pub fn class_respondsToSelector(env: &mut crate::Environment, cls: Class, sel: SEL) -> bool {
     if cls.is_null() || sel.is_null() {
         return false;
     }
@@ -1813,8 +1809,7 @@ pub fn class_addMethod(
     // `id (*)(id, SEL, ...)` — i.e. a C function pointer. Method names
     // ending with `:` are encoded for the Thumb bit by the linker, so we
     // pass the raw bits straight through.
-    let guest_imp =
-        crate::abi::GuestFunction::from_addr_with_thumb_bit(imp.to_bits());
+    let guest_imp = crate::abi::GuestFunction::from_addr_with_thumb_bit(imp.to_bits());
 
     // Install the new method. `borrow_mut::<ClassHostObject>` walks any
     // host-object inheritance chain so this works for both classes and
@@ -1850,11 +1845,7 @@ pub fn class_addMethod(
 /// class pointer itself (matching what `class_getInstanceMethod` returns).
 /// Class methods live on the metaclass, so we resolve the metaclass first
 /// and then walk its chain looking for the selector.
-pub fn class_getClassMethod(
-    env: &mut crate::Environment,
-    cls: Class,
-    name: SEL,
-) -> ConstVoidPtr {
+pub fn class_getClassMethod(env: &mut crate::Environment, cls: Class, name: SEL) -> ConstVoidPtr {
     if cls.is_null() {
         return ConstVoidPtr::null();
     }
@@ -1984,11 +1975,7 @@ pub fn objc_msgForward_stret(
 /// implement it line-by-line so the reference counts of both the old
 /// and new objects stay consistent with how a non-ARC manual
 /// retain/release would have managed them.
-pub fn objc_storeStrong(
-    env: &mut crate::Environment,
-    location: crate::mem::MutPtr<id>,
-    obj: id,
-) {
+pub fn objc_storeStrong(env: &mut crate::Environment, location: crate::mem::MutPtr<id>, obj: id) {
     if location.is_null() {
         return;
     }
@@ -2105,6 +2092,57 @@ pub fn objc_retainBlock(env: &mut crate::Environment, block: id) -> id {
     block
 }
 
+/// `IMP imp_implementationWithBlock(id block)` — returns an IMP that invokes
+/// `block` when called. Per the Objective-C runtime documentation, the block
+/// must be "copied and stored" by the runtime and, when the returned IMP is
+/// called as `(self, _cmd, ...)`, the block's invoke function is entered as
+/// `invoke(block, self, _cmd, ...)` — the block literal itself is passed as
+/// the first argument, shifting the implicit method arguments one register
+/// up (Apple block ABI: on entry to the invoke function, r0 = the block).
+///
+/// We implement it with a small A32 trampoline in guest memory:
+///
+/// ```text
+/// push {r0-r3}          ; stash self, _cmd and the first two register args
+/// ldr  r0, [pc, #8]     ; r0 = block literal
+/// ldr  r12, [pc, #8]    ; r12 = block->invoke
+/// pop  {r1-r4}          ; shift args up one register, restore sp
+/// bx   r12              ; tail-call invoke(block, self, _cmd, ...)
+/// <block literal>       ; literal pool
+/// <invoke>
+/// ```
+///
+/// The block pointer is read from the block literal (offset 12 in the
+/// 32-bit Apple block layout: `isa`, `flags`, `reserved`, `invoke`).
+/// Stack-passed arguments are unaffected: the push/pop pair restores the
+/// stack pointer before the branch. IMPs that return structs via the sret
+/// convention are not handled (the sret pointer would need the same one-
+/// slot shift as `self`); no guest call site in practice combines
+/// `imp_implementationWithBlock` with a struct-returning signature.
+pub fn imp_implementationWithBlock(
+    env: &mut crate::Environment,
+    block: id,
+) -> crate::mem::ConstVoidPtr {
+    if block.to_bits() == 0 {
+        // `imp_implementationWithBlock(NULL)` is documented to crash the
+        // process; returning NULL is the closest non-fatal behaviour.
+        return crate::mem::ConstVoidPtr::from_bits(0);
+    }
+    let block_bits = block.to_bits();
+    let base: crate::mem::MutPtr<u32> = crate::mem::Ptr::from_bits(block_bits);
+    // Block literal layout (32-bit): isa @0, flags @4, reserved @8, invoke @12.
+    let invoke_bits: u32 = env.mem.read(base + 3);
+    let tramp: crate::mem::MutPtr<u32> = env.mem.alloc(32).cast();
+    env.mem.write(tramp + 0, 0xe92d_000f); // push {r0-r3}
+    env.mem.write(tramp + 1, 0xe59f_0008); // ldr  r0, [pc, #8]
+    env.mem.write(tramp + 2, 0xe59f_c008); // ldr  r12, [pc, #8]
+    env.mem.write(tramp + 3, 0xe8bd_001e); // pop  {r1-r4}
+    env.mem.write(tramp + 4, 0xe12f_ff1c); // bx   r12
+    env.mem.write(tramp + 5, block_bits); // literal: block literal
+    env.mem.write(tramp + 6, invoke_bits); // literal: invoke
+    tramp.cast().cast_const()
+}
+
 /// `id objc_unsafeClaimAutoreleasedReturnValue(id obj)` — ARC runtime
 /// optimisation counterpart to `objc_retainAutoreleasedReturnValue`. Apple's
 /// objc4 runtime uses it when a returned object is consumed by code that does
@@ -2216,17 +2254,14 @@ pub fn objc_readClassPair(_env: &mut crate::Environment, cls: Class, _info: Cons
     cls
 }
 
-pub fn swift_getInitializedObjCClass(
-    env: &mut crate::Environment,
-    cls: Class,
-) -> Class {
+pub fn swift_getInitializedObjCClass(env: &mut crate::Environment, cls: Class) -> Class {
     if cls.is_null() {
         return nil;
     }
-    let initialize_sel = env
-        .objc
-        .lookup_selector("initialize")
-        .unwrap_or_else(|| env.objc.register_host_selector("initialize".to_string(), &mut env.mem));
+    let initialize_sel = env.objc.lookup_selector("initialize").unwrap_or_else(|| {
+        env.objc
+            .register_host_selector("initialize".to_string(), &mut env.mem)
+    });
     if env.objc.object_has_method(&env.mem, cls, initialize_sel) {
         let _: id = crate::objc::msg_send_no_initialize(env, (cls, initialize_sel));
     }
@@ -2264,11 +2299,7 @@ pub fn objc_disposeClassPair(_env: &mut crate::Environment, _cls: Class) {}
 /// hooking libraries. Returns the previous superclass and rewrites the
 /// class's inheritance chain in-place.
 /// <https://developer.apple.com/documentation/objectivec/1418687-class_setsuperclass>
-pub fn class_setSuperclass(
-    env: &mut crate::Environment,
-    cls: Class,
-    new_super: Class,
-) -> Class {
+pub fn class_setSuperclass(env: &mut crate::Environment, cls: Class, new_super: Class) -> Class {
     if cls.is_null() {
         return nil;
     }
@@ -2385,10 +2416,9 @@ pub fn method_exchangeImplementations(
     m1: ConstVoidPtr,
     m2: ConstVoidPtr,
 ) {
-    let (Some((cls1, sel1)), Some((cls2, sel2))) = (
-        method_handle_decode(env, m1),
-        method_handle_decode(env, m2),
-    ) else {
+    let (Some((cls1, sel1)), Some((cls2, sel2))) =
+        (method_handle_decode(env, m1), method_handle_decode(env, m2))
+    else {
         log!(
             "Warning: method_exchangeImplementations({:?}, {:?}) — unknown Method handle(s); ignoring.",
             m1,

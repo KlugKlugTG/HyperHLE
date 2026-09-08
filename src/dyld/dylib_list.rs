@@ -203,6 +203,8 @@ pub const ACCELERATE: super::HostDylib = super::HostDylib {
 /// The single list of host dylibs that the linker (and Objective-C runtime)
 /// searches through.
 pub const DYLIB_LIST: &[&super::HostDylib] = &[
+    &frameworks::mopub::DYLIB,
+    &frameworks::javascript_core::DYLIB,
     &libc::DYLIB,
     &objc::DYLIB,
     &crate::environment::app_picker::DYLIB, // Not a real library; special internal classes.

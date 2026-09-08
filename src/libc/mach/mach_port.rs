@@ -23,6 +23,7 @@ use crate::Environment;
 type ipc_space_t = mach_port_t;
 type mach_port_name_t = natural_t;
 type mach_port_right_t = natural_t;
+type mach_port_delta_t = i32;
 
 type mach_msg_type_name_t = u32;
 
@@ -106,8 +107,35 @@ fn mach_port_insert_right(
     KERN_SUCCESS
 }
 
+fn mach_port_mod_refs(
+    env: &mut Environment,
+    task: ipc_space_t,
+    name: mach_port_name_t,
+    right: mach_port_right_t,
+    delta: mach_port_delta_t,
+) -> kern_return_t {
+    // `kern_return_t mach_port_mod_refs(ipc_space_t task, mach_port_t name,
+    // mach_port_right_t right, mach_port_delta_t delta)` — modifies the
+    // number of references (user or send rights) held for `name` by `delta`.
+    // We never hand out real Mach port rights, so the reference count is
+    // bookkeeping fiction: the documented success result (KERN_SUCCESS) is
+    // the correct observable behaviour for any reference the guest already
+    // "owns". Mach/mod_refs call sites (e.g. libxpc teardown) only care that
+    // they don't trap.
+    let _ = env;
+    log_dbg!(
+        "mach_port_mod_refs(task={:#x}, name={}, right={}, delta={})",
+        task,
+        name,
+        right,
+        delta
+    );
+    KERN_SUCCESS
+}
+
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(mach_port_allocate(_, _, _)),
     export_c_func!(mach_port_deallocate(_, _)),
     export_c_func!(mach_port_insert_right(_, _, _, _)),
+    export_c_func!(mach_port_mod_refs(_, _, _, _)),
 ];

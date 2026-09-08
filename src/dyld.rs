@@ -220,17 +220,19 @@ fn link_cxxabi_vtable(
     cxxabi_vtable_addrs: &mut HashMap<String, u32>,
     mem: &mut Mem,
 ) -> ConstVoidPtr {
-    let addr = *cxxabi_vtable_addrs.entry(name.to_string()).or_insert_with(|| {
-        let stub = alloc_a32_ret_stub(mem);
-        let stub_addr = stub.to_bits();
-        let v: MutPtr<u32> = mem.alloc(40).cast();
-        mem.write(v + 0, 0);
-        mem.write(v + 1, 0);
-        for i in 2..10 {
-            mem.write(v + i, stub_addr);
-        }
-        v.to_bits()
-    });
+    let addr = *cxxabi_vtable_addrs
+        .entry(name.to_string())
+        .or_insert_with(|| {
+            let stub = alloc_a32_ret_stub(mem);
+            let stub_addr = stub.to_bits();
+            let v: MutPtr<u32> = mem.alloc(40).cast();
+            mem.write(v + 0, 0);
+            mem.write(v + 1, 0);
+            for i in 2..10 {
+                mem.write(v + i, stub_addr);
+            }
+            v.to_bits()
+        });
     Ptr::from_bits(addr).cast_const()
 }
 
@@ -658,7 +660,13 @@ impl Dyld {
                 if name.contains(|c: char| !(c.is_ascii_alphanumeric() || c == '_' || c == '$')) {
                     let sanitized: String = name
                         .chars()
-                        .map(|c| if c.is_ascii_alphanumeric() || c == '$' { c } else { '_' })
+                        .map(|c| {
+                            if c.is_ascii_alphanumeric() || c == '$' {
+                                c
+                            } else {
+                                '_'
+                            }
+                        })
                         .collect();
                     writeln!(file, "int {sanitized} asm(\"{constant_symbol}\");")?;
                 } else {
@@ -924,12 +932,7 @@ impl Dyld {
                         .create_proc_address_no_inval(mem, sym)
                         .unwrap()
                         .to_ptr();
-                    log_dbg!(
-                        "Linked {} -> {} at {:?}",
-                        name,
-                        target_name,
-                        trampoline_ptr
-                    );
+                    log_dbg!("Linked {} -> {} at {:?}", name, target_name, trampoline_ptr);
                     trampoline_ptr
                 } else {
                     // Fallback: a BX LR stub that returns 0
@@ -1078,7 +1081,9 @@ impl Dyld {
                     trampoline_ptr
                 );
                 trampoline_ptr
-            } else if let Some((_, template)) = search_host_dylibs(|dylib| dylib.constant_exports, name) {
+            } else if let Some((_, template)) =
+                search_host_dylibs(|dylib| dylib.constant_exports, name)
+            {
                 // Constants from host dylibs need late linking (they may
                 // require a full Environment to resolve, e.g. NSString
                 // objects). Store for resolution in do_late_linking().
@@ -1153,6 +1158,35 @@ impl Dyld {
                     trampoline_ptr
                 );
                 continue;
+            }
+
+            // `objc_msgSendSuper` / `objc_msgSendSuper_stret` referenced
+            // through `__nl_symbol_ptr` (same symbols as the special case in
+            // the external-relocation loop above: apps built with older
+            // toolchains emit non-lazy references from SDK stubs). Resolve to
+            // the existing host `objc_msgSendSuper2` / `_stret` trampolines.
+            if symbol == "_objc_msgSendSuper" || symbol == "_objc_msgSendSuper_stret" {
+                let target_name = if symbol == "_objc_msgSendSuper" {
+                    "_objc_msgSendSuper2"
+                } else {
+                    "_objc_msgSendSuper2_stret"
+                };
+                if let Some((sym, _)) =
+                    search_host_dylibs(|dylib| dylib.function_exports, target_name)
+                {
+                    let trampoline_ptr = self
+                        .create_proc_address_no_inval(mem, sym)
+                        .unwrap()
+                        .to_ptr();
+                    mem.write(ptr_ptr, trampoline_ptr);
+                    log_dbg!(
+                        "Linked non-lazy {} -> {} at {:?}",
+                        symbol,
+                        target_name,
+                        trampoline_ptr
+                    );
+                    continue;
+                }
             }
 
             if let Some((symbol, _)) = search_host_dylibs(|dylib| dylib.function_exports, symbol) {

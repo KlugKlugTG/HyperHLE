@@ -35,23 +35,22 @@ mod synchronization;
 mod weak;
 
 pub use classes::{
-    class_addMethod, class_copyIvarList, class_copyMethodList, class_copyPropertyList,
-    class_copyProtocolList, class_getClassMethod, class_getInstanceMethod, class_getInstanceSize,
-    class_getMethodImplementation, class_getMethodImplementation_stret, class_getName,
-    class_getProperty, class_getSuperclass, class_replaceMethod, class_respondsToSelector, class_setSuperclass,
-    method_exchangeImplementations,
+    __objc_deallocOnMainThreadHelper, class_addMethod, class_copyIvarList, class_copyMethodList,
+    class_copyPropertyList, class_copyProtocolList, class_getClassMethod, class_getInstanceMethod,
+    class_getInstanceSize, class_getMethodImplementation, class_getMethodImplementation_stret,
+    class_getName, class_getProperty, class_getSuperclass, class_replaceMethod,
+    class_respondsToSelector, class_setSuperclass, method_exchangeImplementations,
     method_getImplementation, method_getName, method_getTypeEncoding, method_setImplementation,
-    objc_storeStrong,
-    objc_alloc, objc_allocWithZone, objc_allocateClassPair, objc_autorelease, objc_autoreleasePoolPop,
-    swift_getInitializedObjCClass,
-    objc_autoreleasePoolPush, objc_autoreleaseReturnValue, objc_begin_catch, objc_classes,
-    objc_copyClassNamesForImage, objc_disposeClassPair, objc_end_catch, objc_exception_throw,
-    objc_getClass, objc_getMetaClass, objc_getProtocol, objc_getRequiredClass, objc_lookUpClass,
-    objc_readClassPair, objc_registerClassPair,
-    objc_release, objc_retain, objc_retainAutorelease, objc_retainAutoreleaseReturnValue,
-    objc_retainBlock, __objc_deallocOnMainThreadHelper,
-    objc_retainAutoreleasedReturnValue, objc_unsafeClaimAutoreleasedReturnValue, object_getClass, object_getClassName, object_getIndexedIvars,
-    protocol_getName, objc_getClassList, protocol_conformsToProtocol, Class, ClassExports, ClassTemplate,
+    objc_alloc, objc_allocWithZone, objc_allocateClassPair, objc_autorelease,
+    objc_autoreleasePoolPop, objc_autoreleasePoolPush, objc_autoreleaseReturnValue,
+    objc_begin_catch, objc_classes, objc_copyClassNamesForImage, objc_disposeClassPair,
+    objc_end_catch, objc_exception_throw, objc_getClass, objc_getClassList, objc_getMetaClass,
+    objc_getProtocol, objc_getRequiredClass, objc_lookUpClass, objc_readClassPair,
+    objc_registerClassPair, objc_release, objc_retain, objc_retainAutorelease,
+    objc_retainAutoreleaseReturnValue, objc_retainAutoreleasedReturnValue, objc_retainBlock,
+    objc_storeStrong, objc_unsafeClaimAutoreleasedReturnValue, object_getClass,
+    object_getClassName, object_getIndexedIvars, protocol_conformsToProtocol, protocol_getName,
+    swift_getInitializedObjCClass, Class, ClassExports, ClassTemplate,
 };
 pub use messages::{
     autorelease, msg, msg_class, msg_send, msg_send_no_initialize, msg_send_no_type_checking,
@@ -65,6 +64,7 @@ pub use properties::todo_objc_setter;
 pub use selectors::{selector, SEL};
 
 use crate::objc::classes::___objc_personality_v0;
+use crate::objc::classes::imp_implementationWithBlock;
 use crate::objc::classes::{objc_msgForward, objc_msgForward_stret};
 use crate::Environment;
 use classes::{ClassHostObject, FakeClass, UnimplementedClass};
@@ -74,11 +74,11 @@ use messages::{
 };
 use methods::method_list_t;
 use objects::{objc_object, HostObjectEntry};
+use properties::objc_setProperty_atomic;
 use properties::{ivar_list_t, objc_copyStruct, objc_getProperty, objc_setProperty};
 use properties::{
     objc_setProperty_atomic_copy, objc_setProperty_nonatomic, objc_setProperty_nonatomic_copy,
 };
-use properties::objc_setProperty_atomic;
 use properties::{property_getAttributes, property_getName};
 use selectors::{sel_getName, sel_getUid, sel_isEqual, sel_registerName};
 use synchronization::{objc_sync_enter, objc_sync_exit};
@@ -233,7 +233,6 @@ impl ObjC {
     }
 }
 
-
 // ──────────────────────────────────────────────────────────────────
 // Associated objects  (<objc/runtime.h>)
 // ──────────────────────────────────────────────────────────────────
@@ -296,7 +295,9 @@ fn objc_setAssociatedObject(
         _ => false,
     };
 
-    env.objc.associated_objects.insert(map_key, (value, is_retained));
+    env.objc
+        .associated_objects
+        .insert(map_key, (value, is_retained));
 }
 
 /// `id objc_getAssociatedObject(id object, const void *key)`
@@ -402,6 +403,7 @@ const FUNCTIONS: FunctionExports = &[
     export_c_func!(objc_alloc(_)),
     export_c_func!(objc_autorelease(_)),
     export_c_func!(objc_retainBlock(_)),
+    export_c_func!(imp_implementationWithBlock(_)),
     export_c_func!(objc_release(_)),
     export_c_func!(objc_setProperty_nonatomic(_, _, _, _)),
     export_c_func!(objc_exception_throw(_)),

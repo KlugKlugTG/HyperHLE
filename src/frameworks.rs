@@ -23,12 +23,12 @@
 #![allow(clippy::too_many_arguments)] // It's not our fault!
 
 pub mod accelerate;
+pub mod accounts;
 pub mod address_book;
 pub mod address_book_ui;
-pub mod accounts;
+pub mod assets_library;
 pub mod audio_toolbox;
 pub mod avfoundation;
-pub mod assets_library;
 pub mod captive_network;
 pub mod carbon_core;
 pub mod cf_http_message;
@@ -52,27 +52,29 @@ pub mod game_controller;
 pub mod game_kit;
 pub mod gl_kit;
 pub mod image_io;
+pub mod javascript_core;
 pub mod libbz2;
 pub mod libicucore;
 pub mod libsqlite3;
 pub mod libxml2;
 pub mod map_kit;
-pub mod media_toolbox;
 pub mod media_player;
-pub mod metal;
-pub mod web_kit;
-pub mod quick_look;
+pub mod media_toolbox;
 pub mod message_ui;
+pub mod metal;
 pub mod mobile_core_services;
+pub mod mopub;
 pub mod openal;
-pub mod photos;
 pub mod opengles;
+pub mod photos;
+pub mod quick_look;
 pub mod security;
 pub mod social;
 pub mod store_kit;
 pub mod system_configuration;
 pub mod tw_tweet_compose_view_controller;
 pub mod uikit;
+pub mod web_kit;
 pub mod xsapitcui;
 
 /// Container for state of various child modules
