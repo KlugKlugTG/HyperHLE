@@ -871,6 +871,34 @@ unsafe fn present_renderbuffer_readback(env: &mut Environment, drawable: id) {
         log!("Native ES1 readback skipped because the GL context disappeared.");
         return;
     };
+    // Dump the first readback to a PPM for black-screen diagnosis (env var
+    // gated, as this is a developer-only diagnostic).
+    {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        static DUMPED: AtomicBool = AtomicBool::new(false);
+        if std::env::var("TOUCHHLE_DUMP_READBACK").is_ok()
+            && !DUMPED.swap(true, Ordering::Relaxed)
+        {
+            let path = "/tmp/a8run/readback.ppm";
+            let header = format!("P6\n{} {}\n255\n", width, height);
+            let mut out = header.into_bytes();
+            let mut rgb = Vec::with_capacity((width * height * 3) as usize);
+            for px in pixels.chunks_exact(4) {
+                // read_renderbuffer gives RGBA8; PPM wants RGB.
+                rgb.extend_from_slice(&[px[0], px[1], px[2]]);
+            }
+            out.extend_from_slice(&rgb);
+            match std::fs::write(path, &out) {
+                Ok(()) => log!(
+                    "Dumped first renderbuffer readback ({}x{}) to {}",
+                    width,
+                    height,
+                    path
+                ),
+                Err(e) => log!("Failed to dump readback to {}: {}", path, e),
+            }
+        }
+    }
     present_pixels(env, drawable, pixels, width, height);
     let force_composition = env.options.force_composition;
     env.options.force_composition = true;
@@ -1150,6 +1178,26 @@ unsafe fn present_renderbuffer_es2(
             .saturating_mul(4)
     ];
     if width > 0 && height > 0 && !pixels.is_empty() {
+        // Read from the *renderbuffer being presented*, not from whatever
+        // framebuffer the guest happened to leave bound. On iOS the EAGL
+        // renderbuffer IS the default framebuffer, so apps can leave any
+        // binding here — including an offscreen/MSAA FBO whose content is
+        // not what's being presented. Reading from the stale binding yields
+        // black frames (Asphalt 8's Jet engine leaves its own FBO bound).
+        // Attach the renderbuffer to a dedicated FBO and read from that,
+        // mirroring `read_renderbuffer()`'s hardcoded safe path.
+        let mut old_rb: GLint = 0;
+        gles
+            .GetIntegerv(gles2::FRAMEBUFFER_BINDING, &mut old_rb);
+        let mut src_framebuffer: GLuint = 0;
+        gles.GenFramebuffers(1, &mut src_framebuffer);
+        gles.BindFramebuffer(gles2::FRAMEBUFFER, src_framebuffer);
+        gles.FramebufferRenderbuffer(
+            gles2::FRAMEBUFFER,
+            gles2::COLOR_ATTACHMENT0,
+            gles2::RENDERBUFFER,
+            renderbuffer as GLuint,
+        );
         gles.Finish();
         gles.ReadPixels(
             0,
@@ -1160,6 +1208,8 @@ unsafe fn present_renderbuffer_es2(
             gles2::UNSIGNED_BYTE,
             pixels.as_mut_ptr().cast(),
         );
+        gles.BindFramebuffer(gles2::FRAMEBUFFER, old_rb as _);
+        gles.DeleteFramebuffers(1, &src_framebuffer);
         static LOGGED: std::sync::Once = std::sync::Once::new();
         LOGGED.call_once(|| {
             log!("GLES2 presenter: using RGBA CPU readback before texture presentation")
