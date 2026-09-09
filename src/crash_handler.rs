@@ -132,6 +132,26 @@ mod imp {
             crate::environment::LAST_GUEST_PC.load(Ordering::Relaxed),
             crate::environment::LAST_GUEST_LR.load(Ordering::Relaxed)
         );
+        // Identify the aborting OS thread and dump a NATIVE backtrace:
+        // the guest PC ring only tracks the emulation thread, so if the
+        // crash came from a worker (audio/net/JIT helper), this is the only
+        // way to see where it actually died.
+        let msg = format!(
+            "{}aborting thread: name={:?} tid={}\n",
+            msg,
+            std::thread::current().name().unwrap_or("<unnamed>"),
+            unsafe { libc::gettid() }
+        );
+        let msg = format!("{}native backtrace:\n", msg);
+        let msg = {
+            let mut bt = [std::ptr::null_mut::<libc::c_void>(); 48];
+            let n = unsafe { libc::backtrace(bt.as_mut_ptr(), 48) };
+            let mut lines = String::new();
+            for i in 0..n as usize {
+                lines.push_str(&format!("  #{}: {}\n", i, bt[i] as usize));
+            }
+            format!("{}{}", msg, lines)
+        };
         let msg = format!(
             "{}recent guest PCs:{}\n",
             msg,
