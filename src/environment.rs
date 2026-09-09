@@ -18,8 +18,7 @@ use crate::cpu::Cpu;
 use crate::libc::semaphore::sem_t;
 use crate::mem::{self, GuestUSize, MutPtr, MutVoidPtr};
 use crate::{
-    abi, bundle, cpu, dyld, frameworks, fs, gdb, image, libc, mach_o, objc, options, stack,
-    window,
+    abi, bundle, cpu, dyld, frameworks, fs, gdb, image, libc, mach_o, objc, options, stack, window,
 };
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -29,6 +28,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use crate::libc::pthread::cond::pthread_cond_t;
 use crate::window::DeviceFamily;
+use corosensei::stack::DefaultStack;
 use corosensei::{Coroutine, Yielder};
 pub use mutex::{MutexId, MutexType, PTHREAD_MUTEX_DEFAULT};
 use nullable_box::NullableBox;
@@ -87,12 +87,10 @@ impl std::fmt::Debug for Thread {
 }
 
 /// Last guest PC seen by the CPU loop, for crash diagnostics.
-pub static LAST_GUEST_PC: std::sync::atomic::AtomicU32 =
-    std::sync::atomic::AtomicU32::new(0);
+pub static LAST_GUEST_PC: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 /// Last guest LR seen by the CPU loop, for crash diagnostics.
-pub static LAST_GUEST_LR: std::sync::atomic::AtomicU32 =
-    std::sync::atomic::AtomicU32::new(0);
+pub static LAST_GUEST_LR: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
 
 /// Ring buffer of the last N guest PCs, for crash diagnostics.
 pub static GUEST_PC_RING: [std::sync::atomic::AtomicU32; 32] = {
@@ -609,153 +607,168 @@ impl Environment {
             false => None,
         });
 
-        let main_thread_init_routine = Coroutine::new(move |yielder, mut env: Environment| {
-            let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                env.with_yielder(yielder, move |env| {
-                    echo!("CPU emulation begins now.");
-                    // Some apps use the stack inside the static initializer.
-                    // While properly behaving apps should be fine, some app
-                    // will try to poke the top of the stack, so we'll give
-                    // it some room.
-                    env.cpu.regs_mut()[Cpu::SP] = 0xFFFFF000;
+        // XaView BypassStackOverflow: guest code runs on this coroutine stack.
+        // The 1MB corosensei default is too small for deeply-nested guest -> host
+        // -> JNI calls on Android (ART's CheckJNI aborts with a pending
+        // StackOverflowError -> SIGABRT). Give it the same 16MB as SDLThread.
+        let main_thread_init_stack = DefaultStack::new(16 * 1024 * 1024)
+            .expect("failed to allocate main guest coroutine stack");
+        let main_thread_init_routine = Coroutine::with_stack(
+            main_thread_init_stack,
+            move |yielder, mut env: Environment| {
+                let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    env.with_yielder(yielder, move |env| {
+                        echo!("CPU emulation begins now.");
+                        // Some apps use the stack inside the static initializer.
+                        // While properly behaving apps should be fine, some app
+                        // will try to poke the top of the stack, so we'll give
+                        // it some room.
+                        env.cpu.regs_mut()[Cpu::SP] = 0xFFFFF000;
 
-                    // Call `+load` method on classes where it's defined.
-                    // TODO: `+load` methods from our image should take priority
-                    // over frameworks ones.
-                    // TODO: a category `+load` method should be called after
-                    // the class's own +load method.
-                    // Note: `+load` is sent without triggering `+initialize`,
-                    // matching the runtime's guarantee that `+load` runs first.
-                    let mut to_be_loaded = Vec::new();
-                    let mut processed = HashSet::new();
-                    let load_sel: objc::SEL = env
-                        .objc
-                        .register_host_selector("load".to_string(), &mut env.mem);
-                    for (class_name, &class) in env.objc.all_classes() {
-                        if processed.contains(&class) {
-                            continue;
-                        }
-                        if env.objc.is_unimplemented_class(class) || env.objc.is_fake_class(class) {
-                            continue;
-                        }
-                        if env
+                        // Call `+load` method on classes where it's defined.
+                        // TODO: `+load` methods from our image should take priority
+                        // over frameworks ones.
+                        // TODO: a category `+load` method should be called after
+                        // the class's own +load method.
+                        // Note: `+load` is sent without triggering `+initialize`,
+                        // matching the runtime's guarantee that `+load` runs first.
+                        let mut to_be_loaded = Vec::new();
+                        let mut processed = HashSet::new();
+                        let load_sel: objc::SEL = env
                             .objc
-                            .object_has_uninherited_method(&env.mem, class, load_sel)
-                        {
-                            log_dbg!("Calling +load on inheritance chain of {} class", class_name);
-                            let mut inherited = Vec::new();
-                            let mut curr_class = class;
-                            while curr_class != objc::nil
-                                && !env.objc.is_unimplemented_class(curr_class)
-                                && !env.objc.is_fake_class(curr_class)
-                            {
-                                if !processed.contains(&curr_class)
-                                    && env.objc.object_has_uninherited_method(
-                                        &env.mem, curr_class, load_sel,
-                                    )
-                                {
-                                    inherited.push(curr_class);
-                                    processed.insert(curr_class);
-                                }
-                                curr_class = env.objc.get_superclass(curr_class);
+                            .register_host_selector("load".to_string(), &mut env.mem);
+                        for (class_name, &class) in env.objc.all_classes() {
+                            if processed.contains(&class) {
+                                continue;
                             }
-                            to_be_loaded.extend(inherited.into_iter().rev());
+                            if env.objc.is_unimplemented_class(class)
+                                || env.objc.is_fake_class(class)
+                            {
+                                continue;
+                            }
+                            if env
+                                .objc
+                                .object_has_uninherited_method(&env.mem, class, load_sel)
+                            {
+                                log_dbg!(
+                                    "Calling +load on inheritance chain of {} class",
+                                    class_name
+                                );
+                                let mut inherited = Vec::new();
+                                let mut curr_class = class;
+                                while curr_class != objc::nil
+                                    && !env.objc.is_unimplemented_class(curr_class)
+                                    && !env.objc.is_fake_class(curr_class)
+                                {
+                                    if !processed.contains(&curr_class)
+                                        && env.objc.object_has_uninherited_method(
+                                            &env.mem, curr_class, load_sel,
+                                        )
+                                    {
+                                        inherited.push(curr_class);
+                                        processed.insert(curr_class);
+                                    }
+                                    curr_class = env.objc.get_superclass(curr_class);
+                                }
+                                to_be_loaded.extend(inherited.into_iter().rev());
+                            }
                         }
-                    }
-                    for &class in &to_be_loaded {
-                        () = objc::msg_send_no_initialize(env, (class, load_sel));
-                    }
+                        for &class in &to_be_loaded {
+                            () = objc::msg_send_no_initialize(env, (class, load_sel));
+                        }
 
-                    // Static initializers for libraries must be run before
-                    // the initializer in the app binary.
-                    for bin_idx in env.get_sorted_bin_indices().unwrap() {
-                        let Some(bin) = env.bins.get(bin_idx) else {
-                            continue;
-                        };
-                        let Some(section) =
-                            bin.get_section(mach_o::SectionType::ModInitFuncPointers)
-                        else {
-                            continue;
-                        };
+                        // Static initializers for libraries must be run before
+                        // the initializer in the app binary.
+                        for bin_idx in env.get_sorted_bin_indices().unwrap() {
+                            let Some(bin) = env.bins.get(bin_idx) else {
+                                continue;
+                            };
+                            let Some(section) =
+                                bin.get_section(mach_o::SectionType::ModInitFuncPointers)
+                            else {
+                                continue;
+                            };
 
-                        log_dbg!("Calling static initializers for {:?}", bin.name);
-                        assert!(section.size % 4 == 0);
+                            log_dbg!("Calling static initializers for {:?}", bin.name);
+                            assert!(section.size % 4 == 0);
 
-                        let base: mem::ConstPtr<abi::GuestFunction> =
-                            mem::Ptr::from_bits(section.addr);
+                            let base: mem::ConstPtr<abi::GuestFunction> =
+                                mem::Ptr::from_bits(section.addr);
 
-                        let count = section.size / 4;
-                        for i in 0..count {
-                            let func = env.mem.read(base + i);
+                            let count = section.size / 4;
+                            for i in 0..count {
+                                let func = env.mem.read(base + i);
 
-                            log_dbg!(
-                                "Calling static initializer at {:?} from {:?}",
-                                func,
-                                (base + i)
+                                log_dbg!(
+                                    "Calling static initializer at {:?} from {:?}",
+                                    func,
+                                    (base + i)
+                                );
+
+                                () = func.call_from_host(env, ());
+                            }
+                            log_dbg!("Static initialization done");
+                        }
+
+                        {
+                            let bin_path = env.bundle.executable_path();
+
+                            let envp_list: Vec<String> = env
+                                .env_vars
+                                .clone()
+                                .iter_mut()
+                                .map(|tuple| {
+                                    [
+                                        std::str::from_utf8(tuple.0).unwrap(),
+                                        "=",
+                                        env.mem.cstr_at_utf8(*tuple.1).unwrap(),
+                                    ]
+                                    .concat()
+                                })
+                                .collect();
+
+                            let envp_ref_list: Vec<&str> =
+                                envp_list.iter().map(|keyvalue| keyvalue.as_str()).collect();
+
+                            let bin_path_apple_key =
+                                format!("executable_path={}", bin_path.as_str());
+
+                            let argv = Vec::from_iter(
+                                std::iter::once(bin_path.as_str())
+                                    .chain(app_args.iter().map(|s| s.as_str())),
                             );
 
-                            () = func.call_from_host(env, ());
+                            let envp = envp_ref_list.as_slice();
+                            let apple = &[bin_path_apple_key.as_str()];
+                            stack::prep_stack_for_start(
+                                &mut env.mem,
+                                &mut env.cpu,
+                                &argv,
+                                envp,
+                                apple,
+                                entry_point_is_lc_main,
+                            );
                         }
-                        log_dbg!("Static initialization done");
-                    }
 
-                    {
-                        let bin_path = env.bundle.executable_path();
+                        // Manually call here, since running call_from_host pushes
+                        // a stack frame and disrupts abi for _start.
+                        env.cpu
+                            .branch_with_link(entry_point_addr, env.dyld.thread_exit_routine());
 
-                        let envp_list: Vec<String> = env
-                            .env_vars
-                            .clone()
-                            .iter_mut()
-                            .map(|tuple| {
-                                [
-                                    std::str::from_utf8(tuple.0).unwrap(),
-                                    "=",
-                                    env.mem.cstr_at_utf8(*tuple.1).unwrap(),
-                                ]
-                                .concat()
-                            })
-                            .collect();
+                        env.run_call();
 
-                        let envp_ref_list: Vec<&str> =
-                            envp_list.iter().map(|keyvalue| keyvalue.as_str()).collect();
+                        panic!("Main function exited unexpectedly!");
+                    })
+                }));
 
-                        let bin_path_apple_key = format!("executable_path={}", bin_path.as_str());
-
-                        let argv = Vec::from_iter(
-                            std::iter::once(bin_path.as_str())
-                                .chain(app_args.iter().map(|s| s.as_str())),
-                        );
-
-                        let envp = envp_ref_list.as_slice();
-                        let apple = &[bin_path_apple_key.as_str()];
-                        stack::prep_stack_for_start(
-                            &mut env.mem,
-                            &mut env.cpu,
-                            &argv,
-                            envp,
-                            apple,
-                            entry_point_is_lc_main,
-                        );
-                    }
-
-                    // Manually call here, since running call_from_host pushes
-                    // a stack frame and disrupts abi for _start.
-                    env.cpu
-                        .branch_with_link(entry_point_addr, env.dyld.thread_exit_routine());
-
-                    env.run_call();
-
-                    panic!("Main function exited unexpectedly!");
-                })
-            }));
-
-            if let Err(e) = res {
-                let panic_cell = env.panic_cell.clone();
-                panic_cell.set(Some(env));
-                std::panic::resume_unwind(e);
-            }
-            env
-        });
+                if let Err(e) = res {
+                    let panic_cell = env.panic_cell.clone();
+                    panic_cell.set(Some(env));
+                    std::panic::resume_unwind(e);
+                }
+                env
+            },
+        );
 
         let main_thread = Thread {
             active: true,
@@ -1204,36 +1217,39 @@ impl Environment {
         let stack_high_addr = stack_alloc.to_bits() + stack_size;
         assert!(stack_high_addr.is_multiple_of(4));
 
-        let thread_routine = Coroutine::new(move |yielder, mut env: Environment| {
-            log!(
-                "touchHLE: guest worker thread now running (start_routine={:#x})",
-                start_routine.addr_with_thumb_bit()
-            );
-            let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                env.with_yielder(yielder, move |env| {
-                    let regs = env.cpu.regs_mut();
-                    regs[cpu::Cpu::LR] = env.dyld.thread_exit_routine().addr_with_thumb_bit();
-                    regs[cpu::Cpu::SP] = stack_high_addr;
-                    regs[0] = user_data.to_bits();
+        let thread_stack =
+            DefaultStack::new(16 * 1024 * 1024).expect("failed to allocate guest coroutine stack");
+        let thread_routine =
+            Coroutine::with_stack(thread_stack, move |yielder, mut env: Environment| {
+                log!(
+                    "touchHLE: guest worker thread now running (start_routine={:#x})",
+                    start_routine.addr_with_thumb_bit()
+                );
+                let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                    env.with_yielder(yielder, move |env| {
+                        let regs = env.cpu.regs_mut();
+                        regs[cpu::Cpu::LR] = env.dyld.thread_exit_routine().addr_with_thumb_bit();
+                        regs[cpu::Cpu::SP] = stack_high_addr;
+                        regs[0] = user_data.to_bits();
 
-                    env.cpu.set_cpsr(
-                        cpu::Cpu::CPSR_USER_MODE
-                            | ((start_routine.is_thumb() as u32) * cpu::Cpu::CPSR_THUMB),
-                    );
-                    let return_value: mem::MutVoidPtr =
-                        start_routine.call_from_host(env, (user_data,));
-                    let curr_thread = &mut env.threads[env.current_thread];
-                    curr_thread.return_value = Some(return_value);
-                    curr_thread.active = false;
-                });
-            }));
-            if let Err(e) = res {
-                let panic_cell = env.panic_cell.clone();
-                panic_cell.set(Some(env));
-                std::panic::resume_unwind(e);
-            }
-            env
-        });
+                        env.cpu.set_cpsr(
+                            cpu::Cpu::CPSR_USER_MODE
+                                | ((start_routine.is_thumb() as u32) * cpu::Cpu::CPSR_THUMB),
+                        );
+                        let return_value: mem::MutVoidPtr =
+                            start_routine.call_from_host(env, (user_data,));
+                        let curr_thread = &mut env.threads[env.current_thread];
+                        curr_thread.return_value = Some(return_value);
+                        curr_thread.active = false;
+                    });
+                }));
+                if let Err(e) = res {
+                    let panic_cell = env.panic_cell.clone();
+                    panic_cell.set(Some(env));
+                    std::panic::resume_unwind(e);
+                }
+                env
+            });
 
         self.threads.push(Thread {
             active: true,
@@ -2035,7 +2051,9 @@ impl Environment {
                              progress, so skipping the faulting instruction \
                              instead. This usually means a framework stub \
                              returned data the guest keeps re-trapping on.",
-                            pc, count, lr
+                            pc,
+                            count,
+                            lr
                         );
                     }
                     self.cpu.regs_mut()[cpu::Cpu::PC] = pc.wrapping_add(instruction_len);
@@ -2346,8 +2364,7 @@ impl Environment {
                                 self.mem.read(mem::ConstPtr::from_bits(fp1 - 8));
                             let saved_r6: GuestUSize =
                                 self.mem.read(mem::ConstPtr::from_bits(fp1 - 4));
-                            let saved_r7: GuestUSize =
-                                self.mem.read(mem::ConstPtr::from_bits(fp1));
+                            let saved_r7: GuestUSize = self.mem.read(mem::ConstPtr::from_bits(fp1));
                             let saved_lr: GuestUSize =
                                 self.mem.read(mem::ConstPtr::from_bits(fp1 + 4));
                             self.cpu.regs_mut()[4] = saved_r4;
@@ -2361,7 +2378,9 @@ impl Environment {
                         } else {
                             log!("FATAL: Asphalt stack chain corrupted beyond fp0!");
                             self.cpu
-                                .branch(abi::GuestFunction::from_addr_with_thumb_bit(0x00a8a1bd | 1));
+                                .branch(abi::GuestFunction::from_addr_with_thumb_bit(
+                                    0x00a8a1bd | 1,
+                                ));
                         }
                     }
                     // BypassAsphaltOverdriveDeadlocks
@@ -2744,7 +2763,10 @@ impl Environment {
             if let Some(w) = self.window.as_mut() {
                 w.on_main_stack = true;
             }
-            f(self.window.as_mut().expect(NO_WINDOW_MSG), self.options.as_mut())
+            f(
+                self.window.as_mut().expect(NO_WINDOW_MSG),
+                self.options.as_mut(),
+            )
         }
     }
 }
