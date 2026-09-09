@@ -254,6 +254,40 @@ mod imp {
             if fd >= 0 {
                 let _ = libc::write(fd, bytes.as_ptr() as *const libc::c_void, bytes.len());
             }
+            // On Android, the most common cause of this abort is a JNI
+            // fatal error raised by ART ("JNI DETECTED ERROR IN APPLICATION:
+            // ..."), whose message only goes to logcat. Fork + exec
+            // `logcat -d --pid=<ours>` to append our own log entries (the
+            // JNI error text included) to the log file before dying.
+            #[cfg(target_os = "android")]
+            {
+                let my_pid = libc::getpid();
+                let child = libc::fork();
+                if child == 0 {
+                    // Child: redirect stdout/stderr into the log file and
+                    // dump the logcat ring buffer for this process.
+                    let lfd = LOG_FD.load(Ordering::SeqCst);
+                    if lfd >= 0 {
+                        libc::dup2(lfd, libc::STDOUT_FILENO);
+                        libc::dup2(lfd, libc::STDERR_FILENO);
+                    }
+                    let pid_str = std::fmt::format(format_args!("{}", my_pid));
+                    let mut pid_c = pid_str.into_bytes();
+                    pid_c.push(0);
+                    libc::execl(
+                        b"/system/bin/logcat\0".as_ptr() as *const libc::c_char,
+                        b"logcat\0".as_ptr() as *const libc::c_char,
+                        b"-d\0".as_ptr() as *const libc::c_char,
+                        b"--pid\0".as_ptr() as *const libc::c_char,
+                        pid_c.as_ptr() as *const libc::c_char,
+                        std::ptr::null::<libc::c_char>(),
+                    );
+                    libc::_exit(127);
+                } else if child > 0 {
+                    let mut status: libc::c_int = 0;
+                    libc::waitpid(child, &mut status, 0);
+                }
+            }
             // Restore the default disposition and re-raise so the platform's
             // crash reporter (Android tombstone, core dumps) still sees it.
             let mut dfl: libc::sigaction = std::mem::zeroed();
