@@ -16,8 +16,14 @@
 /// Append a message to the log file (and stderr). Safe to call from a panic
 /// hook; uses file-level locking via try_lock so re-entrant panics don't
 /// deadlock — on contention the message is dropped rather than deadlocked.
+#[cfg(unix)]
 fn raw_fd() -> i32 {
     imp::log_fd()
+}
+
+#[cfg(not(unix))]
+fn raw_fd() -> i32 {
+    -1
 }
 
 pub fn append_to_log(msg: &str) {
@@ -140,10 +146,12 @@ mod imp {
             "{}aborting thread: name={:?} tid={}\n",
             msg,
             std::thread::current().name().unwrap_or("<unnamed>"),
-            unsafe { libc::gettid() }
+            // libc::gettid is Linux-only; pthread_self works everywhere.
+            unsafe { libc::pthread_self() as u64 }
         );
-        let msg = format!("{}native backtrace:\n", msg);
+        #[cfg(all(unix, target_env = "gnu"))]
         let msg = {
+            let msg = format!("{}native backtrace:\n", msg);
             let mut bt = [std::ptr::null_mut::<libc::c_void>(); 48];
             let n = unsafe { libc::backtrace(bt.as_mut_ptr(), 48) };
             let mut lines = String::new();
