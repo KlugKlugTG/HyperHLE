@@ -24,8 +24,7 @@ use crate::mem::{GuestUSize, Mem, MutVoidPtr};
 use crate::objc::ObjC;
 use crate::Environment;
 
-#[derive(Copy, Clone)]
-#[derive(Default)]
+#[derive(Copy, Clone, Default)]
 pub(super) struct CGBitmapContextData {
     pub(super) data: MutVoidPtr,
     pub(super) data_is_owned: bool,

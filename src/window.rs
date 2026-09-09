@@ -1380,23 +1380,23 @@ impl Window {
                     }
                 }
                 E::AppWillEnterBackground { .. } => {
-                    log!("Received app-will-resign-active event.");
+                    log_dbg!("Received app-will-resign-active event.");
                     Event::AppWillResignActive
                 }
                 E::AppDidEnterBackground { .. } => {
-                    log!("Received app-did-enter-background event.");
+                    log_dbg!("Received app-did-enter-background event.");
                     Event::AppDidEnterBackground
                 }
                 E::AppWillEnterForeground { .. } => {
-                    log!("Received app-will-enter-foreground event.");
+                    log_dbg!("Received app-will-enter-foreground event.");
                     Event::AppWillEnterForeground
                 }
                 E::AppDidEnterForeground { .. } => {
-                    log!("Received app-did-become-active event.");
+                    log_dbg!("Received app-did-become-active event.");
                     Event::AppDidBecomeActive
                 }
                 E::AppTerminating { .. } => {
-                    log!("Received app-will-terminate event.");
+                    log_dbg!("Received app-will-terminate event.");
                     assert!(self.high_priority_event.is_none());
                     self.high_priority_event = Some(Event::AppWillTerminate);
                     // App is about to be killed by the OS. Stop polling so we

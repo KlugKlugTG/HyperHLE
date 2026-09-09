@@ -340,7 +340,8 @@ impl GdbServer {
                         if !addr.is_empty() {
                             if let Ok(new_pc) = u32::from_str_radix(addr, 16) {
                                 log!("GDB: Resume with signal at address {:#x}", new_pc);
-                                let func = crate::abi::GuestFunction::from_addr_with_thumb_bit(new_pc);
+                                let func =
+                                    crate::abi::GuestFunction::from_addr_with_thumb_bit(new_pc);
                                 cpu.branch(func);
                             } else {
                                 log!("GDB: Could not parse resume address {:?}, ignoring", addr);

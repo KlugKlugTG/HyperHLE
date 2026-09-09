@@ -107,11 +107,7 @@ impl ClassHostObject {
     /// Parse the property list from the binary and populate `self.properties`.
     /// This allows `class_getProperty` to return proper `objc_property_t`
     /// pointers for declared @property entries.
-    pub(super) fn add_properties_from_bin(
-        &mut self,
-        prop_list_ptr: ConstVoidPtr,
-        mem: &Mem,
-    ) {
+    pub(super) fn add_properties_from_bin(&mut self, prop_list_ptr: ConstVoidPtr, mem: &Mem) {
         let prop_list_ptr: ConstPtr<property_list_t> = prop_list_ptr.cast();
         let property_list_t {
             entsize_and_flags,
@@ -383,7 +379,9 @@ pub(super) fn objc_setProperty_nonatomic(
     value: id,
     offset: GuestISize,
 ) {
-    objc_setProperty(env, this, _cmd, offset, value, /* atomic: */ false, /* should_copy: */ 0)
+    objc_setProperty(
+        env, this, _cmd, offset, value, /* atomic: */ false, /* should_copy: */ 0,
+    )
 }
 
 /// Optimised atomic, retain-property setter. Compilers emit
@@ -407,7 +405,9 @@ pub(super) fn objc_setProperty_atomic(
     value: id,
     offset: GuestISize,
 ) {
-    objc_setProperty(env, this, _cmd, offset, value, /* atomic: */ true, /* should_copy: */ 0)
+    objc_setProperty(
+        env, this, _cmd, offset, value, /* atomic: */ true, /* should_copy: */ 0,
+    )
 }
 
 /// Optimised non-atomic, copy-property setter. Mid-iOS-6+ compilers emit
@@ -428,7 +428,9 @@ pub(super) fn objc_setProperty_nonatomic_copy(
     value: id,
     offset: GuestISize,
 ) {
-    objc_setProperty(env, this, _cmd, offset, value, /* atomic: */ false, /* should_copy: */ 1)
+    objc_setProperty(
+        env, this, _cmd, offset, value, /* atomic: */ false, /* should_copy: */ 1,
+    )
 }
 
 /// Optimised atomic, copy-property setter. Same idea as
@@ -441,7 +443,9 @@ pub(super) fn objc_setProperty_atomic_copy(
     value: id,
     offset: GuestISize,
 ) {
-    objc_setProperty(env, this, _cmd, offset, value, /* atomic: */ true, /* should_copy: */ 1)
+    objc_setProperty(
+        env, this, _cmd, offset, value, /* atomic: */ true, /* should_copy: */ 1,
+    )
 }
 
 // note: https://opensource.apple.com/source/objc4/objc4-723/runtime/objc-accessors.mm.auto.html

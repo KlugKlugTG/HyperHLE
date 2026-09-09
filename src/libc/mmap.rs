@@ -7,7 +7,7 @@
 use crate::dyld::FunctionExports;
 use crate::environment::Environment;
 use crate::export_c_func;
-use crate::libc::errno::{set_errno, EIO, EINVAL, ENOTSUP};
+use crate::libc::errno::{set_errno, EINVAL, EIO, ENOTSUP};
 use crate::libc::posix_io;
 use crate::libc::posix_io::{off_t, open_direct, FileDescriptor, SEEK_SET};
 use crate::mem::{ConstPtr, GuestUSize, MutVoidPtr, PAGE_SIZE_ALIGN_MASK};
@@ -89,7 +89,8 @@ fn mmap(
         if new_offset != offset {
             log!(
                 "Warning: mmap: lseek to offset {} failed (returned {}); returning MAP_FAILED",
-                offset, new_offset
+                offset,
+                new_offset
             );
             env.mem.free(ptr);
             set_errno(env, EIO);
@@ -100,7 +101,9 @@ fn mmap(
         if (read as u32) < len {
             log!(
                 "Warning: mmap: read only {} of {} bytes from fd {}; padding remainder with zeros",
-                read, len, fd
+                read,
+                len,
+                fd
             );
             // Remainder is already zeroed (calloc)
         }
@@ -128,7 +131,9 @@ fn munmap(env: &mut Environment, addr: MutVoidPtr, len: GuestUSize) -> i32 {
         if expected_len != len {
             log_dbg!(
                 "munmap({:?}, {}): length mismatch (expected {}), proceeding anyway",
-                addr, len, expected_len
+                addr,
+                len,
+                expected_len
             );
         }
         env.mem.free(addr);
@@ -137,7 +142,8 @@ fn munmap(env: &mut Environment, addr: MutVoidPtr, len: GuestUSize) -> i32 {
     } else {
         log!(
             "Warning: munmap({:?}, {}): unknown mapping, returning -1",
-            addr, len
+            addr,
+            len
         );
         set_errno(env, EINVAL);
         -1

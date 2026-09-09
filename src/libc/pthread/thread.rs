@@ -707,27 +707,15 @@ fn pthread_sigmask(
 
 /// `pthread_kill` — send a signal to a specific thread.
 /// Not supported in HLE; returns 0 (success) to avoid app abort.
-fn pthread_kill(
-    _env: &mut Environment,
-    thread: pthread_t,
-    sig: i32,
-) -> i32 {
-    log_dbg!(
-        "pthread_kill(thread={:?}, sig={}) -> stub 0",
-        thread,
-        sig
-    );
+fn pthread_kill(_env: &mut Environment, thread: pthread_t, sig: i32) -> i32 {
+    log_dbg!("pthread_kill(thread={:?}, sig={}) -> stub 0", thread, sig);
     0
 }
 
 /// `pthread_attr_setscope` — set the contention scope attribute.
 /// On Darwin this is essentially always PTHREAD_SCOPE_SYSTEM.  We accept any
 /// value and return 0.
-fn pthread_attr_setscope(
-    _env: &mut Environment,
-    attr: MutVoidPtr,
-    scope: i32,
-) -> i32 {
+fn pthread_attr_setscope(_env: &mut Environment, attr: MutVoidPtr, scope: i32) -> i32 {
     log_dbg!(
         "pthread_attr_setscope(attr={:?}, scope={}) -> stub 0",
         attr,
@@ -755,7 +743,10 @@ fn pthread_getname_np(
         return EINVAL;
     }
     let Some(host_obj) = State::get(env).threads.get(&thread) else {
-        log_dbg!("pthread_getname_np: unknown thread {:?}, returning ESRCH", thread);
+        log_dbg!(
+            "pthread_getname_np: unknown thread {:?}, returning ESRCH",
+            thread
+        );
         return ESRCH;
     };
     let name = host_obj.name.clone();

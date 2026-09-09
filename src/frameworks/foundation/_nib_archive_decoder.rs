@@ -392,7 +392,12 @@ fn get_value_to_decode_for_key(env: &mut Environment, unarchiver: id, key: id) -
     // be `Some` whenever a guest calls a decode method. Be defensive against
     // a malformed archive that somehow leaves it cleared.
     let current_idx = host_obj.current_object_idx?;
-    let obj = host_obj.archive.as_ref().unwrap().objects().get(current_idx as usize)?;
+    let obj = host_obj
+        .archive
+        .as_ref()
+        .unwrap()
+        .objects()
+        .get(current_idx as usize)?;
     obj.values(host_obj.archive.as_ref().unwrap().values())
         .iter()
         .find(|&val| val.key(host_obj.archive.as_ref().unwrap().keys()) == &key)
@@ -521,7 +526,13 @@ pub fn decode_current_array(env: &mut Environment, unarchiver: id) -> Vec<id> {
 
     let mut indicies = vec![];
 
-    let Some(object) = host_obj.archive.as_ref().unwrap().objects().get(current_idx as usize) else {
+    let Some(object) = host_obj
+        .archive
+        .as_ref()
+        .unwrap()
+        .objects()
+        .get(current_idx as usize)
+    else {
         log!(
             "Warning: decode_current_array: current_object_idx {} is out of \
              range; returning empty array.",
@@ -610,7 +621,13 @@ pub fn decode_current_string(env: &mut Environment, unarchiver: id) -> id {
         return from_rust_string(env, String::new());
     };
 
-    let Some(object) = host_obj.archive.as_ref().unwrap().objects().get(current_idx as usize) else {
+    let Some(object) = host_obj
+        .archive
+        .as_ref()
+        .unwrap()
+        .objects()
+        .get(current_idx as usize)
+    else {
         log!(
             "Warning: decode_current_string: current_object_idx {} is out of \
              range; returning empty string.",
@@ -661,7 +678,13 @@ pub fn decode_current_number(env: &mut Environment, unarchiver: id) -> id {
         return msg![env; num initWithInteger:(0 as NSInteger)];
     };
 
-    let Some(object) = host_obj.archive.as_ref().unwrap().objects().get(current_idx as usize) else {
+    let Some(object) = host_obj
+        .archive
+        .as_ref()
+        .unwrap()
+        .objects()
+        .get(current_idx as usize)
+    else {
         log!(
             "Warning: decode_current_number: current_object_idx {} is out of \
              range; returning 0.",

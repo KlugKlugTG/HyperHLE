@@ -116,7 +116,11 @@ pub fn sqlite3_open(env: &mut Environment, filename_ptr: u32, pp_db: u32) -> u32
             .into_owned()
     };
 
-    log!("libsqlite3: sqlite3_open requested {:?} => {:?}", filename, path);
+    log!(
+        "libsqlite3: sqlite3_open requested {:?} => {:?}",
+        filename,
+        path
+    );
 
     match Connection::open(&path) {
         Ok(conn) => {

@@ -16,7 +16,6 @@ pub struct NSMetadataQueryHostObject {
 // Заменяем неработающий макрос на прямую реализацию трейта HostObject
 impl HostObject for NSMetadataQueryHostObject {}
 
-
 pub const CLASSES: ClassExports = objc_classes! {
     (env, this, _cmd);
 

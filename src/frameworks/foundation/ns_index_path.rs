@@ -11,8 +11,7 @@ use super::NSUInteger;
 use crate::frameworks::foundation::NSInteger;
 use crate::mem::{ConstPtr, MutPtr};
 use crate::objc::{
-    autorelease, id, msg, msg_class, nil, objc_classes, retain, ClassExports, HostObject,
-    NSZonePtr,
+    autorelease, id, msg, msg_class, nil, objc_classes, retain, ClassExports, HostObject, NSZonePtr,
 };
 
 #[derive(Default)]

@@ -5,8 +5,8 @@
  */
 //! `UIPageControl`.
 
-use crate::frameworks::foundation::NSInteger;
 use super::ui_control::UIControlHostObject;
+use crate::frameworks::foundation::NSInteger;
 use crate::objc::{
     id, impl_HostObject_with_superclass, msg_class, nil, objc_classes, release, retain,
     ClassExports, NSZonePtr,

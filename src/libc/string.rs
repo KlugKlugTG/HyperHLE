@@ -552,8 +552,8 @@ fn strfry(env: &mut Environment, s: MutPtr<u8>) -> MutPtr<u8> {
         return s;
     }
     for i in (1..len).rev() {
-        let j = (i as u64 * 6364136223846793005u64.wrapping_add(1442695040888963407)) as u32
-            % (i + 1);
+        let j =
+            (i as u64 * 6364136223846793005u64.wrapping_add(1442695040888963407)) as u32 % (i + 1);
         let a = env.mem.read(s + i);
         let b = env.mem.read(s + j);
         env.mem.write(s + i, b);

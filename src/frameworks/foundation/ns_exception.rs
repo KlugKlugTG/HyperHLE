@@ -55,7 +55,6 @@ pub struct State {
     pub uncaught_exception_handler: MutVoidPtr,
 }
 
-
 pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
@@ -541,10 +540,7 @@ fn NSGetUncaughtExceptionHandler(env: &mut Environment) -> MutVoidPtr {
         .foundation
         .ns_exception
         .uncaught_exception_handler;
-    log_dbg!(
-        "NSGetUncaughtExceptionHandler -> {:?}",
-        handler
-    );
+    log_dbg!("NSGetUncaughtExceptionHandler -> {:?}", handler);
     handler
 }
 

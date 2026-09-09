@@ -344,8 +344,8 @@ impl Allocator {
         self.used_chunks.insert(chunk);
     }
 
-        pub fn alloc(&mut self, size: GuestUSize) -> VAddr {
-        // ИСПРАВЛЕНИЕ: Выравнивание может привести к переполнению (overflow), 
+    pub fn alloc(&mut self, size: GuestUSize) -> VAddr {
+        // ИСПРАВЛЕНИЕ: Выравнивание может привести к переполнению (overflow),
         // если игра запрашивает гигантский объем памяти (например, 0xffffffff).
         let aligned_size_opt = if size < PAGE_SIZE {
             let s = size.max(MIN_CHUNK_SIZE);

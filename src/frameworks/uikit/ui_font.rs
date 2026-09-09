@@ -12,7 +12,9 @@ use crate::frameworks::core_graphics::cg_bitmap_context::CGBitmapContextDrawer;
 use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::ns_string::{from_rust_string, get_static_str, to_rust_string};
 use crate::frameworks::foundation::NSInteger;
-use crate::objc::{autorelease, id, msg, msg_class, nil, objc_classes, ClassExports, HostObject, NSZonePtr};
+use crate::objc::{
+    autorelease, id, msg, msg_class, nil, objc_classes, ClassExports, HostObject, NSZonePtr,
+};
 use crate::Environment;
 use std::collections::HashMap;
 use std::ops::Range;
@@ -21,9 +23,9 @@ use std::ops::Range;
 pub(super) struct State {
     fonts: HashMap<FontKind, Font>,
     sans_regular_ja: Option<Font>,
-sans_bold_ja: Option<Font>,
-sans_regular_zh: Option<Font>,
-sans_bold_zh: Option<Font>,
+    sans_bold_ja: Option<Font>,
+    sans_regular_zh: Option<Font>,
+    sans_bold_zh: Option<Font>,
     sans_regular_ar: Option<Font>,
     sans_bold_ar: Option<Font>,
 }
@@ -472,8 +474,10 @@ fn convert_line_break_mode(ui_mode: UILineBreakMode) -> WrapMode {
 /// Japanese, Korean) Unicode blocks that the bundled Latin/serif fonts can't
 /// render and which require the Noto Sans CJK fallback.
 fn is_cjk_char(c: u32) -> bool {
-    (0x3000..=0x30FF).contains(&c) || (0xFF00..=0xFFEF).contains(&c) ||
-    (0x4e00..=0x9FA0).contains(&c) || (0x3400..=0x4DBF).contains(&c)
+    (0x3000..=0x30FF).contains(&c)
+        || (0xFF00..=0xFFEF).contains(&c)
+        || (0x4e00..=0x9FA0).contains(&c)
+        || (0x3400..=0x4DBF).contains(&c)
 }
 
 /// Returns `true` if the codepoint belongs to one of the Arabic Unicode blocks.
@@ -484,7 +488,7 @@ fn is_arabic_char(c: u32) -> bool {
     (0x0750..=0x077F).contains(&c) || // Arabic Supplement
     (0x08A0..=0x08FF).contains(&c) || // Arabic Extended-A
     (0xFB50..=0xFDFF).contains(&c) || // Arabic Presentation Forms-A
-    (0xFE70..=0xFEFF).contains(&c)    // Arabic Presentation Forms-B
+    (0xFE70..=0xFEFF).contains(&c) // Arabic Presentation Forms-B
 }
 
 #[rustfmt::skip]

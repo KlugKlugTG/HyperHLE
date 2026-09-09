@@ -141,10 +141,7 @@ fn malloc_zone_size(
     env.mem.malloc_size(ptr)
 }
 
-fn malloc_zone_from_ptr(
-    env: &mut Environment,
-    ptr: ConstVoidPtr,
-) -> MutPtr<malloc_zone_t> {
+fn malloc_zone_from_ptr(env: &mut Environment, ptr: ConstVoidPtr) -> MutPtr<malloc_zone_t> {
     if ptr.is_null() || env.mem.malloc_size(ptr) == 0 {
         return MutPtr::null();
     }
@@ -188,7 +185,8 @@ fn malloc_zone_memalign(
     }
     let aligned_bits = (raw.to_bits() + header + alignment - 1) & !(alignment - 1);
     let aligned = MutVoidPtr::from_bits(aligned_bits);
-    env.mem.write(MutPtr::from_bits(aligned_bits - header), raw.to_bits());
+    env.mem
+        .write(MutPtr::from_bits(aligned_bits - header), raw.to_bits());
     aligned
 }
 

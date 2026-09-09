@@ -93,7 +93,10 @@ fn pthread_key_delete(env: &mut Environment, key: pthread_key_t) -> i32 {
         log_dbg!("pthread_key_delete({}) cleared per-thread values", key);
         0
     } else {
-        log_dbg!("pthread_key_delete({}) on unknown key, returning EINVAL", key);
+        log_dbg!(
+            "pthread_key_delete({}) on unknown key, returning EINVAL",
+            key
+        );
         22
     }
 }

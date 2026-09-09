@@ -237,12 +237,18 @@ fn encode_string(string: &str, encoding: NSStringEncoding, lossy: bool) -> Optio
         NSUTF16BigEndianStringEncoding => {
             Some(string.encode_utf16().flat_map(u16::to_be_bytes).collect())
         }
-        NSUTF32LittleEndianStringEncoding => {
-            Some(string.chars().flat_map(|c| (c as u32).to_le_bytes()).collect())
-        }
-        NSUTF32BigEndianStringEncoding | NSUTF32StringEncoding => {
-            Some(string.chars().flat_map(|c| (c as u32).to_be_bytes()).collect())
-        }
+        NSUTF32LittleEndianStringEncoding => Some(
+            string
+                .chars()
+                .flat_map(|c| (c as u32).to_le_bytes())
+                .collect(),
+        ),
+        NSUTF32BigEndianStringEncoding | NSUTF32StringEncoding => Some(
+            string
+                .chars()
+                .flat_map(|c| (c as u32).to_be_bytes())
+                .collect(),
+        ),
         _ => {
             if let Some(enc) = encoding_rs_for(encoding) {
                 let (cow, _, had_errors) = enc.encode(string);
@@ -413,9 +419,7 @@ impl StringHostObject {
                         "Warning: NSString decode with unimplemented encoding {:#x}; using lossy UTF-8 fallback.",
                         encoding
                     );
-                    StringHostObject::Utf8(Cow::Owned(
-                        String::from_utf8_lossy(&bytes).into_owned(),
-                    ))
+                    StringHostObject::Utf8(Cow::Owned(String::from_utf8_lossy(&bytes).into_owned()))
                 }
             }
         }

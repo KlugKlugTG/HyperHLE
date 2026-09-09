@@ -1014,11 +1014,7 @@ impl Mem {
     /// larger than 64KB (e.g. GLSL shader source uploaded via `glShaderSource`
     /// without an explicit length), where the default cap would silently
     /// truncate the string and corrupt it.
-    pub fn cstr_at_with_max_len<const MUT: bool>(
-        &self,
-        ptr: Ptr<u8, MUT>,
-        max_len: u32,
-    ) -> &[u8] {
+    pub fn cstr_at_with_max_len<const MUT: bool>(&self, ptr: Ptr<u8, MUT>, max_len: u32) -> &[u8] {
         let mut len: u32 = 0;
         while self.read(ptr + len) != b'\0' {
             len += 1;

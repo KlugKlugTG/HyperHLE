@@ -6,15 +6,15 @@
 
 //! `AudioSession.h` (Audio Session Services)
 
+use crate::abi::CallFromHost;
 use crate::abi::GuestFunction;
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::carbon_core::OSStatus;
 use crate::frameworks::core_audio_types::{debug_fourcc, fourcc};
 use crate::frameworks::core_foundation::cf_run_loop::{CFRunLoopMode, CFRunLoopRef};
 use crate::frameworks::foundation::ns_string;
-use crate::abi::CallFromHost;
-use crate::objc::id;
 use crate::mem::{guest_size_of, ConstVoidPtr, MutPtr, MutVoidPtr};
+use crate::objc::id;
 use crate::Environment;
 
 type AudioSessionInterruptionListener = GuestFunction;
@@ -62,7 +62,11 @@ const kAudioSessionCategory_SoloAmbientSound: u32 = fourcc(b"solo");
 /// чтобы не возвращать им мусор и не ломать их внутреннюю логику.
 pub struct State {
     pub active: bool,
-    pub property_listeners: Vec<(AudioSessionPropertyID, AudioSessionPropertyListener, ConstVoidPtr)>,
+    pub property_listeners: Vec<(
+        AudioSessionPropertyID,
+        AudioSessionPropertyListener,
+        ConstVoidPtr,
+    )>,
     pub category: u32,
     pub current_hardware_sample_rate: f64,
     pub current_hardware_output_number_channels: u32,
@@ -398,10 +402,7 @@ pub fn AudioSessionAddPropertyListener(
     in_proc: AudioSessionPropertyListener,
     in_client_data: ConstVoidPtr,
 ) -> OSStatus {
-    log_dbg!(
-        "AudioSessionAddPropertyListener({})",
-        debug_fourcc(in_id)
-    );
+    log_dbg!("AudioSessionAddPropertyListener({})", debug_fourcc(in_id));
     env.framework_state
         .audio_toolbox
         .audio_session
@@ -467,7 +468,11 @@ pub fn AudioSessionRemovePropertyListenerWithUserData(
 
 /// Fire all listeners registered for `in_id`.
 fn notify_property_listeners(env: &mut Environment, in_id: AudioSessionPropertyID) {
-    let listeners: Vec<(AudioSessionPropertyID, AudioSessionPropertyListener, ConstVoidPtr)> = env
+    let listeners: Vec<(
+        AudioSessionPropertyID,
+        AudioSessionPropertyListener,
+        ConstVoidPtr,
+    )> = env
         .framework_state
         .audio_toolbox
         .audio_session

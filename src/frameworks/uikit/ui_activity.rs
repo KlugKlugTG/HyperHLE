@@ -23,8 +23,8 @@
 
 use crate::frameworks::foundation::NSInteger;
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, nil, objc_classes, release,
-    retain, ClassExports, HostObject, NSZonePtr,
+    id, impl_HostObject_with_superclass, msg, nil, objc_classes, release, retain, ClassExports,
+    HostObject, NSZonePtr,
 };
 
 pub type UIActivityCategory = NSInteger;
@@ -41,9 +41,9 @@ impl HostObject for UIActivityItemProviderHostObject {}
 #[derive(Default)]
 pub struct UIActivityViewControllerHostObject {
     superclass: super::ui_view_controller::UIViewControllerHostObject,
-    activity_items: id, // NSArray *
+    activity_items: id,         // NSArray *
     application_activities: id, // NSArray *
-    completion_handler: id, // Objective-C block, kept for the ABI; we never invoke it
+    completion_handler: id,     // Objective-C block, kept for the ABI; we never invoke it
     completion_with_items_handler: id,
     excluded_activity_types: id,
 }

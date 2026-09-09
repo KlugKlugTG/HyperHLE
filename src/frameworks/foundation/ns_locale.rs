@@ -112,7 +112,9 @@ impl State {
         &mut env.framework_state.foundation.ns_locale
     }
 }
-fn pvz_locale_override(env: &Environment) -> Option<(&'static [&'static str], &'static str, &'static str)> {
+fn pvz_locale_override(
+    env: &Environment,
+) -> Option<(&'static [&'static str], &'static str, &'static str)> {
     let id = env.bundle.bundle_identifier();
 
     if id == "com.popcap.ios.chs.PvZiPad" {
@@ -136,7 +138,10 @@ fn get_preferred_languages(env: &mut Environment) -> Vec<String> {
 
     if let Some((langs, _country, _locale)) = pvz_locale_override(env) {
         let languages: Vec<String> = langs.iter().map(|s| s.to_string()).collect();
-        log!("The app requested your preferred languages. {:?} will be reported for Chinese PvZ.", languages);
+        log!(
+            "The app requested your preferred languages. {:?} will be reported for Chinese PvZ.",
+            languages
+        );
         return languages;
     }
 
@@ -146,7 +151,7 @@ fn get_preferred_languages(env: &mut Environment) -> Vec<String> {
         log!("The app requested your preferred languages. No information could be retrieved, so {:?} (English) will be reported.", lang);
         vec![lang]
     } else {
-        log!("The app requested your preferred languages. {:?} will be reported based on your system language preferences.", languages);
+        log_dbg!("The app requested your preferred languages. {:?} will be reported based on your system language preferences.", languages);
         languages
     }
 }
@@ -154,7 +159,10 @@ fn get_preferred_languages(env: &mut Environment) -> Vec<String> {
 fn get_preferred_countries(env: &mut Environment) -> Vec<String> {
     if let Some((_langs, country, _locale)) = pvz_locale_override(env) {
         let countries = vec![country.to_string()];
-        log!("The app requested your current locale. {:?} will be reported for Chinese PvZ.", countries);
+        log!(
+            "The app requested your current locale. {:?} will be reported for Chinese PvZ.",
+            countries
+        );
         return countries;
     }
 
@@ -164,7 +172,7 @@ fn get_preferred_countries(env: &mut Environment) -> Vec<String> {
         log!("The app requested your current locale. No country information could be retrieved, so {:?} will be reported.", country);
         vec![country]
     } else {
-        log!("The app requested your current locale. {:?} will be reported based on your system region settings.", countries);
+        log_dbg!("The app requested your current locale. {:?} will be reported based on your system region settings.", countries);
         countries
     }
 }

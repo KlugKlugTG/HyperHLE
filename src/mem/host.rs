@@ -63,9 +63,7 @@ pub(super) unsafe fn allocate_memory(size: usize) -> std::io::Result<*mut core::
 }
 
 #[cfg(windows)]
-pub(super) unsafe fn allocate_guest_memory(
-    size: usize,
-) -> std::io::Result<*mut core::ffi::c_void> {
+pub(super) unsafe fn allocate_guest_memory(size: usize) -> std::io::Result<*mut core::ffi::c_void> {
     use windows_sys::Win32::System::Memory::{VirtualAlloc, MEM_RESERVE, PAGE_READWRITE};
 
     let ptr = unsafe { VirtualAlloc(std::ptr::null(), size, MEM_RESERVE, PAGE_READWRITE) };
@@ -78,9 +76,7 @@ pub(super) unsafe fn allocate_guest_memory(
 }
 
 #[cfg(unix)]
-pub(super) unsafe fn allocate_guest_memory(
-    size: usize,
-) -> std::io::Result<*mut core::ffi::c_void> {
+pub(super) unsafe fn allocate_guest_memory(size: usize) -> std::io::Result<*mut core::ffi::c_void> {
     unsafe { allocate_memory(size) }
 }
 
@@ -207,14 +203,8 @@ mod lazy_commit {
         const PAGE_SIZE: usize = super::super::PAGE_SIZE as usize;
         let page_addr = fault_addr & !(PAGE_SIZE - 1);
 
-        let committed = unsafe {
-            VirtualAlloc(
-                page_addr as *const _,
-                PAGE_SIZE,
-                MEM_COMMIT,
-                PAGE_READWRITE,
-            )
-        };
+        let committed =
+            unsafe { VirtualAlloc(page_addr as *const _, PAGE_SIZE, MEM_COMMIT, PAGE_READWRITE) };
         if committed.is_null() {
             return EXCEPTION_CONTINUE_SEARCH;
         }

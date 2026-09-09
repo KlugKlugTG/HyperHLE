@@ -10,7 +10,9 @@
 //! sufficient for apps that query the host name for analytics or display.
 
 use crate::frameworks::foundation::ns_string;
-use crate::objc::{autorelease, id, msg, msg_class, objc_classes, ClassExports, HostObject, NSZonePtr};
+use crate::objc::{
+    autorelease, id, msg, msg_class, objc_classes, ClassExports, HostObject, NSZonePtr,
+};
 
 #[derive(Default)]
 struct NSHostHostObject {

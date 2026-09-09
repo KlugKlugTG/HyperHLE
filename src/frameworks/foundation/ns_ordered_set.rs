@@ -620,10 +620,7 @@ pub fn debug_description(env: &mut Environment, ordered_set: id) -> String {
     let mut out = String::from("{(\n");
     for object in array {
         let desc: id = msg![env; object description];
-        out.push_str(&format!(
-            "    {},\n",
-            ns_string::to_rust_string(env, desc)
-        ));
+        out.push_str(&format!("    {},\n", ns_string::to_rust_string(env, desc)));
     }
     out.push_str(")}");
     out

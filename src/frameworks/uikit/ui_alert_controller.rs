@@ -12,8 +12,8 @@
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::{ns_string, NSInteger, NSUInteger};
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, msg_class, nil, objc_classes,
-    objc_retainBlock, release, retain, ClassExports, HostObject, NSZonePtr,
+    id, impl_HostObject_with_superclass, msg, msg_class, nil, objc_classes, objc_retainBlock,
+    release, retain, ClassExports, HostObject, NSZonePtr,
 };
 use crate::window;
 
@@ -54,7 +54,10 @@ fn invoke_block(env: &mut crate::Environment, block: id, object: id) {
     }
     let invoke_ptr: u32 = env.mem.read(block.cast::<u32>() + 3u32);
     if invoke_ptr == 0 {
-        log!("Warning: block {:?} has NULL invoke pointer; skipping.", block);
+        log!(
+            "Warning: block {:?} has NULL invoke pointer; skipping.",
+            block
+        );
         return;
     }
     use crate::abi::CallFromHost;

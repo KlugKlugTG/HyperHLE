@@ -477,4 +477,3 @@ impl OpenAL<'_> {
         al_sys::alSpeedOfSound(speed)
     }
 }
-

@@ -133,7 +133,12 @@ fn fnmatch_impl(pattern: &[u8], string: &[u8], flags: i32) -> bool {
     }
 }
 
-pub(super) fn fnmatch(env: &mut Environment, pattern: ConstPtr<u8>, string: ConstPtr<u8>, flags: i32) -> i32 {
+pub(super) fn fnmatch(
+    env: &mut Environment,
+    pattern: ConstPtr<u8>,
+    string: ConstPtr<u8>,
+    flags: i32,
+) -> i32 {
     let pat = env.mem.cstr_at(pattern);
     let s = env.mem.cstr_at(string);
     log_dbg!(

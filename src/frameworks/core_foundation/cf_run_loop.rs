@@ -17,9 +17,7 @@ use crate::frameworks::core_foundation::{CFIndex, CFRelease, CFRetain, CFTypeRef
 use crate::frameworks::foundation::ns_run_loop::run_run_loop_single_iteration;
 use crate::frameworks::foundation::ns_string;
 use crate::mem::{ConstPtr, GuestISize, MutPtr, MutVoidPtr, SafeRead};
-use crate::objc::{
-    id, msg, msg_class, nil, objc_classes, ClassExports, HostObject,
-};
+use crate::objc::{id, msg, msg_class, nil, objc_classes, ClassExports, HostObject};
 use crate::Environment;
 
 pub type CFRunLoopRef = CFTypeRef;

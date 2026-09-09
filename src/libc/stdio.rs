@@ -12,7 +12,7 @@ use super::posix_io::{
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::fs::{FsError, GuestPath};
 use crate::libc::errno::{
-    set_errno, EACCES, EBADF, EIO, EINVAL, ENOENT, ENOTDIR, ENOTEMPTY, EOVERFLOW,
+    set_errno, EACCES, EBADF, EINVAL, EIO, ENOENT, ENOTDIR, ENOTEMPTY, EOVERFLOW,
 };
 use crate::libc::string::strlen;
 use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, Mem, MutPtr, MutVoidPtr, Ptr, SafeRead};
@@ -88,9 +88,9 @@ impl State {
                 );
             }
             FILEHostObject {
-                    pushbacks: Vec::new(),
-                    error: false,
-                }
+                pushbacks: Vec::new(),
+                error: false,
+            }
         });
         self.file_streams.get_mut(&file_ptr).unwrap()
     }
@@ -122,6 +122,8 @@ fn fopen(env: &mut Environment, filename: ConstPtr<u8>, mode: ConstPtr<u8>) -> M
         match flag {
             // binary flag does nothing on UNIX
             b'b' => (),
+            // text flag is meaningless on UNIX too
+            b't' => (),
             b'+' => plus = true,
             other => {
                 log!("Tolerating unrecognized fopen() mode flag: {:?}", other);
@@ -284,9 +286,7 @@ fn fread(
         None => {
             // item_size * n_items overflows 32 bits; report an error
             // instead of wrapping (or panicking) and reading garbage.
-            log!(
-                "Warning: fread(): item_size * n_items overflows; returning 0.",
-            );
+            log!("Warning: fread(): item_size * n_items overflows; returning 0.",);
             set_errno(env, EOVERFLOW);
             return 0;
         }
@@ -506,9 +506,7 @@ fn fwrite(
         None => {
             // item_size * n_items overflows 32 bits; report an error
             // instead of wrapping (or panicking) and writing garbage.
-            log!(
-                "Warning: fwrite(): item_size * n_items overflows; returning 0.",
-            );
+            log!("Warning: fwrite(): item_size * n_items overflows; returning 0.",);
             set_errno(env, EOVERFLOW);
             return 0;
         }
@@ -600,9 +598,7 @@ fn fseeko(env: &mut Environment, file_ptr: MutPtr<FILE>, offset: off_t, whence: 
 fn ftell(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
     // 32-bit off_t saturation: report i32::MAX (with errno = EOVERFLOW
     // semantics) instead of panicking when the position exceeds 2GiB.
-    ftello(env, file_ptr)
-        .try_into()
-        .unwrap_or(i32::MAX)
+    ftello(env, file_ptr).try_into().unwrap_or(i32::MAX)
 }
 fn ftello(env: &mut Environment, file_ptr: MutPtr<FILE>) -> off_t {
     // errno is cleared at entry; posix_io (and explicit error paths)
@@ -1064,5 +1060,8 @@ pub const FUNCTIONS: FunctionExports = &[
     // this symbol directly because the SDK headers expand getc() to an
     // inline that calls ___srget on buffer miss.
     // The Mach-O symbol is "___srget" (C name "__srget" with _ prefix).
-    ("___srget", &(fgetc as fn(&mut crate::Environment, MutPtr<FILE>) -> i32)),
+    (
+        "___srget",
+        &(fgetc as fn(&mut crate::Environment, MutPtr<FILE>) -> i32),
+    ),
 ];

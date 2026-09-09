@@ -27,9 +27,7 @@ use super::ns_string::{from_rust_string, to_rust_string};
 use super::ns_value::NSNumberHostObject;
 use super::NSUInteger;
 use crate::mem::MutPtr;
-use crate::objc::{
-    autorelease, id, msg, msg_class, nil, objc_classes, ClassExports,
-};
+use crate::objc::{autorelease, id, msg, msg_class, nil, objc_classes, ClassExports};
 use crate::Environment;
 
 pub type NSJSONReadingOptions = NSUInteger;
@@ -403,11 +401,19 @@ impl<'a> JsonParser<'a> {
             self.pos += lit.len();
             Ok(())
         } else {
-            Err(format!("expected literal {:?} at offset {}", std::str::from_utf8(lit).unwrap_or("?"), self.pos))
+            Err(format!(
+                "expected literal {:?} at offset {}",
+                std::str::from_utf8(lit).unwrap_or("?"),
+                self.pos
+            ))
         }
     }
 
-    fn parse_value(&mut self, env: &mut Environment, opt: NSJSONReadingOptions) -> Result<id, String> {
+    fn parse_value(
+        &mut self,
+        env: &mut Environment,
+        opt: NSJSONReadingOptions,
+    ) -> Result<id, String> {
         self.skip_ws();
         let c = self.peek().ok_or_else(|| "unexpected EOF".to_string())?;
         match c {
@@ -430,11 +436,18 @@ impl<'a> JsonParser<'a> {
                 Ok(msg_class![env; NSNull null])
             }
             b'-' | b'0'..=b'9' => self.parse_number(env),
-            other => Err(format!("unexpected byte 0x{:02x} at offset {}", other, self.pos)),
+            other => Err(format!(
+                "unexpected byte 0x{:02x} at offset {}",
+                other, self.pos
+            )),
         }
     }
 
-    fn parse_object(&mut self, env: &mut Environment, opt: NSJSONReadingOptions) -> Result<id, String> {
+    fn parse_object(
+        &mut self,
+        env: &mut Environment,
+        opt: NSJSONReadingOptions,
+    ) -> Result<id, String> {
         self.bump(); // '{'
         let mutable = (opt & NSJSONReadingMutableContainers) != 0;
         let dict: id = if mutable {
@@ -486,7 +499,11 @@ impl<'a> JsonParser<'a> {
         }
     }
 
-    fn parse_array(&mut self, env: &mut Environment, opt: NSJSONReadingOptions) -> Result<id, String> {
+    fn parse_array(
+        &mut self,
+        env: &mut Environment,
+        opt: NSJSONReadingOptions,
+    ) -> Result<id, String> {
         self.bump(); // '['
         let mutable = (opt & NSJSONReadingMutableContainers) != 0;
         let arr: id = msg_class![env; NSMutableArray array];
@@ -525,7 +542,10 @@ impl<'a> JsonParser<'a> {
 
     fn parse_string(&mut self) -> Result<String, String> {
         if self.bump() != Some(b'"') {
-            return Err(format!("expected '\"' at offset {}", self.pos.saturating_sub(1)));
+            return Err(format!(
+                "expected '\"' at offset {}",
+                self.pos.saturating_sub(1)
+            ));
         }
         let mut out = String::new();
         loop {
@@ -584,7 +604,10 @@ impl<'a> JsonParser<'a> {
                         let start = self.pos - 1;
                         let s = std::str::from_utf8(&self.bytes[start..])
                             .map_err(|_| "invalid UTF-8 in string".to_string())?;
-                        let ch = s.chars().next().ok_or_else(|| "invalid UTF-8".to_string())?;
+                        let ch = s
+                            .chars()
+                            .next()
+                            .ok_or_else(|| "invalid UTF-8".to_string())?;
                         out.push(ch);
                         self.pos = start + ch.len_utf8();
                     }

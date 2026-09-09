@@ -9,14 +9,12 @@
 use crate::audio;
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::audio_toolbox::audio_file::{
-    AudioFileHostObject,
-    AudioFileID, State as AudioFileState,
+    AudioFileHostObject, AudioFileID, State as AudioFileState,
 };
 use crate::frameworks::carbon_core::{eofErr, OSStatus};
 use crate::frameworks::core_audio_types::{
-    debug_fourcc, fourcc,
-    kAudioFormatFlagIsPacked, kAudioFormatFlagIsSignedInteger, kAudioFormatLinearPCM,
-    AudioStreamBasicDescription,
+    debug_fourcc, fourcc, kAudioFormatFlagIsPacked, kAudioFormatFlagIsSignedInteger,
+    kAudioFormatLinearPCM, AudioStreamBasicDescription,
 };
 use crate::frameworks::core_foundation::cf_url::CFURLRef;
 use crate::frameworks::foundation::ns_url::to_rust_path;
@@ -351,10 +349,16 @@ pub fn ExtAudioFileGetProperty(
                     packet_count,
                     ..
                 } => (*packet_count * format.frames_per_packet as u64) as i64,
-                AudioFileHostObject::Writable { format, ref data, .. } => {
+                AudioFileHostObject::Writable {
+                    format, ref data, ..
+                } => {
                     let bpp = format.bytes_per_packet;
                     let fpp = format.frames_per_packet;
-                    if bpp > 0 { (data.len() as i64 * fpp as i64) / bpp as i64 } else { 0 }
+                    if bpp > 0 {
+                        (data.len() as i64 * fpp as i64) / bpp as i64
+                    } else {
+                        0
+                    }
                 }
             };
             env.mem.write(out_property_data.cast(), total_frames);

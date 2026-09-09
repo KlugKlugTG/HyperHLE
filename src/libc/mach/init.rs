@@ -24,17 +24,15 @@ fn mach_thread_self(env: &mut Environment) -> mach_port_t {
     (env.current_thread + 1).try_into().unwrap()
 }
 
-pub const CONSTANTS: ConstantExports = &[
-    (
-        "_mach_task_self_",
-        HostConstant::Custom(|env| {
-            env.mem
-                .alloc_and_write(MACH_TASK_SELF)
-                .cast_void()
-                .cast_const()
-        }),
-    ),
-];
+pub const CONSTANTS: ConstantExports = &[(
+    "_mach_task_self_",
+    HostConstant::Custom(|env| {
+        env.mem
+            .alloc_and_write(MACH_TASK_SELF)
+            .cast_void()
+            .cast_const()
+    }),
+)];
 
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(mach_task_self()),

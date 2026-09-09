@@ -24,10 +24,9 @@
 
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::libc::errno::{
-    set_errno, EACCES, EADDRINUSE, EADDRNOTAVAIL, EAGAIN, EBADF, ECONNABORTED, ECONNREFUSED,
-    ECONNRESET, EINVAL,
-    EAFNOSUPPORT, EIO, EISCONN, ENETUNREACH, ENOPROTOOPT, ENOTCONN, ENOTSUP, ENOTTY,
-    EPROTONOSUPPORT, ESOCKTNOSUPPORT, ETIMEDOUT,
+    set_errno, EACCES, EADDRINUSE, EADDRNOTAVAIL, EAFNOSUPPORT, EAGAIN, EBADF, ECONNABORTED,
+    ECONNREFUSED, ECONNRESET, EINVAL, EIO, EISCONN, ENETUNREACH, ENOPROTOOPT, ENOTCONN, ENOTSUP,
+    ENOTTY, EPROTONOSUPPORT, ESOCKTNOSUPPORT, ETIMEDOUT,
 };
 use crate::libc::posix_io::{close, find_or_create_socket, is_socket, FileDescriptor};
 use crate::libc::time::timeval;
@@ -41,9 +40,7 @@ use crate::libc::netdb::{socklen_t, IPPROTO_TCP, IPPROTO_UDP};
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::io::{Read, Write};
-use std::net::{
-    Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream, UdpSocket,
-};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4, TcpListener, TcpStream, UdpSocket};
 
 pub const AF_INET: i32 = 2;
 pub const SOCK_STREAM: i32 = 1;
@@ -267,7 +264,10 @@ fn socket(env: &mut Environment, domain: i32, type_: i32, protocol: i32) -> File
         // Should be unreachable: find_or_create_socket() returns an fd with
         // no open file object, so it cannot have a socket either. Log and
         // overwrite a stale entry rather than panicking.
-        log!("Warning: socket(): fd {} already had a stale socket entry", fd);
+        log!(
+            "Warning: socket(): fd {} already had a stale socket entry",
+            fd
+        );
     }
     let host_object = SocketHostObject {
         type_,
@@ -332,7 +332,8 @@ fn ioctl(env: &mut Environment, fd: i32, request: u32, args: DotDotDot) -> i32 {
         request => {
             log!(
                 "ioctl({} (socket), {:#x}, ...) is not supported, returning ENOTTY",
-                fd, request
+                fd,
+                request
             );
             set_errno(env, ENOTTY);
             -1
@@ -417,7 +418,9 @@ fn getsockopt(
         (level, option_name) => {
             log!(
                 "getsockopt: unhandled level={:#x} option={:#x} on socket {}",
-                level, option_name, socket
+                level,
+                option_name,
+                socket
             );
             set_errno(env, ENOPROTOOPT);
             return -1;
@@ -439,7 +442,13 @@ fn getsockopt(
         }
         // Report lingering disabled; a zeroed struct is a valid answer.
         let option_value: MutPtr<linger> = option_value.cast();
-        env.mem.write(option_value, linger { l_onoff: 0, l_linger: 0 });
+        env.mem.write(
+            option_value,
+            linger {
+                l_onoff: 0,
+                l_linger: 0,
+            },
+        );
         env.mem.write(option_len, guest_size_of::<linger>());
     } else {
         // Zero-fill struct-valued options (e.g. TCP_INFO) so the guest sees
@@ -814,7 +823,11 @@ fn listen(env: &mut Environment, socket: i32, backlog: i32) -> i32 {
         return -1;
     }
 
-    log_dbg!("listen(socket: {}, backlog: {}): already listening on host", socket, backlog);
+    log_dbg!(
+        "listen(socket: {}, backlog: {}): already listening on host",
+        socket,
+        backlog
+    );
     0 // Success
 }
 
@@ -973,16 +986,14 @@ fn select(
                 }
                 // Clean bit in the set for the current socket
                 *bits &= !(1 << bit_index);
-                let socket_host_object = match State::get(env).sockets.get(&fd)
-                {
+                let socket_host_object = match State::get(env).sockets.get(&fd) {
                     Some(s) => s,
                     None => return false,
                 };
                 let type_ = socket_host_object.type_;
                 match type_ {
                     SOCK_DGRAM => {
-                        let Some(udp_socket) = socket_host_object.udp_socket.as_ref()
-                        else {
+                        let Some(udp_socket) = socket_host_object.udp_socket.as_ref() else {
                             // No host socket yet (never bound nor sent to):
                             // nothing can be readable; treat as not-ready.
                             return false;
@@ -1012,10 +1023,7 @@ fn select(
                                 true
                             }
                             Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                                log_dbg!(
-                                    "select: Socket {} would block on peeking, continue.",
-                                    fd
-                                );
+                                log_dbg!("select: Socket {} would block on peeking, continue.", fd);
                                 // Not ready; the caller loop will re-poll or
                                 // expire the timeout as appropriate.
                                 false
@@ -1044,8 +1052,7 @@ fn select(
                                     // We set host socket as non-blocking in
                                     // order to have more control of how and
                                     // when it's used
-                                    if let Err(e) = stream.set_nonblocking(true)
-                                    {
+                                    if let Err(e) = stream.set_nonblocking(true) {
                                         // If we cannot make the stream
                                         // non-blocking, drop it and report
                                         // not-ready rather than risking a
@@ -1144,7 +1151,8 @@ fn select(
                         log!(
                             "Warning: select() read_set fd {} has unknown socket type {}; \
                              treating as not-ready.",
-                            fd, other
+                            fd,
+                            other
                         );
                         false
                     }
@@ -1167,8 +1175,7 @@ fn select(
                 }
                 // Clean bit in the current socket set
                 *bits &= !(1 << bit_index);
-                let socket_host_object = match State::get(env).sockets.get(&fd)
-                {
+                let socket_host_object = match State::get(env).sockets.get(&fd) {
                     Some(s) => s,
                     None => return false,
                 };
@@ -1204,7 +1211,8 @@ fn select(
                         log!(
                             "Warning: select() write_set fd {} has unknown socket type {}; \
                              treating as not-ready.",
-                            fd, other
+                            fd,
+                            other
                         );
                         false
                     }
@@ -1227,8 +1235,7 @@ fn select(
                 }
                 // Clean bit in the current socket set
                 *bits &= !(1 << bit_index);
-                let socket_host_object = match State::get(env).sockets.get(&fd)
-                {
+                let socket_host_object = match State::get(env).sockets.get(&fd) {
                     Some(s) => s,
                     None => return false,
                 };
@@ -1248,7 +1255,8 @@ fn select(
                                 log!(
                                     "select: TCP socket {} has a pending error: {:?}; \
                                      reporting it via the error_fds set.",
-                                    fd, error
+                                    fd,
+                                    error
                                 );
                                 // Set bit back so the guest observes the error
                                 // on this socket rather than us panicking.
@@ -1275,7 +1283,8 @@ fn select(
                         log!(
                             "Warning: select() error_set fd {} has unknown socket type {}; \
                              treating as no-error.",
-                            fd, other
+                            fd,
+                            other
                         );
                         false
                     }
@@ -1555,24 +1564,24 @@ fn recvfrom(
                 }
             } else {
                 match udp_socket.recv_from(buf) {
-                Ok(n) => n,
-                // FIX: was unimplemented!() — return EAGAIN so the app's
-                // non-blocking network loop can retry without crashing.
-                Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
-                    log_dbg!(
-                        "recvfrom: UDP socket {} no data yet (WouldBlock), \
+                    Ok(n) => n,
+                    // FIX: was unimplemented!() — return EAGAIN so the app's
+                    // non-blocking network loop can retry without crashing.
+                    Err(ref e) if e.kind() == io::ErrorKind::WouldBlock => {
+                        log_dbg!(
+                            "recvfrom: UDP socket {} no data yet (WouldBlock), \
                         returning EAGAIN for thread {}",
-                        socket,
-                        env.current_thread
-                    );
-                    set_errno(env, EAGAIN);
-                    return -1;
-                }
-                Err(e) => {
-                    log!("recvfrom: UDP socket {socket} IO error: {e}");
-                    set_errno(env, EIO);
-                    return -1;
-                }
+                            socket,
+                            env.current_thread
+                        );
+                        set_errno(env, EAGAIN);
+                        return -1;
+                    }
+                    Err(e) => {
+                        log!("recvfrom: UDP socket {socket} IO error: {e}");
+                        set_errno(env, EIO);
+                        return -1;
+                    }
                 }
             };
             if !address.is_null() {

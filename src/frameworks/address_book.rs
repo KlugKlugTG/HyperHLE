@@ -432,18 +432,9 @@ pub const CONSTANTS: ConstantExports = &[
         "_kABPersonAddressStreetKey",
         HostConstant::NSString("Street"),
     ),
-    (
-        "_kABPersonAddressCityKey",
-        HostConstant::NSString("City"),
-    ),
-    (
-        "_kABPersonAddressStateKey",
-        HostConstant::NSString("State"),
-    ),
-    (
-        "_kABPersonAddressZIPKey",
-        HostConstant::NSString("ZIP"),
-    ),
+    ("_kABPersonAddressCityKey", HostConstant::NSString("City")),
+    ("_kABPersonAddressStateKey", HostConstant::NSString("State")),
+    ("_kABPersonAddressZIPKey", HostConstant::NSString("ZIP")),
     (
         "_kABPersonAddressCountryKey",
         HostConstant::NSString("Country"),
@@ -540,10 +531,7 @@ pub const CONSTANTS: ConstantExports = &[
         "_ABAddressBookErrorDomain",
         HostConstant::NSString("ABAddressBookErrorDomain"),
     ),
-    (
-        "_kABPersonAlternateBirthdayProperty",
-        HostConstant::NullPtr,
-    ),
+    ("_kABPersonAlternateBirthdayProperty", HostConstant::NullPtr),
     (
         "_kABPersonAlternateBirthdayCalendarIdentifierKey",
         HostConstant::NSString("calendaridentifier"),

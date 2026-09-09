@@ -700,8 +700,7 @@ fn enforce_limits(env: &mut crate::Environment, cache: id) {
             let h = env.objc.borrow::<NSCacheHostObject>(cache);
             let count = h.order.len() as NSUInteger;
             let over_count = h.count_limit > 0 && count > h.count_limit;
-            let over_cost = h.total_cost_limit > 0
-                && h.total_cost > h.total_cost_limit as u64;
+            let over_cost = h.total_cost_limit > 0 && h.total_cost > h.total_cost_limit as u64;
             let victim = h.order.front();
             (
                 over_count,
@@ -710,8 +709,12 @@ fn enforce_limits(env: &mut crate::Environment, cache: id) {
                 victim.map(|e| e.cost).unwrap_or(0),
             )
         };
-        if !over_count && !over_cost { break; }
-        if victim_key == nil { break; }
+        if !over_count && !over_cost {
+            break;
+        }
+        if victim_key == nil {
+            break;
+        }
 
         let (dict, delegate) = {
             let h = env.objc.borrow::<NSCacheHostObject>(cache);

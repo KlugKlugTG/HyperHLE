@@ -55,8 +55,8 @@ pub const kCGPatternTilingConstantSpacing: CGPatternTiling = 2;
 #[derive(Copy, Clone, Default, Debug)]
 pub struct CGPatternCallbacks {
     pub version: u32,
-    pub draw_pattern: u32,  // function pointer
-    pub release_info: u32,  // function pointer
+    pub draw_pattern: u32, // function pointer
+    pub release_info: u32, // function pointer
 }
 unsafe impl SafeRead for CGPatternCallbacks {}
 

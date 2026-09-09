@@ -11,9 +11,9 @@ mod media_library;
 mod media_picker_controller;
 mod media_playlist;
 mod media_query;
-mod mp_volume_view;
 pub mod mf_mail_compose_view_controller;
 mod movie_player;
+mod mp_volume_view;
 mod music_player;
 
 pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {

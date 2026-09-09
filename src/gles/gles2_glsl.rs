@@ -275,7 +275,6 @@ fn translate_frag_data(source: &str) -> String {
     out
 }
 
-
 fn is_ident_char(b: u8) -> bool {
     b.is_ascii_alphanumeric() || b == b'_'
 }

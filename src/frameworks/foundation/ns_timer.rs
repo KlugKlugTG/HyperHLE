@@ -5,8 +5,8 @@
  */
 //! `NSTimer`.
 
-use super::NSTimeInterval;
 use super::ns_time_interval_to_duration_or_zero;
+use super::NSTimeInterval;
 use crate::objc::{
     autorelease, id, msg, msg_class, msg_send, nil, objc_classes, release, retain, ClassExports,
     HostObject, NSZonePtr, SEL,

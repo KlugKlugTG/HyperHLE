@@ -133,7 +133,11 @@ pub fn recomposite_if_necessary(env: &mut Environment, force: bool) -> Option<In
         let advance_by = ns_time_interval_to_duration_or_zero(interval)
             .checked_mul(advance_by)
             .unwrap_or(Duration::ZERO);
-        Some(recomposite_next.checked_add(advance_by).unwrap_or(recomposite_next))
+        Some(
+            recomposite_next
+                .checked_add(advance_by)
+                .unwrap_or(recomposite_next),
+        )
     } else {
         // Apple's NSTimer/CADisplayLink "missed deadline" handling is
         // tolerant of bogus intervals: if the guest hands us a negative

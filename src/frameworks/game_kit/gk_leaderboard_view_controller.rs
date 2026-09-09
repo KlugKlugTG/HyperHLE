@@ -10,7 +10,8 @@
 use crate::frameworks::foundation::NSInteger;
 use crate::frameworks::uikit::ui_view_controller::UIViewControllerHostObject;
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, nil, objc_classes, release, retain, ClassExports, NSZonePtr,
+    id, impl_HostObject_with_superclass, msg, nil, objc_classes, release, retain, ClassExports,
+    NSZonePtr,
 };
 
 type GKLeaderboardTimeScope = NSInteger;

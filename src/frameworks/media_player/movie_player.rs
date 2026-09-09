@@ -87,9 +87,7 @@ impl PendingNotification {
     fn name(&self) -> &'static str {
         match self {
             PendingNotification::LoadStateChange(_) => MPMoviePlayerLoadStateDidChangeNotification,
-            PendingNotification::NaturalSizeAvailable(_) => {
-                MPMovieNaturalSizeAvailableNotification
-            }
+            PendingNotification::NaturalSizeAvailable(_) => MPMovieNaturalSizeAvailableNotification,
             PendingNotification::DurationAvailable(_) => MPMovieDurationAvailableNotification,
             PendingNotification::ReadyForDisplayChange(_) => {
                 MPMoviePlayerReadyForDisplayDidChangeNotification
@@ -382,7 +380,9 @@ fn enqueue(env: &mut Environment, notification: PendingNotification, when: Insta
 /// distinguish them.
 fn schedule_preload_sequence(env: &mut Environment, this: id) {
     {
-        let host = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+        let host = env
+            .objc
+            .borrow_mut::<MPMoviePlayerControllerHostObject>(this);
         if host.preload_scheduled {
             return;
         }
@@ -436,7 +436,9 @@ fn schedule_preload_sequence(env: &mut Environment, this: id) {
 
     // Promote loadState to "Playable | PlaythroughOK".
     {
-        let host = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+        let host = env
+            .objc
+            .borrow_mut::<MPMoviePlayerControllerHostObject>(this);
         host.load_state = MPMovieLoadStatePlayable | MPMovieLoadStatePlaythroughOK;
     }
     enqueue(env, PendingNotification::LoadStateChange(this), base);
@@ -444,13 +446,27 @@ fn schedule_preload_sequence(env: &mut Environment, this: id) {
     // Natural size / duration / ready-for-display all become valid together
     // because we have no decoder pipeline to fill them in over time.
     let metadata_at = base + Duration::from_millis(10);
-    enqueue(env, PendingNotification::NaturalSizeAvailable(this), metadata_at);
-    enqueue(env, PendingNotification::DurationAvailable(this), metadata_at);
+    enqueue(
+        env,
+        PendingNotification::NaturalSizeAvailable(this),
+        metadata_at,
+    );
+    enqueue(
+        env,
+        PendingNotification::DurationAvailable(this),
+        metadata_at,
+    );
     {
-        let host = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+        let host = env
+            .objc
+            .borrow_mut::<MPMoviePlayerControllerHostObject>(this);
         host.ready_for_display = true;
     }
-    enqueue(env, PendingNotification::ReadyForDisplayChange(this), metadata_at);
+    enqueue(
+        env,
+        PendingNotification::ReadyForDisplayChange(this),
+        metadata_at,
+    );
 
     // Legacy `ContentPreloadDidFinish` (iPhone OS 2 API).
     enqueue(
@@ -490,15 +506,25 @@ fn schedule_preload_sequence(env: &mut Environment, this: id) {
 
 fn schedule_playback(env: &mut Environment, this: id, start_at: Instant) {
     let already_finish_scheduled = {
-        let host = env.objc.borrow_mut::<MPMoviePlayerControllerHostObject>(this);
+        let host = env
+            .objc
+            .borrow_mut::<MPMoviePlayerControllerHostObject>(this);
         host.playback_state = MPMoviePlaybackStatePlaying;
         let was = host.finish_scheduled;
         host.finish_scheduled = true;
         was
     };
 
-    enqueue(env, PendingNotification::NowPlayingMovieChange(this), start_at);
-    enqueue(env, PendingNotification::PlaybackStateChange(this), start_at);
+    enqueue(
+        env,
+        PendingNotification::NowPlayingMovieChange(this),
+        start_at,
+    );
+    enqueue(
+        env,
+        PendingNotification::PlaybackStateChange(this),
+        start_at,
+    );
 
     if !already_finish_scheduled {
         // Treat the (undecoded) movie as having played to its end. Reason 0
@@ -949,10 +975,8 @@ pub(super) fn handle_players(env: &mut Environment) {
         if let PendingNotification::PlaybackDidFinish { reason, .. } = notif {
             // userInfo[MPMoviePlayerPlaybackDidFinishReasonUserInfoKey] = reason
             let reason_num: id = msg_class![env; NSNumber numberWithInt:(reason)];
-            let reason_key = ns_string::get_static_str(
-                env,
-                MPMoviePlayerPlaybackDidFinishReasonUserInfoKey,
-            );
+            let reason_key =
+                ns_string::get_static_str(env, MPMoviePlayerPlaybackDidFinishReasonUserInfoKey);
             let user_info: id = msg_class![env; NSDictionary
                 dictionaryWithObject:reason_num
                 forKey:reason_key];

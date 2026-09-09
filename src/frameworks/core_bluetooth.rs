@@ -144,10 +144,7 @@ pub const CONSTANTS: ConstantExports = &[
         HostConstant::NSString("2905"),
     ),
     // CBError.h
-    (
-        "_CBErrorDomain",
-        HostConstant::NSString("CBErrorDomain"),
-    ),
+    ("_CBErrorDomain", HostConstant::NSString("CBErrorDomain")),
     (
         "_CBATTErrorDomain",
         HostConstant::NSString("CBATTErrorDomain"),

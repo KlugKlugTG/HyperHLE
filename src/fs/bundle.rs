@@ -402,9 +402,11 @@ mod tests {
         let file = std::fs::File::create(&ipa_path).unwrap();
         let mut zip = zip::ZipWriter::new(file);
         let options = zip::write::FileOptions::default();
-        zip.start_file("Payload/TestApp.app/Info.plist", options).unwrap();
+        zip.start_file("Payload/TestApp.app/Info.plist", options)
+            .unwrap();
         zip.write_all(b"plist").unwrap();
-        zip.start_file("Payload/TestApp.app/broken.bin", options).unwrap();
+        zip.start_file("Payload/TestApp.app/broken.bin", options)
+            .unwrap();
         zip.write_all(b"data").unwrap();
         zip.finish().unwrap();
 

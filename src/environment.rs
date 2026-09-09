@@ -1221,7 +1221,7 @@ impl Environment {
             DefaultStack::new(16 * 1024 * 1024).expect("failed to allocate guest coroutine stack");
         let thread_routine =
             Coroutine::with_stack(thread_stack, move |yielder, mut env: Environment| {
-                log!(
+                log_dbg!(
                     "touchHLE: guest worker thread now running (start_routine={:#x})",
                     start_routine.addr_with_thumb_bit()
                 );

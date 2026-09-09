@@ -15,7 +15,7 @@
 //! - Apple's [The Objective-C Programming Language](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjectiveC/Chapters/ocSelectors.html)
 
 use std::collections::HashMap;
-use std::sync::{OnceLock, Mutex};
+use std::sync::{Mutex, OnceLock};
 
 use super::ObjC;
 use crate::abi::{GuestArg, GuestRet};

@@ -7,8 +7,7 @@
 
 use crate::frameworks::foundation::NSInteger;
 use crate::objc::{
-    id, impl_HostObject_with_superclass, msg, objc_classes, ClassExports,
-    NSZonePtr,
+    id, impl_HostObject_with_superclass, msg, objc_classes, ClassExports, NSZonePtr,
 };
 
 type UIActivityIndicatorViewStyle = NSInteger;

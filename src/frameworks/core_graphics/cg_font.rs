@@ -18,9 +18,7 @@ use crate::frameworks::core_foundation::cf_string::CFStringRef;
 use crate::frameworks::core_foundation::{CFRelease, CFRetain, CFTypeRef};
 use crate::frameworks::foundation::{ns_string, unichar};
 use crate::mem::{ConstPtr, GuestUSize, MutPtr, MutVoidPtr, Ptr};
-use crate::objc::{
-    id, msg, msg_class, nil, objc_classes, retain, ClassExports, HostObject, ObjC,
-};
+use crate::objc::{id, msg, msg_class, nil, objc_classes, retain, ClassExports, HostObject, ObjC};
 use crate::Environment;
 use rusttype::GlyphId;
 
@@ -46,7 +44,6 @@ pub const kCGGlyphMax: CGGlyph = kCGFontIndexMax;
 // Text encoding constants for CGContextSelectFont
 pub const kCGEncodingFontSpecific: i32 = 0;
 pub const kCGEncodingMacRoman: i32 = 1;
-
 
 // =========================================================================
 // MARK: - Host Object
@@ -96,7 +93,6 @@ fn font_from_name(env: &mut Environment, name: CFStringRef) -> id {
     msg_class![env; UIFont systemFontOfSize:size]
 }
 
-
 // =========================================================================
 // MARK: - Creation
 // =========================================================================
@@ -145,10 +141,7 @@ fn CGFontCreateCopyWithVariations(
 ///
 /// Creates a CGFont backed by a real rasterizable [Font] parsed from the
 /// bytes provided by the data provider.
-fn CGFontCreateWithDataProvider(
-    env: &mut Environment,
-    provider: CGDataProviderRef,
-) -> CGFontRef {
+fn CGFontCreateWithDataProvider(env: &mut Environment, provider: CGDataProviderRef) -> CGFontRef {
     if provider.is_null() {
         return Ptr::null();
     }
@@ -162,8 +155,10 @@ fn CGFontCreateWithDataProvider(
             // The font data could not be parsed — most likely a CFF/OTTO OpenType
             // font, which rusttype does not support. Fall back to the bundled
             // sans-serif font so text is at least visible rather than invisible.
-            log!("CGFontCreateWithDataProvider: could not parse font data (possibly CFF/OTTO); \
-                  falling back to Liberation Sans");
+            log!(
+                "CGFontCreateWithDataProvider: could not parse font data (possibly CFF/OTTO); \
+                  falling back to Liberation Sans"
+            );
             Font::sans_regular()
         }
     };
@@ -171,7 +166,6 @@ fn CGFontCreateWithDataProvider(
     let class = env.objc.get_known_class("_touchHLE_CGFont", &mut env.mem);
     env.objc.alloc_object(class, host_obj, &mut env.mem)
 }
-
 
 // =========================================================================
 // MARK: - Retain / Release
@@ -247,9 +241,7 @@ fn CGFontGetGlyphWithGlyphName(
         return kCGFontIndexInvalid;
     }
     if !is_data_provider_font(env, font) {
-        log_dbg!(
-            "CGFontGetGlyphWithGlyphName: non-data-provider font, returning invalid"
-        );
+        log_dbg!("CGFontGetGlyphWithGlyphName: non-data-provider font, returning invalid");
         return kCGFontIndexInvalid;
     }
 
@@ -292,7 +284,6 @@ fn CGFontCopyGlyphNameForGlyph(
         None => nil,
     }
 }
-
 
 // =========================================================================
 // MARK: - Name queries
@@ -365,8 +356,10 @@ fn extract_name_from_name_table(data: &[u8], name_id: u16) -> Option<String> {
         let encoding_id = u16::from_be_bytes([data[record_offset + 2], data[record_offset + 3]]);
         let _language_id = u16::from_be_bytes([data[record_offset + 4], data[record_offset + 5]]);
         let nid = u16::from_be_bytes([data[record_offset + 6], data[record_offset + 7]]);
-        let length = u16::from_be_bytes([data[record_offset + 8], data[record_offset + 9]]) as usize;
-        let offset = u16::from_be_bytes([data[record_offset + 10], data[record_offset + 11]]) as usize;
+        let length =
+            u16::from_be_bytes([data[record_offset + 8], data[record_offset + 9]]) as usize;
+        let offset =
+            u16::from_be_bytes([data[record_offset + 10], data[record_offset + 11]]) as usize;
 
         if nid != name_id {
             continue;
@@ -403,7 +396,6 @@ fn extract_name_from_name_table(data: &[u8], name_id: u16) -> Option<String> {
     None
 }
 
-
 // =========================================================================
 // MARK: - Metrics (real implementations using rusttype)
 // =========================================================================
@@ -414,11 +406,7 @@ fn CGFontGetNumberOfGlyphs(env: &mut Environment, font: CGFontRef) -> i32 {
         return 0;
     }
     if is_data_provider_font(env, font) {
-        return env
-            .objc
-            .borrow::<CGFontHostObject>(font)
-            .font
-            .glyph_count() as i32;
+        return env.objc.borrow::<CGFontHostObject>(font).font.glyph_count() as i32;
     }
     // Fallback for UIFont-backed fonts: return a reasonable default
     256
@@ -614,11 +602,7 @@ fn CGFontGetStemV(env: &mut Environment, font: CGFontRef) -> f32 {
 ///
 /// Returns the bounding box of the font in design units. Read from the
 /// 'head' table (xMin, yMin, xMax, yMax at offsets 36-43).
-fn CGFontGetFontBBox(
-    env: &mut Environment,
-    font: CGFontRef,
-    out: MutVoidPtr,
-) {
+fn CGFontGetFontBBox(env: &mut Environment, font: CGFontRef, out: MutVoidPtr) {
     use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
     if font.is_null() || out.is_null() {
         return;
@@ -662,7 +646,6 @@ fn CGFontGetFontBBox(
     let p: crate::mem::MutPtr<CGRect> = out.cast();
     env.mem.write(p, rect);
 }
-
 
 // =========================================================================
 // MARK: - Per-glyph metrics (real implementations)
@@ -760,7 +743,6 @@ fn CGFontGetGlyphBBoxes(
     true
 }
 
-
 // =========================================================================
 // MARK: - Table access (real implementation)
 // =========================================================================
@@ -777,11 +759,7 @@ fn CGFontCopyTableTags(env: &mut Environment, font: CGFontRef) -> CFTypeRef {
         return nil;
     }
 
-    let tags = env
-        .objc
-        .borrow::<CGFontHostObject>(font)
-        .font
-        .table_tags();
+    let tags = env.objc.borrow::<CGFontHostObject>(font).font.table_tags();
 
     if tags.is_empty() {
         return nil;
@@ -823,13 +801,19 @@ fn CGFontCopyTableForTag(env: &mut Environment, font: CGFontRef, tag: u32) -> CF
 
             let len: u32 = bytes.len() as u32;
             let buf = env.mem.alloc(len);
-            env.mem.bytes_at_mut(buf.cast(), len).copy_from_slice(&bytes);
-            CFDataCreate(env, kCFAllocatorDefault, buf.cast_const().cast(), len as i32)
+            env.mem
+                .bytes_at_mut(buf.cast(), len)
+                .copy_from_slice(&bytes);
+            CFDataCreate(
+                env,
+                kCFAllocatorDefault,
+                buf.cast_const().cast(),
+                len as i32,
+            )
         }
         None => nil,
     }
 }
-
 
 // =========================================================================
 // MARK: - PostScript subset / encoding
@@ -934,7 +918,6 @@ fn CGFontGetTypeID(env: &mut Environment) -> u32 {
     let class = env.objc.get_known_class("_touchHLE_CGFont", &mut env.mem);
     class.to_bits()
 }
-
 
 // =========================================================================
 // MARK: - Function exports

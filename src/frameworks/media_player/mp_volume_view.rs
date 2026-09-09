@@ -14,8 +14,8 @@ use crate::frameworks::audio_toolbox::audio_session;
 use crate::frameworks::core_graphics::{CGRect, CGSize};
 use crate::frameworks::uikit::ui_view::ui_control::UIControlEventValueChanged;
 use crate::objc::{
-    autorelease, id, impl_HostObject_with_superclass, msg, msg_class, msg_super, nil,
-    objc_classes, release, retain, ClassExports, NSZonePtr,
+    autorelease, id, impl_HostObject_with_superclass, msg, msg_class, msg_super, nil, objc_classes,
+    release, retain, ClassExports, NSZonePtr,
 };
 use crate::Environment;
 
@@ -41,7 +41,10 @@ fn set_volume(env: &mut Environment, value: f32) {
 }
 
 fn update_slider(env: &mut Environment, this: id) {
-    let slider = env.objc.borrow::<MPVolumeViewHostObject>(this).volume_slider;
+    let slider = env
+        .objc
+        .borrow::<MPVolumeViewHostObject>(this)
+        .volume_slider;
     if slider != nil {
         let _: () = msg![env; slider setValue:(volume(env))];
     }
@@ -56,11 +59,15 @@ fn replace_state_image(env: &mut Environment, this: id, state: u32, image: id, k
         }
         1 => {
             let host = env.objc.borrow_mut::<MPVolumeViewHostObject>(this);
-            host.minimum_volume_slider_images.insert(state, image).unwrap_or(nil)
+            host.minimum_volume_slider_images
+                .insert(state, image)
+                .unwrap_or(nil)
         }
         2 => {
             let host = env.objc.borrow_mut::<MPVolumeViewHostObject>(this);
-            host.maximum_volume_slider_images.insert(state, image).unwrap_or(nil)
+            host.maximum_volume_slider_images
+                .insert(state, image)
+                .unwrap_or(nil)
         }
         _ => {
             let host = env.objc.borrow_mut::<MPVolumeViewHostObject>(this);
@@ -95,10 +102,13 @@ fn init_common(env: &mut Environment, this: id) -> id {
         .objc
         .lookup_selector("volumeSliderValueChanged:")
         .expect("MPVolumeView action selector was not registered");
-    let _: () = msg![env; slider addTarget:this action:action forControlEvents:UIControlEventValueChanged];
+    let _: () =
+        msg![env; slider addTarget:this action:action forControlEvents:UIControlEventValueChanged];
     let _: () = msg![env; this addSubview:slider];
     release(env, slider);
-    env.objc.borrow_mut::<MPVolumeViewHostObject>(this).volume_slider = slider;
+    env.objc
+        .borrow_mut::<MPVolumeViewHostObject>(this)
+        .volume_slider = slider;
     let _: () = msg![env; this setShowsVolumeSlider:true];
     let _: () = msg![env; this setShowsRouteButton:true];
     this

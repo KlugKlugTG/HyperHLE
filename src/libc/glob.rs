@@ -79,9 +79,13 @@ fn glob(
 
     // Reject (with a warning) flag combinations that change the meaning of
     // results in ways we do not implement, per POSIX these would be honored.
-    let unsupported = flags & !(GLOB_DOOFFS | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_APPEND | GLOB_NOCHECK | GLOB_MARK);
+    let unsupported = flags
+        & !(GLOB_DOOFFS | GLOB_NOSORT | GLOB_NOESCAPE | GLOB_APPEND | GLOB_NOCHECK | GLOB_MARK);
     if unsupported != 0 {
-        log!("glob(): unsupported flags {:#x}, results may be incomplete", unsupported);
+        log!(
+            "glob(): unsupported flags {:#x}, results may be incomplete",
+            unsupported
+        );
     }
     let no_check = flags & GLOB_NOCHECK != 0;
 
@@ -213,14 +217,12 @@ fn write_glob_results(
     // GLOB_APPEND: the previous results belong to us; move their entries
     // into the new list and release the old array (POSIX keeps the matches
     // and requires appending to them).
-    let (old_pathv, old_pathc) = if flags & GLOB_APPEND != 0
-        && !tmp_glob.gl_pathv.is_null()
-        && tmp_glob.gl_pathc > 0
-    {
-        (tmp_glob.gl_pathv, tmp_glob.gl_pathc as u64)
-    } else {
-        (MutPtr::null(), 0u64)
-    };
+    let (old_pathv, old_pathc) =
+        if flags & GLOB_APPEND != 0 && !tmp_glob.gl_pathv.is_null() && tmp_glob.gl_pathc > 0 {
+            (tmp_glob.gl_pathv, tmp_glob.gl_pathc as u64)
+        } else {
+            (MutPtr::null(), 0u64)
+        };
     let new_matches = entries.len() as u64;
     // Slots reserved by GLOB_DOOFFS plus the previous matches are copied
     // over to their original indices.

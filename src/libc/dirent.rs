@@ -78,9 +78,8 @@ pub(super) fn opendir(env: &mut Environment, filename: ConstPtr<u8>) -> MutPtr<D
             set_errno(env, ENOENT);
             return Ptr::null();
         };
-        let mut vec: Vec<(String, FsNodeType)> = iter
-            .map(|(str, type_)| (str.to_string(), type_))
-            .collect();
+        let mut vec: Vec<(String, FsNodeType)> =
+            iter.map(|(str, type_)| (str.to_string(), type_)).collect();
         // POSIX requires readdir() to return "." and ".." as the first two
         // entries of every directory.
         vec.insert(0, ("..".to_string(), FsNodeType::Directory));

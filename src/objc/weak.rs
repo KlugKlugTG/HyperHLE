@@ -46,10 +46,7 @@ impl ObjC {
         if target == nil {
             return;
         }
-        self.weak_refs
-            .entry(target)
-            .or_default()
-            .push(location);
+        self.weak_refs.entry(target).or_default().push(location);
     }
 
     /// Remove `location` from the weak entry of whatever object it
@@ -76,11 +73,7 @@ impl ObjC {
     /// every registered weak slot. After this method returns no slot
     /// references the object any more, so any subsequent
     /// `objc_loadWeak` for those slots correctly returns `nil`.
-    pub(crate) fn zero_weak_references_for(
-        &mut self,
-        object: id,
-        mem: &mut crate::mem::Mem,
-    ) {
+    pub(crate) fn zero_weak_references_for(&mut self, object: id, mem: &mut crate::mem::Mem) {
         if let Some(list) = self.weak_refs.remove(&object) {
             for slot in list {
                 // It's possible the slot has already been overwritten
@@ -99,11 +92,7 @@ impl ObjC {
 /// Per the ARC runtime contract: register `location` as a weak slot
 /// referring to `newObj`, after first unregistering it from any
 /// previous referent. Returns `newObj`.
-pub fn objc_storeWeak(
-    env: &mut Environment,
-    location: MutPtr<id>,
-    new_obj: id,
-) -> id {
+pub fn objc_storeWeak(env: &mut Environment, location: MutPtr<id>, new_obj: id) -> id {
     if location.is_null() {
         return new_obj;
     }
@@ -122,22 +111,14 @@ pub fn objc_storeWeak(
 /// but documented to tolerate a deallocating object (returns nil
 /// instead of crashing). touchHLE never enters the "deallocating but
 /// not yet deallocated" intermediate state, so we forward.
-pub fn objc_storeWeakOrNil(
-    env: &mut Environment,
-    location: MutPtr<id>,
-    new_obj: id,
-) -> id {
+pub fn objc_storeWeakOrNil(env: &mut Environment, location: MutPtr<id>, new_obj: id) -> id {
     objc_storeWeak(env, location, new_obj)
 }
 
 /// `id objc_initWeak(id *location, id newObj)` — same as
 /// `objc_storeWeak` except `*location` is assumed to be uninitialised
 /// (so we don't try to unregister a previous value).
-pub fn objc_initWeak(
-    env: &mut Environment,
-    location: MutPtr<id>,
-    new_obj: id,
-) -> id {
+pub fn objc_initWeak(env: &mut Environment, location: MutPtr<id>, new_obj: id) -> id {
     if location.is_null() {
         return new_obj;
     }
@@ -193,11 +174,7 @@ pub fn objc_destroyWeak(env: &mut Environment, location: MutPtr<id>) {
 /// `void objc_copyWeak(id *to, id *from)` — initialises `*to` as a
 /// weak slot pointing at the same object that `*from` does, without
 /// disturbing `*from`. Used for `__weak` ivars during object copy.
-pub fn objc_copyWeak(
-    env: &mut Environment,
-    to: MutPtr<id>,
-    from: MutPtr<id>,
-) {
+pub fn objc_copyWeak(env: &mut Environment, to: MutPtr<id>, from: MutPtr<id>) {
     if to.is_null() || from.is_null() {
         return;
     }
@@ -209,11 +186,7 @@ pub fn objc_copyWeak(
 /// registration: `*to` becomes the live slot and `*from` is left
 /// uninitialised. Per the ARC spec we must update the side table so
 /// the deallocation walker zeroes `*to`, not `*from`.
-pub fn objc_moveWeak(
-    env: &mut Environment,
-    to: MutPtr<id>,
-    from: MutPtr<id>,
-) {
+pub fn objc_moveWeak(env: &mut Environment, to: MutPtr<id>, from: MutPtr<id>) {
     if to.is_null() || from.is_null() {
         return;
     }

@@ -26,11 +26,11 @@
 
 #[macro_use]
 mod log;
-mod crash_handler;
 mod abi;
 mod audio;
 mod bundle;
 mod cpu;
+mod crash_handler;
 mod debug;
 mod dyld;
 mod environment;

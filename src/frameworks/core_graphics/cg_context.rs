@@ -1236,9 +1236,14 @@ fn CGContextSetFont(env: &mut Environment, context: CGContextRef, font: CGFontRe
     } else {
         // Case 3: unknown / freed object — use a bundled fallback font so
         // CGContextShowGlyphsAtPoint has something to render with.
-        log_dbg!("CGContextSetFont: unrecognised font {:?} (possibly freed UIFont); \
-                  substituting Liberation Sans", font);
-        let host_obj = Box::new(CGFontHostObject { font: crate::font::Font::sans_regular() });
+        log_dbg!(
+            "CGContextSetFont: unrecognised font {:?} (possibly freed UIFont); \
+                  substituting Liberation Sans",
+            font
+        );
+        let host_obj = Box::new(CGFontHostObject {
+            font: crate::font::Font::sans_regular(),
+        });
         let class = env.objc.get_known_class("_touchHLE_CGFont", &mut env.mem);
         env.objc.alloc_object(class, host_obj, &mut env.mem)
     };
@@ -1282,9 +1287,7 @@ fn CGContextShowGlyphsAtPoint(
 
     let host = env.objc.borrow::<CGContextHostObject>(context);
     let font_size = host.font_size;
-    let text_transform = host
-        .text_transform
-        .unwrap_or(CGAffineTransformIdentity);
+    let text_transform = host.text_transform.unwrap_or(CGAffineTransformIdentity);
 
     let mut drawer = CGBitmapContextDrawer::new(&env.objc, &mut env.mem, context);
     let fill_color = drawer.rgb_fill_color();
@@ -1442,7 +1445,6 @@ fn CGContextShowGlyphs(
 ) {
     CGContextShowGlyphsAtPoint(env, context, 0.0, 0.0, glyphs, count);
 }
-
 
 /// `void CGContextSetAllowsFontSubpixelPositioning(CGContextRef c, bool allow)`
 ///

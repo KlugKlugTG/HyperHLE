@@ -17,7 +17,6 @@ use crate::dyld::{export_c_func, FunctionExports};
 use crate::mem::{ConstPtr, GuestUSize, MutPtr, MutVoidPtr, SafeRead};
 use crate::Environment;
 
-
 use std::f32::consts::PI;
 
 /// Opaque type representing an FFT setup object.
@@ -46,7 +45,6 @@ struct GuestDSPSplitComplex {
     imagp: MutPtr<f32>,
 }
 unsafe impl SafeRead for GuestDSPSplitComplex {}
-
 
 /// `vDSP_create_fftsetup` — allocate and initialize an FFT weights array.
 ///
@@ -79,7 +77,6 @@ fn vDSP_destroy_fftsetup(env: &mut Environment, setup: FFTSetup) {
         env.mem.free(setup);
     }
 }
-
 
 /// Helper: perform in-place radix-2 FFT on split-complex data.
 /// Uses Cooley-Tukey decimation-in-time algorithm.
@@ -129,7 +126,6 @@ fn do_fft_split(real: &mut [f32], imag: &mut [f32], n: usize, direction: i32) {
     }
 }
 
-
 /// `vDSP_fft_zip` — in-place single-precision complex FFT.
 ///
 /// Apple docs: Computes an in-place single-precision complex discrete Fourier
@@ -168,7 +164,6 @@ fn vDSP_fft_zip(
         env.mem.write((split.imagp + offset).cast(), imag_vec[i]);
     }
 }
-
 
 /// `vDSP_fft_zrip` — in-place single-precision real FFT (packed format).
 ///
@@ -213,7 +208,6 @@ fn vDSP_fft_zrip(
     }
 }
 
-
 /// `vDSP_fft_zop` — out-of-place single-precision complex FFT.
 fn vDSP_fft_zop(
     env: &mut Environment,
@@ -247,11 +241,12 @@ fn vDSP_fft_zop(
     let out_stride_us = out_stride.max(1) as usize;
     for i in 0..n {
         let offset = (i * out_stride_us) as GuestUSize;
-        env.mem.write((out_split.realp + offset).cast(), real_vec[i]);
-        env.mem.write((out_split.imagp + offset).cast(), imag_vec[i]);
+        env.mem
+            .write((out_split.realp + offset).cast(), real_vec[i]);
+        env.mem
+            .write((out_split.imagp + offset).cast(), imag_vec[i]);
     }
 }
-
 
 /// `vDSP_vsmul` — vector scalar multiply (single-precision).
 /// C[i] = A[i*stride_a] * B, for i in 0..n
@@ -292,7 +287,6 @@ fn vDSP_zvmags(
         env.mem.write((output + i * sc).cast(), r * r + im * im);
     }
 }
-
 
 /// `vDSP_meanv` — mean of a vector (single-precision).
 fn vDSP_meanv(
@@ -337,7 +331,6 @@ fn vDSP_maxv(
     env.mem.write(output, max_val);
 }
 
-
 /// `vDSP_minv` — minimum of a vector (single-precision).
 fn vDSP_minv(
     env: &mut Environment,
@@ -381,13 +374,12 @@ fn vDSP_rmsqv(
     env.mem.write(output, (sum_sq / (n as f32)).sqrt());
 }
 
-
 /// `vDSP_ctoz` — interleaved-complex to split-complex conversion.
 /// Copies interleaved complex data (real, imag, real, imag, ...) into
 /// separate real and imaginary arrays.
 fn vDSP_ctoz(
     env: &mut Environment,
-    input: ConstPtr<f32>,     // interleaved complex pairs
+    input: ConstPtr<f32>, // interleaved complex pairs
     stride_input: vDSP_Length,
     output: ConstPtr<GuestDSPSplitComplex>,
     stride_output: vDSP_Length,
@@ -409,7 +401,7 @@ fn vDSP_ztoc(
     env: &mut Environment,
     input: ConstPtr<GuestDSPSplitComplex>,
     stride_input: vDSP_Length,
-    output: MutPtr<f32>,      // interleaved complex pairs
+    output: MutPtr<f32>, // interleaved complex pairs
     stride_output: vDSP_Length,
     n: vDSP_Length,
 ) {
@@ -423,7 +415,6 @@ fn vDSP_ztoc(
         env.mem.write((output + i * so * 2 + 1).cast(), im);
     }
 }
-
 
 /// `vDSP_vadd` — vector add (single-precision). C[i] = A[i] + B[i]
 fn vDSP_vadd(
@@ -467,7 +458,6 @@ fn vDSP_vmul(
     }
 }
 
-
 /// `vDSP_vfill` — fill vector with scalar.
 fn vDSP_vfill(
     env: &mut Environment,
@@ -484,12 +474,7 @@ fn vDSP_vfill(
 }
 
 /// `vDSP_vclr` — clear (zero) a vector.
-fn vDSP_vclr(
-    env: &mut Environment,
-    output: MutPtr<f32>,
-    stride: vDSP_Length,
-    n: vDSP_Length,
-) {
+fn vDSP_vclr(env: &mut Environment, output: MutPtr<f32>, stride: vDSP_Length, n: vDSP_Length) {
     let s = stride.max(1) as GuestUSize;
     for i in 0..(n as GuestUSize) {
         env.mem.write((output + i * s).cast(), 0.0f32);
@@ -505,7 +490,7 @@ fn vDSP_vclr(
 #[repr(C, packed)]
 #[derive(Copy, Clone, Default)]
 struct VImageBuffer {
-    data: u32,      // guest pointer
+    data: u32, // guest pointer
     height: u32,
     width: u32,
     row_bytes: u32,
@@ -580,7 +565,9 @@ fn vImageCopyBuffer(
         return KV_IMAGE_INVALID_PARAMETER;
     }
     let line_bytes = (src_width as u64) * (pixel_size as u64);
-    let line_bytes = line_bytes.min(src_row_bytes as u64).min(dst_row_bytes as u64) as u32;
+    let line_bytes = line_bytes
+        .min(src_row_bytes as u64)
+        .min(dst_row_bytes as u64) as u32;
     for y in 0..src_height {
         let src_row = src_data + y * src_row_bytes;
         let dst_row = dst_data + y * dst_row_bytes;
@@ -781,7 +768,8 @@ fn vDSP_normalize(
     if !output.is_null() && std_dev > 0.0 {
         for i in 0..(n as GuestUSize) {
             let v: f32 = env.mem.read((input + i * sa).cast());
-            env.mem.write((output + i * sc).cast(), (v - mean) / std_dev);
+            env.mem
+                .write((output + i * sc).cast(), (v - mean) / std_dev);
         }
     }
     if !mean_out.is_null() {
@@ -929,12 +917,7 @@ fn cblas_saxpy(
 /// `cblas_snrm2` — Euclidean norm of vector X (single-precision).
 /// Returns sqrt(sum(X[i]^2))
 /// Reference: https://developer.apple.com/documentation/accelerate/1513280-cblas_snrm2
-fn cblas_snrm2(
-    env: &mut Environment,
-    n: i32,
-    x: ConstPtr<f32>,
-    inc_x: i32,
-) -> f32 {
+fn cblas_snrm2(env: &mut Environment, n: i32, x: ConstPtr<f32>, inc_x: i32) -> f32 {
     if n <= 0 {
         return 0.0;
     }
@@ -949,13 +932,7 @@ fn cblas_snrm2(
 
 /// `cblas_sscal` — X = alpha*X (single-precision).
 /// Reference: https://developer.apple.com/documentation/accelerate/1513178-cblas_sscal
-fn cblas_sscal(
-    env: &mut Environment,
-    n: i32,
-    alpha: f32,
-    x: MutPtr<f32>,
-    inc_x: i32,
-) {
+fn cblas_sscal(env: &mut Environment, n: i32, alpha: f32, x: MutPtr<f32>, inc_x: i32) {
     if n <= 0 {
         return;
     }
@@ -1017,8 +994,8 @@ fn cblas_scopy(
 /// Reference: https://developer.apple.com/documentation/accelerate/1513338-cblas_sgemv
 fn cblas_sgemv(
     env: &mut Environment,
-    _order: i32,     // CblasRowMajor=101 or CblasColMajor=102
-    trans: i32,      // CblasNoTrans=111, CblasTrans=112
+    _order: i32, // CblasRowMajor=101 or CblasColMajor=102
+    trans: i32,  // CblasNoTrans=111, CblasTrans=112
     m: i32,
     n: i32,
     alpha: f32,
@@ -1044,16 +1021,13 @@ fn cblas_sgemv(
         let yi: f32 = env.mem.read((y + i * inc_y).cast());
         let mut dot: f32 = 0.0;
         for j in 0..(cols as GuestUSize) {
-            let a_idx = if no_trans {
-                i * lda + j
-            } else {
-                j * lda + i
-            };
+            let a_idx = if no_trans { i * lda + j } else { j * lda + i };
             let aij: f32 = env.mem.read((a + a_idx).cast());
             let xj: f32 = env.mem.read((x + j * inc_x).cast());
             dot += aij * xj;
         }
-        env.mem.write((y + i * inc_y).cast(), beta * yi + alpha * dot);
+        env.mem
+            .write((y + i * inc_y).cast(), beta * yi + alpha * dot);
     }
 }
 

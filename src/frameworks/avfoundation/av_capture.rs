@@ -63,12 +63,9 @@ pub const AVMediaCharacteristicVisual: &str = "public.visual";
 pub const AVMediaCharacteristicAudible: &str = "public.audible";
 pub const AVMediaCharacteristicLegible: &str = "public.legible";
 pub const AVMediaCharacteristicFrameBased: &str = "public.frame-based";
-pub const AVMediaCharacteristicIsMainProgramContent: &str =
-    "public.main-program-content";
-pub const AVMediaCharacteristicIsAuxiliaryContent: &str =
-    "public.auxiliary-content";
-pub const AVMediaCharacteristicContainsOnlyForcedSubtitles: &str =
-    "public.subtitles.forced-only";
+pub const AVMediaCharacteristicIsMainProgramContent: &str = "public.main-program-content";
+pub const AVMediaCharacteristicIsAuxiliaryContent: &str = "public.auxiliary-content";
+pub const AVMediaCharacteristicContainsOnlyForcedSubtitles: &str = "public.subtitles.forced-only";
 pub const AVMediaCharacteristicTranscribesSpokenDialogForAccessibility: &str =
     "public.accessibility.transcribes-spoken-dialog";
 pub const AVMediaCharacteristicDescribesMusicAndSoundForAccessibility: &str =
@@ -76,12 +73,9 @@ pub const AVMediaCharacteristicDescribesMusicAndSoundForAccessibility: &str =
 pub const AVMediaCharacteristicEasyToRead: &str = "public.easy-to-read";
 pub const AVMediaCharacteristicDescribesVideoForAccessibility: &str =
     "public.accessibility.describes-video";
-pub const AVMediaCharacteristicLanguageTranslation: &str =
-    "public.translation";
-pub const AVMediaCharacteristicDubbedTranslation: &str =
-    "public.translation.dubbed";
-pub const AVMediaCharacteristicVoiceOverTranslation: &str =
-    "public.translation.voice-over";
+pub const AVMediaCharacteristicLanguageTranslation: &str = "public.translation";
+pub const AVMediaCharacteristicDubbedTranslation: &str = "public.translation.dubbed";
+pub const AVMediaCharacteristicVoiceOverTranslation: &str = "public.translation.voice-over";
 
 // AVCaptureSession presets.
 pub const AVCaptureSessionPresetPhoto: &str = "AVCaptureSessionPresetPhoto";
@@ -305,15 +299,11 @@ pub const CONSTANTS: ConstantExports = &[
     ),
     (
         "_AVMediaCharacteristicTranscribesSpokenDialogForAccessibility",
-        HostConstant::NSString(
-            AVMediaCharacteristicTranscribesSpokenDialogForAccessibility,
-        ),
+        HostConstant::NSString(AVMediaCharacteristicTranscribesSpokenDialogForAccessibility),
     ),
     (
         "_AVMediaCharacteristicDescribesMusicAndSoundForAccessibility",
-        HostConstant::NSString(
-            AVMediaCharacteristicDescribesMusicAndSoundForAccessibility,
-        ),
+        HostConstant::NSString(AVMediaCharacteristicDescribesMusicAndSoundForAccessibility),
     ),
     (
         "_AVMediaCharacteristicEasyToRead",
@@ -321,9 +311,7 @@ pub const CONSTANTS: ConstantExports = &[
     ),
     (
         "_AVMediaCharacteristicDescribesVideoForAccessibility",
-        HostConstant::NSString(
-            AVMediaCharacteristicDescribesVideoForAccessibility,
-        ),
+        HostConstant::NSString(AVMediaCharacteristicDescribesVideoForAccessibility),
     ),
     (
         "_AVMediaCharacteristicLanguageTranslation",

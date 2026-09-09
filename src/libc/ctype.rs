@@ -161,10 +161,7 @@ fn get_default_rune_locale(env: &mut Environment) -> ConstVoidPtr {
             charclass: Ptr::null(),
         })
         .cast();
-    DEFAULT_RUNE_LOCALE_ADDR.store(
-        ptr.to_bits(),
-        std::sync::atomic::Ordering::Relaxed,
-    );
+    DEFAULT_RUNE_LOCALE_ADDR.store(ptr.to_bits(), std::sync::atomic::Ordering::Relaxed);
     ptr.cast_const()
 }
 

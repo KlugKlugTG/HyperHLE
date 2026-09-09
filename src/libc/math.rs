@@ -1104,10 +1104,7 @@ fn fesetround(env: &mut Environment, round: i32) -> i32 {
     // Per the C standard (7.6.3.2 fesetround), the argument must be one of
     // the implementation's supported rounding-direction macros; the four
     // IEEE 754 modes below are all supported by our rint()/nearbyint().
-    if round == FE_TONEAREST
-        || round == FE_TOWARDZERO
-        || round == FE_UPWARD
-        || round == FE_DOWNWARD
+    if round == FE_TONEAREST || round == FE_TOWARDZERO || round == FE_UPWARD || round == FE_DOWNWARD
     {
         env.libc_state.math.rounding_direction = round;
         0 // Success

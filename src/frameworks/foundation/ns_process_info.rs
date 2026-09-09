@@ -22,8 +22,8 @@ use crate::frameworks::foundation::ns_string;
 use crate::libc::mach::host::physical_memory;
 use crate::mem::SafeRead;
 use crate::objc::{id, msg, msg_class, nil, objc_classes, release, retain, ClassExports};
-use std::collections::HashMap;
 use crate::Environment;
+use std::collections::HashMap;
 use std::time::Instant;
 
 /// `NSOperatingSystemVersion` from `Foundation/NSProcessInfo.h`.

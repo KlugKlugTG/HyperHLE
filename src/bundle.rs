@@ -392,8 +392,7 @@ impl Bundle {
     pub fn main_nib_filename(&self, device_family: Option<DeviceFamily>) -> Option<&str> {
         // TODO: extend this logic for all device-specific keys
         if let Some(device_family) = device_family {
-            if device_family.is_ipad() && self.plist.get("NSMainNibFile~ipad").is_some()
-            {
+            if device_family.is_ipad() && self.plist.get("NSMainNibFile~ipad").is_some() {
                 return self
                     .plist
                     .get("NSMainNibFile~ipad")
@@ -411,14 +410,9 @@ impl Bundle {
     /// extension) of a compiled storyboard found in the bundle resources
     /// (e.g. `Main` resolves to `Base.lproj/Main~iphone.storyboardc/` on
     /// iPhone).
-    pub fn main_storyboard_filename(
-        &self,
-        device_family: Option<DeviceFamily>,
-    ) -> Option<&str> {
+    pub fn main_storyboard_filename(&self, device_family: Option<DeviceFamily>) -> Option<&str> {
         if let Some(device_family) = device_family {
-            if device_family.is_ipad()
-                && self.plist.get("UIMainStoryboardFile~ipad").is_some()
-            {
+            if device_family.is_ipad() && self.plist.get("UIMainStoryboardFile~ipad").is_some() {
                 return self
                     .plist
                     .get("UIMainStoryboardFile~ipad")
@@ -444,10 +438,7 @@ impl Bundle {
         // tolerance instead of crashing the host emulator.
         if let Some(v) = self.plist.get("UISupportedInterfaceOrientations") {
             if let Some(arr) = v.as_array() {
-                return arr
-                    .iter()
-                    .filter_map(|o| o.as_string())
-                    .collect();
+                return arr.iter().filter_map(|o| o.as_string()).collect();
             }
             if let Some(s) = v.as_string() {
                 if s.contains(',') {
@@ -456,7 +447,11 @@ impl Bundle {
                         s
                     );
                 }
-                return s.split(',').map(|p| p.trim()).filter(|p| !p.is_empty()).collect();
+                return s
+                    .split(',')
+                    .map(|p| p.trim())
+                    .filter(|p| !p.is_empty())
+                    .collect();
             }
             log!(
                 "UISupportedInterfaceOrientations has unexpected plist type {:?}; ignoring.",
@@ -467,9 +462,16 @@ impl Bundle {
         if let Some(v) = self.plist.get("UIInterfaceOrientation") {
             let str = v.as_string().unwrap_or("UIInterfaceOrientationPortrait");
             if str.contains(',') {
-                log!("UIInterfaceOrientation is a comma separated list of strings ({}), splitting!", str);
+                log!(
+                    "UIInterfaceOrientation is a comma separated list of strings ({}), splitting!",
+                    str
+                );
             }
-            return str.split(',').map(|p| p.trim()).filter(|p| !p.is_empty()).collect();
+            return str
+                .split(',')
+                .map(|p| p.trim())
+                .filter(|p| !p.is_empty())
+                .collect();
         }
 
         vec!["UIInterfaceOrientationPortrait"]

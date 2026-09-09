@@ -152,9 +152,7 @@ fn SCNetworkReachabilityScheduleWithRunLoop(
     _run_loop_mode: CFTypeRef,
 ) -> bool {
     let (callback, context) = {
-        let host = env
-            .objc
-            .borrow::<SCNetworkReachabilityHostObject>(target);
+        let host = env.objc.borrow::<SCNetworkReachabilityHostObject>(target);
         (host.callout, host.context)
     };
     if let Some(callback) = callback {

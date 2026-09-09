@@ -35,7 +35,6 @@ pub struct State {
     pub atexit_handlers: Vec<GuestFunction>,
 }
 
-
 /// State for the POSIX `drand48`/`lrand48`/`mrand48` family. Mirrors what real
 /// libc keeps internally — a 48-bit state plus the multiplier `a` and addend
 /// `c` (modifiable via `lcong48`).
@@ -248,7 +247,10 @@ fn posix_memalign(
     // Over-allocate so that we definitely have room for an aligned slice
     // plus a 4-byte header storing the original allocation pointer.
     let header: GuestUSize = std::mem::size_of::<u32>() as GuestUSize;
-    let Some(over) = size.checked_add(alignment).and_then(|s| s.checked_add(header)) else {
+    let Some(over) = size
+        .checked_add(alignment)
+        .and_then(|s| s.checked_add(header))
+    else {
         return crate::libc::errno::ENOMEM;
     };
     let raw = env.mem.alloc(over);
@@ -274,7 +276,11 @@ fn valloc(env: &mut Environment, size: GuestUSize) -> MutVoidPtr {
     const PAGE_SIZE: GuestUSize = 4096;
     let out: MutPtr<MutVoidPtr> = env.mem.alloc(4).cast();
     let rc = posix_memalign(env, out, PAGE_SIZE, size);
-    let ptr = if rc == 0 { env.mem.read(out) } else { MutVoidPtr::null() };
+    let ptr = if rc == 0 {
+        env.mem.read(out)
+    } else {
+        MutVoidPtr::null()
+    };
     env.mem.free(out.cast());
     ptr
 }
@@ -808,7 +814,11 @@ fn exit(env: &mut Environment, exit_code: i32) {
         let _: () = func.call_from_host(env, ());
     }
 
-    log!("Guest exit({}) on emulated thread {}", exit_code, env.current_thread);
+    log!(
+        "Guest exit({}) on emulated thread {}",
+        exit_code,
+        env.current_thread
+    );
     env.stack_trace_current();
     echo!("App called exit({}); touchHLE will now quit.", exit_code);
     std::process::exit(exit_code);
@@ -826,13 +836,15 @@ fn abort(env: &mut Environment) {
         let prev_fp: u32 = env.mem.read(crate::mem::ConstPtr::<u32>::from_bits(fp));
         let lr: u32 = env.mem.read(crate::mem::ConstPtr::<u32>::from_bits(fp + 4));
         if lr > 0 && lr < 0x10000000 {
-            echo!("App called abort(); unwinding to caller frame at {:#010x} instead of crashing.", lr);
+            echo!(
+                "App called abort(); unwinding to caller frame at {:#010x} instead of crashing.",
+                lr
+            );
             env.stack_trace_current();
             env.cpu.regs_mut()[7] = prev_fp;
             env.cpu.regs_mut()[13] = fp + 8;
             env.cpu.regs_mut()[0] = 0;
-            env.cpu
-                .branch(GuestFunction::from_addr_with_thumb_bit(lr));
+            env.cpu.branch(GuestFunction::from_addr_with_thumb_bit(lr));
             return;
         }
         fp = prev_fp;
@@ -980,12 +992,7 @@ fn strtoull_l(
     strtoull(env, str, endptr, base)
 }
 
-fn strtoll(
-    env: &mut Environment,
-    str: ConstPtr<u8>,
-    endptr: MutPtr<MutPtr<u8>>,
-    base: i32,
-) -> i64 {
+fn strtoll(env: &mut Environment, str: ConstPtr<u8>, endptr: MutPtr<MutPtr<u8>>, base: i32) -> i64 {
     set_errno(env, 0);
     let base = base as u32;
     if base != 0 && !(2..=36).contains(&base) {
@@ -1665,18 +1672,18 @@ fn flistxattr(
 /// call).
 ///
 /// Return value: Z_OK (0) on success.
-fn inflateReset2(
-    _env: &mut Environment,
-    _strm: MutVoidPtr,
-    _window_bits: i32,
-) -> i32 {
+fn inflateReset2(_env: &mut Environment, _strm: MutVoidPtr, _window_bits: i32) -> i32 {
     // Z_OK = 0. We cannot easily call back into the guest's inflateReset
     // from host code without the full z_stream layout. However, the most
     // common pattern is that inflateReset2 is called right after inflateInit2
     // (which already set window bits) or before any actual inflate call.
     // Returning Z_OK lets the app proceed — the stream state was already
     // initialized by the guest's inflateInit2 which IS in the old libz.
-    log_dbg!("inflateReset2(strm={:?}, windowBits={}) -> Z_OK (stubbed)", _strm, _window_bits);
+    log_dbg!(
+        "inflateReset2(strm={:?}, windowBits={}) -> Z_OK (stubbed)",
+        _strm,
+        _window_bits
+    );
     0 // Z_OK
 }
 
@@ -1694,7 +1701,8 @@ fn getloadavg(env: &mut Environment, loadavg: MutPtr<f64>, nelem: i32) -> i32 {
     let count = nelem.min(3);
     let samples = [0.5, 0.5, 0.5];
     for i in 0..count {
-        env.mem.write(loadavg + i as GuestUSize, samples[i as usize]);
+        env.mem
+            .write(loadavg + i as GuestUSize, samples[i as usize]);
     }
     count
 }

@@ -17,9 +17,8 @@ use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::carbon_core::OSStatus;
 use crate::frameworks::core_audio_types::{
     debug_fourcc, fourcc, kAudioFormatAppleIMA4, kAudioFormatFlagIsBigEndian,
-    kAudioFormatFlagIsFloat, kAudioFormatFlagIsPacked,
-    kAudioFormatLinearPCM, kAudioFormatMPEG4AAC, kAudioFormatMPEGLayer3,
-    AudioStreamBasicDescription,
+    kAudioFormatFlagIsFloat, kAudioFormatFlagIsPacked, kAudioFormatLinearPCM, kAudioFormatMPEG4AAC,
+    kAudioFormatMPEGLayer3, AudioStreamBasicDescription,
 };
 use crate::frameworks::core_foundation::cf_run_loop::{
     kCFRunLoopCommonModes, CFRunLoopGetMain, CFRunLoopMode, CFRunLoopRef,
@@ -526,7 +525,9 @@ fn AudioQueueAddPropertyListener(
         host_object.aq_is_running_proc = Some(in_proc);
         host_object.aq_is_running_user_data = Some(in_user_data);
     } else {
-        host_object.property_listeners.push((in_id, in_proc, in_user_data));
+        host_object
+            .property_listeners
+            .push((in_id, in_proc, in_user_data));
     }
     0 // success
 }
@@ -1304,20 +1305,32 @@ fn prime_audio_queue(env: &mut Environment, in_aq: AudioQueueRef) {
             );
             let err = context.GetError();
             if err != 0 {
-                log!("Warning: audio queue {:?} OpenAL query failed: {:#x}; skipping refill.", in_aq, err);
+                log!(
+                    "Warning: audio queue {:?} OpenAL query failed: {:#x}; skipping refill.",
+                    in_aq,
+                    err
+                );
                 break;
             }
         }
         let Ok(al_buffers_queued) = usize::try_from(al_buffers_queued) else {
-            log!("Warning: audio queue {:?} reported negative queued-buffer count.", in_aq);
+            log!(
+                "Warning: audio queue {:?} reported negative queued-buffer count.",
+                in_aq
+            );
             break;
         };
         let Ok(al_buffers_processed) = usize::try_from(al_buffers_processed) else {
-            log!("Warning: audio queue {:?} reported negative processed-buffer count.", in_aq);
+            log!(
+                "Warning: audio queue {:?} reported negative processed-buffer count.",
+                in_aq
+            );
             break;
         };
 
-        if al_buffers_processed > al_buffers_queued || al_buffers_queued > host_object.buffer_queue.len() {
+        if al_buffers_processed > al_buffers_queued
+            || al_buffers_queued > host_object.buffer_queue.len()
+        {
             log!("Warning: audio queue {:?} reported inconsistent buffer counts (queued={}, processed={}, tracked={}); skipping refill.", in_aq, al_buffers_queued, al_buffers_processed, host_object.buffer_queue.len());
             break;
         }
@@ -1565,18 +1578,18 @@ fn notify_aq_is_running(env: &mut Environment, in_aq: AudioQueueRef) {
     // Snapshot everything the queue holds before invoking any callbacks: a
     // listener may register or remove listeners re-entrantly, and the host
     // object borrow must not outlive the state it came from.
-    let Some((is_running_proc, is_running_user_data, listeners)) = State::get(
-        &mut env.framework_state,
-    )
-    .audio_queues
-    .get_mut(&in_aq)
-    .map(|host_object| {
-        (
-            host_object.aq_is_running_proc,
-            host_object.aq_is_running_user_data,
-            host_object.property_listeners.clone(),
-        )
-    }) else {
+    let Some((is_running_proc, is_running_user_data, listeners)) =
+        State::get(&mut env.framework_state)
+            .audio_queues
+            .get_mut(&in_aq)
+            .map(|host_object| {
+                (
+                    host_object.aq_is_running_proc,
+                    host_object.aq_is_running_user_data,
+                    host_object.property_listeners.clone(),
+                )
+            })
+    else {
         return;
     };
 

@@ -246,10 +246,7 @@ fn find_scene_nib_name(
     for sb_dir in &storyboardc_candidates {
         let mut nib_candidates: Vec<String> = Vec::new();
         if !device_suffix.is_empty() {
-            nib_candidates.push(format!(
-                "{}/{}{}.nib",
-                sb_dir, nib_base_name, device_suffix
-            ));
+            nib_candidates.push(format!("{}/{}{}.nib", sb_dir, nib_base_name, device_suffix));
         }
         nib_candidates.push(format!("{}/{}.nib", sb_dir, nib_base_name));
 

@@ -8,9 +8,7 @@
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::frameworks::core_foundation::cf_allocator::CFAllocatorRef;
 use crate::frameworks::core_foundation::cf_string::CFStringRef;
-use crate::frameworks::core_foundation::cf_url::{
-    CFURLCopyFileSystemPath, kCFURLPOSIXPathStyle,
-};
+use crate::frameworks::core_foundation::cf_url::{kCFURLPOSIXPathStyle, CFURLCopyFileSystemPath};
 use crate::frameworks::core_foundation::{CFRelease, CFRetain, CFTypeRef};
 use crate::frameworks::foundation::ns_string;
 use crate::fs::GuestPath;
@@ -451,7 +449,9 @@ fn CFWriteStreamCreateWithFile(
     let path = ns_string::to_rust_string(env, path_string).into_owned();
     CFRelease(env, path_string);
     let stream = alloc_write_stream(env);
-    env.objc.borrow_mut::<CFWriteStreamHostObject>(stream).file_path = Some(path);
+    env.objc
+        .borrow_mut::<CFWriteStreamHostObject>(stream)
+        .file_path = Some(path);
     stream
 }
 
@@ -677,9 +677,7 @@ fn CFReadStreamGetBuffer(
     env.mem
         .bytes_at_mut(buffer, data.len() as u32)
         .copy_from_slice(&data);
-    env.objc
-        .borrow_mut::<CFReadStreamHostObject>(stream)
-        .buffer = Some(buffer);
+    env.objc.borrow_mut::<CFReadStreamHostObject>(stream).buffer = Some(buffer);
     buffer.cast_const()
 }
 
@@ -771,7 +769,9 @@ fn CFWriteStreamSetProperty(
         return false;
     }
     let append = msg![env; property_value boolValue];
-    env.objc.borrow_mut::<CFWriteStreamHostObject>(stream).append = append;
+    env.objc
+        .borrow_mut::<CFWriteStreamHostObject>(stream)
+        .append = append;
     true
 }
 

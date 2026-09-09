@@ -59,11 +59,7 @@ fn CFSetCreate(
     set
 }
 
-fn CFSetCreateCopy(
-    env: &mut Environment,
-    allocator: CFAllocatorRef,
-    set: CFSetRef,
-) -> CFSetRef {
+fn CFSetCreateCopy(env: &mut Environment, allocator: CFAllocatorRef, set: CFSetRef) -> CFSetRef {
     if !allocator.is_null() && allocator != kCFAllocatorDefault {
         log_dbg!("CFSetCreateCopy: ignoring custom allocator {:?}", allocator);
     }
@@ -120,11 +116,7 @@ fn CFSetGetCount(env: &mut Environment, set: CFSetRef) -> CFIndex {
     count as CFIndex
 }
 
-fn CFSetContainsValue(
-    env: &mut Environment,
-    set: CFSetRef,
-    value: ConstVoidPtr,
-) -> bool {
+fn CFSetContainsValue(env: &mut Environment, set: CFSetRef, value: ConstVoidPtr) -> bool {
     if set == nil {
         return false;
     }
@@ -132,11 +124,7 @@ fn CFSetContainsValue(
     msg![env; set containsObject:value_id]
 }
 
-fn CFSetGetValue(
-    env: &mut Environment,
-    set: CFSetRef,
-    value: ConstVoidPtr,
-) -> ConstVoidPtr {
+fn CFSetGetValue(env: &mut Environment, set: CFSetRef, value: ConstVoidPtr) -> ConstVoidPtr {
     if set == nil {
         return ConstPtr::null();
     }
@@ -145,11 +133,7 @@ fn CFSetGetValue(
     member.cast().cast_const()
 }
 
-fn CFSetGetCountOfValue(
-    env: &mut Environment,
-    set: CFSetRef,
-    value: ConstVoidPtr,
-) -> CFIndex {
+fn CFSetGetCountOfValue(env: &mut Environment, set: CFSetRef, value: ConstVoidPtr) -> CFIndex {
     if CFSetContainsValue(env, set, value) {
         1
     } else {
@@ -157,11 +141,7 @@ fn CFSetGetCountOfValue(
     }
 }
 
-fn CFSetGetValues(
-    env: &mut Environment,
-    set: CFSetRef,
-    values: MutPtr<ConstVoidPtr>,
-) {
+fn CFSetGetValues(env: &mut Environment, set: CFSetRef, values: MutPtr<ConstVoidPtr>) {
     if set == nil || values.is_null() {
         return;
     }
@@ -175,11 +155,7 @@ fn CFSetGetValues(
 
 // MARK: - Mutation
 
-fn CFSetAddValue(
-    env: &mut Environment,
-    set: CFMutableSetRef,
-    value: ConstVoidPtr,
-) {
+fn CFSetAddValue(env: &mut Environment, set: CFMutableSetRef, value: ConstVoidPtr) {
     if set == nil {
         return;
     }
@@ -187,11 +163,7 @@ fn CFSetAddValue(
     () = msg![env; set addObject:value_id];
 }
 
-fn CFSetReplaceValue(
-    env: &mut Environment,
-    set: CFMutableSetRef,
-    value: ConstVoidPtr,
-) {
+fn CFSetReplaceValue(env: &mut Environment, set: CFMutableSetRef, value: ConstVoidPtr) {
     if set == nil {
         return;
     }
@@ -204,11 +176,7 @@ fn CFSetReplaceValue(
     () = msg![env; set addObject:value_id];
 }
 
-fn CFSetSetValue(
-    env: &mut Environment,
-    set: CFMutableSetRef,
-    value: ConstVoidPtr,
-) {
+fn CFSetSetValue(env: &mut Environment, set: CFMutableSetRef, value: ConstVoidPtr) {
     // Apple docs: "Sets a value in a mutable set. If `value` is not
     // already in the set, this function is equivalent to
     // CFSetAddValue; otherwise it replaces the existing value with the
@@ -224,11 +192,7 @@ fn CFSetSetValue(
     () = msg![env; set addObject:value_id];
 }
 
-fn CFSetRemoveValue(
-    env: &mut Environment,
-    set: CFMutableSetRef,
-    value: ConstVoidPtr,
-) {
+fn CFSetRemoveValue(env: &mut Environment, set: CFMutableSetRef, value: ConstVoidPtr) {
     if set == nil {
         return;
     }

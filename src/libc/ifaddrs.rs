@@ -162,8 +162,11 @@ fn if_indextoname(env: &mut Environment, ifindex: u32, ifname: MutPtr<u8>) -> Mu
     for (i, &byte) in name.iter().chain(std::iter::once(&0)).enumerate() {
         env.mem.write(ifname + i as u32, byte);
     }
-    log_dbg!("if_indextoname({}) => \"{}\"", ifindex,
-        std::str::from_utf8(name).unwrap_or("?"));
+    log_dbg!(
+        "if_indextoname({}) => \"{}\"",
+        ifindex,
+        std::str::from_utf8(name).unwrap_or("?")
+    );
     ifname
 }
 
@@ -178,11 +181,11 @@ unsafe impl SafeRead for if_nameindex {}
 
 // Layout of the guest-allocated if_nameindex() result:
 // [lo0 entry][en0 entry][other entry][terminator][lo0 name][en0 name][en1 name]
-const IF_NAMEINDEX_TABLE_BYTES: GuestUSize =
-    (std::mem::size_of::<if_nameindex>() as GuestUSize) * 4
-        + (FAKE_LOOPBACK_NAME.len() as GuestUSize + 1)
-        + (FAKE_WIFI_NAME.len() as GuestUSize + 1)
-        + (3 + 1); // "en1"
+const IF_NAMEINDEX_TABLE_BYTES: GuestUSize = (std::mem::size_of::<if_nameindex>() as GuestUSize)
+    * 4
+    + (FAKE_LOOPBACK_NAME.len() as GuestUSize + 1)
+    + (FAKE_WIFI_NAME.len() as GuestUSize + 1)
+    + (3 + 1); // "en1"
 
 /// `struct if_nameindex *if_nameindex(void)`
 ///
@@ -204,12 +207,18 @@ fn if_nameindex(env: &mut Environment) -> MutPtr<if_nameindex> {
         let entry: MutPtr<if_nameindex> = MutPtr::from_bits(base.to_bits() + slot * entry_size);
         let name_ptr: MutPtr<u8> = MutPtr::from_bits(name_area.to_bits() + name_off);
         for (i, &byte) in name.iter().chain(std::iter::once(&0)).enumerate() {
-            env.mem.write(MutPtr::from_bits(name_area.to_bits() + name_off + i as u32), byte);
+            env.mem.write(
+                MutPtr::from_bits(name_area.to_bits() + name_off + i as u32),
+                byte,
+            );
         }
-        env.mem.write(entry, if_nameindex {
-            if_index: index,
-            if_name: name_ptr.cast_const(),
-        });
+        env.mem.write(
+            entry,
+            if_nameindex {
+                if_index: index,
+                if_name: name_ptr.cast_const(),
+            },
+        );
     };
 
     let mut name_off: u32 = 0;
@@ -224,10 +233,13 @@ fn if_nameindex(env: &mut Environment) -> MutPtr<if_nameindex> {
     }
     // Terminator entry: index 0, NULL name.
     let terminator: MutPtr<if_nameindex> = MutPtr::from_bits(base.to_bits() + 3 * entry_size);
-    env.mem.write(terminator, if_nameindex {
-        if_index: 0,
-        if_name: ConstPtr::null(),
-    });
+    env.mem.write(
+        terminator,
+        if_nameindex {
+            if_index: 0,
+            if_name: ConstPtr::null(),
+        },
+    );
 
     log_dbg!("if_nameindex() => table with 3 fake interfaces (lo0, en0, en1)");
     base.cast()

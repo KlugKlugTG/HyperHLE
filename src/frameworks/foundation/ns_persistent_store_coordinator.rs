@@ -6,9 +6,9 @@
 //! `NSPersistentStoreCoordinator` and related Core Data classes.
 //! These are stubbed — Core Data persistence is not implemented.
 
+use crate::dyld::{ConstantExports, HostConstant};
 use crate::frameworks::foundation::ns_string;
 use crate::frameworks::foundation::{NSInteger, NSUInteger};
-use crate::dyld::{ConstantExports, HostConstant};
 use crate::objc::{
     autorelease, id, msg, msg_class, nil, objc_classes, release, retain, ClassExports, HostObject,
     NSZonePtr,

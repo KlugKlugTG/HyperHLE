@@ -16,12 +16,12 @@ pub mod ad_banner_view;
 pub mod fb_session;
 pub mod gk_achievement;
 pub mod gk_challenge_event_handler;
-mod gk_turn_based_event_handler;
 mod gk_leaderboard;
 pub mod gk_leaderboard_view_controller;
 pub mod gk_local_player;
 mod gk_score;
 mod gk_session;
+mod gk_turn_based_event_handler;
 
 use crate::dyld::{ConstantExports, HostConstant};
 

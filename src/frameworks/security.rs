@@ -899,22 +899,10 @@ pub const CONSTANTS: ConstantExports = &[
         "_kSecImportItemIdentity",
         HostConstant::NSString("identity"),
     ),
-    (
-        "_kSecImportItemLabel",
-        HostConstant::NSString("label"),
-    ),
-    (
-        "_kSecImportItemKeyID",
-        HostConstant::NSString("keyid"),
-    ),
-    (
-        "_kSecImportItemTrust",
-        HostConstant::NSString("trust"),
-    ),
-    (
-        "_kSecImportItemCertChain",
-        HostConstant::NSString("chain"),
-    ),
+    ("_kSecImportItemLabel", HostConstant::NSString("label")),
+    ("_kSecImportItemKeyID", HostConstant::NSString("keyid")),
+    ("_kSecImportItemTrust", HostConstant::NSString("trust")),
+    ("_kSecImportItemCertChain", HostConstant::NSString("chain")),
     // -----------------------------------------------------------------
     // `kSecAttrAccessControl` — value is a SecAccessControl that
     // qualifies `kSecAttrAccessible`. Apps thread it as an opaque
@@ -937,10 +925,7 @@ pub const CONSTANTS: ConstantExports = &[
     // `kSecSharedPassword` — kSecSharedPassword key for AutoFill APIs.
     // <https://developer.apple.com/documentation/security/secaddsharedwebcredential>
     // -----------------------------------------------------------------
-    (
-        "_kSecSharedPassword",
-        HostConstant::NSString("spwd"),
-    ),
+    ("_kSecSharedPassword", HostConstant::NSString("spwd")),
     // -----------------------------------------------------------------
     // `kSecAttrAuthenticationType` enumerated values, per Apple
     // `<Security/SecItem.h>`. The four-character strings are the
@@ -984,110 +969,38 @@ pub const CONSTANTS: ConstantExports = &[
     // continue to look up correctly.
     // <https://developer.apple.com/documentation/security/ksecattrprotocol>
     // -----------------------------------------------------------------
-    (
-        "_kSecAttrProtocolFTPProxy",
-        HostConstant::NSString("ftpx"),
-    ),
+    ("_kSecAttrProtocolFTPProxy", HostConstant::NSString("ftpx")),
     (
         "_kSecAttrProtocolFTPAccount",
         HostConstant::NSString("ftpa"),
     ),
-    (
-        "_kSecAttrProtocolFTPS",
-        HostConstant::NSString("ftps"),
-    ),
-    (
-        "_kSecAttrProtocolHTTPProxy",
-        HostConstant::NSString("htpx"),
-    ),
+    ("_kSecAttrProtocolFTPS", HostConstant::NSString("ftps")),
+    ("_kSecAttrProtocolHTTPProxy", HostConstant::NSString("htpx")),
     (
         "_kSecAttrProtocolHTTPSProxy",
         HostConstant::NSString("htsx"),
     ),
-    (
-        "_kSecAttrProtocolIRC",
-        HostConstant::NSString("irc "),
-    ),
-    (
-        "_kSecAttrProtocolIRCS",
-        HostConstant::NSString("ircs"),
-    ),
-    (
-        "_kSecAttrProtocolNNTP",
-        HostConstant::NSString("nntp"),
-    ),
-    (
-        "_kSecAttrProtocolNNTPS",
-        HostConstant::NSString("ntps"),
-    ),
-    (
-        "_kSecAttrProtocolPOP3",
-        HostConstant::NSString("pop3"),
-    ),
-    (
-        "_kSecAttrProtocolPOP3S",
-        HostConstant::NSString("pops"),
-    ),
-    (
-        "_kSecAttrProtocolSMTP",
-        HostConstant::NSString("smtp"),
-    ),
-    (
-        "_kSecAttrProtocolIMAP",
-        HostConstant::NSString("imap"),
-    ),
-    (
-        "_kSecAttrProtocolLDAP",
-        HostConstant::NSString("ldap"),
-    ),
-    (
-        "_kSecAttrProtocolLDAPS",
-        HostConstant::NSString("ldps"),
-    ),
-    (
-        "_kSecAttrProtocolTelnet",
-        HostConstant::NSString("teln"),
-    ),
-    (
-        "_kSecAttrProtocolTelnetS",
-        HostConstant::NSString("tels"),
-    ),
-    (
-        "_kSecAttrProtocolSSH",
-        HostConstant::NSString("ssh "),
-    ),
-    (
-        "_kSecAttrProtocolAFP",
-        HostConstant::NSString("afp "),
-    ),
-    (
-        "_kSecAttrProtocolAppleTalk",
-        HostConstant::NSString("atlk"),
-    ),
-    (
-        "_kSecAttrProtocolDAAP",
-        HostConstant::NSString("daap"),
-    ),
-    (
-        "_kSecAttrProtocolEPPC",
-        HostConstant::NSString("eppc"),
-    ),
-    (
-        "_kSecAttrProtocolRTSP",
-        HostConstant::NSString("rtsp"),
-    ),
-    (
-        "_kSecAttrProtocolRTSPProxy",
-        HostConstant::NSString("rtsx"),
-    ),
-    (
-        "_kSecAttrProtocolSMB",
-        HostConstant::NSString("smb "),
-    ),
-    (
-        "_kSecAttrProtocolSOCKS",
-        HostConstant::NSString("sox "),
-    ),
+    ("_kSecAttrProtocolIRC", HostConstant::NSString("irc ")),
+    ("_kSecAttrProtocolIRCS", HostConstant::NSString("ircs")),
+    ("_kSecAttrProtocolNNTP", HostConstant::NSString("nntp")),
+    ("_kSecAttrProtocolNNTPS", HostConstant::NSString("ntps")),
+    ("_kSecAttrProtocolPOP3", HostConstant::NSString("pop3")),
+    ("_kSecAttrProtocolPOP3S", HostConstant::NSString("pops")),
+    ("_kSecAttrProtocolSMTP", HostConstant::NSString("smtp")),
+    ("_kSecAttrProtocolIMAP", HostConstant::NSString("imap")),
+    ("_kSecAttrProtocolLDAP", HostConstant::NSString("ldap")),
+    ("_kSecAttrProtocolLDAPS", HostConstant::NSString("ldps")),
+    ("_kSecAttrProtocolTelnet", HostConstant::NSString("teln")),
+    ("_kSecAttrProtocolTelnetS", HostConstant::NSString("tels")),
+    ("_kSecAttrProtocolSSH", HostConstant::NSString("ssh ")),
+    ("_kSecAttrProtocolAFP", HostConstant::NSString("afp ")),
+    ("_kSecAttrProtocolAppleTalk", HostConstant::NSString("atlk")),
+    ("_kSecAttrProtocolDAAP", HostConstant::NSString("daap")),
+    ("_kSecAttrProtocolEPPC", HostConstant::NSString("eppc")),
+    ("_kSecAttrProtocolRTSP", HostConstant::NSString("rtsp")),
+    ("_kSecAttrProtocolRTSPProxy", HostConstant::NSString("rtsx")),
+    ("_kSecAttrProtocolSMB", HostConstant::NSString("smb ")),
+    ("_kSecAttrProtocolSOCKS", HostConstant::NSString("sox ")),
 ];
 
 // =========================================================================

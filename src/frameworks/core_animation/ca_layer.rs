@@ -21,8 +21,8 @@ use crate::frameworks::core_graphics::cg_color::{CGColorHostObject, CGColorRef};
 use crate::frameworks::core_graphics::cg_color_space::CGColorSpaceCreateDeviceRGB;
 use crate::frameworks::core_graphics::cg_context::{
     CGContextClearRect, CGContextDrawImage, CGContextFillRect, CGContextRef, CGContextRelease,
-    CGContextScaleCTM,
-    CGContextRestoreGState, CGContextSaveGState, CGContextSetRGBFillColor, CGContextTranslateCTM,
+    CGContextRestoreGState, CGContextSaveGState, CGContextScaleCTM, CGContextSetRGBFillColor,
+    CGContextTranslateCTM,
 };
 use crate::frameworks::core_graphics::cg_image::{
     kCGImageAlphaPremultipliedLast, kCGImageByteOrder32Big,
@@ -1201,8 +1201,7 @@ fn render_layer_in_context(env: &mut Environment, layer: id, ctx: CGContextRef) 
         // Probe whether `contents` is a CGImage-equivalent. A CGImage is a
         // CF type, not an Obj-C class, so we duck-type using the
         // existing pure-CG getter `CGImageGetWidth` returning non-zero.
-        let width =
-            crate::frameworks::core_graphics::cg_image::CGImageGetWidth(env, contents);
+        let width = crate::frameworks::core_graphics::cg_image::CGImageGetWidth(env, contents);
         if width != 0 {
             CGContextDrawImage(env, ctx, bounds, contents);
         }

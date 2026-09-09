@@ -76,20 +76,20 @@ enum Join {
 fn joining_type(c: char) -> Join {
     use Join::*;
     match c as u32 {
-        0x0621 => NonJoining,                        // hamza
-        0x0622 | 0x0623 | 0x0624 | 0x0625 => Right,  // alef variants, waw hamza
-        0x0626 => Dual,                              // yeh with hamza
-        0x0627 => Right,                             // alef
-        0x0628 => Dual,                              // beh
-        0x0629 => Right,                             // teh marbuta
-        0x062A..=0x062E => Dual,                     // teh, theh, jeem, hah, khah
-        0x062F | 0x0630 | 0x0631 | 0x0632 => Right,  // dal, thal, reh, zain
-        0x0633..=0x063A => Dual,                     // seen..ghain
-        0x0640 => Causing,                           // tatweel (kashida)
-        0x0641..=0x0647 => Dual,                     // feh, qaf, kaf, lam, meem, noon, heh
-        0x0648 => Right,                             // waw
-        0x0649 => Dual,                              // alef maksura
-        0x064A => Dual,                              // yeh
+        0x0621 => NonJoining,                       // hamza
+        0x0622 | 0x0623 | 0x0624 | 0x0625 => Right, // alef variants, waw hamza
+        0x0626 => Dual,                             // yeh with hamza
+        0x0627 => Right,                            // alef
+        0x0628 => Dual,                             // beh
+        0x0629 => Right,                            // teh marbuta
+        0x062A..=0x062E => Dual,                    // teh, theh, jeem, hah, khah
+        0x062F | 0x0630 | 0x0631 | 0x0632 => Right, // dal, thal, reh, zain
+        0x0633..=0x063A => Dual,                    // seen..ghain
+        0x0640 => Causing,                          // tatweel (kashida)
+        0x0641..=0x0647 => Dual,                    // feh, qaf, kaf, lam, meem, noon, heh
+        0x0648 => Right,                            // waw
+        0x0649 => Dual,                             // alef maksura
+        0x064A => Dual,                             // yeh
         // Transparent: combining marks / harakat.
         0x0610..=0x061A
         | 0x064B..=0x065F
@@ -202,14 +202,8 @@ fn shape(chars: &[char]) -> Vec<char> {
     let joins: Vec<Join> = chars.iter().map(|&c| joining_type(c)).collect();
 
     // Index of the nearest non-transparent character before/after `i`.
-    let prev_base = |i: usize| {
-        (0..i)
-            .rev()
-            .find(|&k| joins[k] != Join::Transparent)
-    };
-    let next_base = |i: usize| {
-        (i + 1..n).find(|&k| joins[k] != Join::Transparent)
-    };
+    let prev_base = |i: usize| (0..i).rev().find(|&k| joins[k] != Join::Transparent);
+    let next_base = |i: usize| (i + 1..n).find(|&k| joins[k] != Join::Transparent);
 
     let mut out = Vec::with_capacity(n);
     let mut i = 0;
@@ -282,7 +276,8 @@ fn direction_class(c: char) -> Dir {
     } else if c.is_alphabetic()
         || c.is_ascii_digit()
         || (0x0660..=0x0669).contains(&u) // Arabic-Indic digits
-        || (0x06F0..=0x06F9).contains(&u) // extended Arabic-Indic digits
+        || (0x06F0..=0x06F9).contains(&u)
+    // extended Arabic-Indic digits
     {
         // Numbers are kept left-to-right, matching how digits read inside
         // Arabic text.
@@ -346,7 +341,11 @@ fn reorder_visual(shaped: &[char]) -> Vec<char> {
         while i < n && raw[i] == Dir::Neutral {
             i += 1;
         }
-        let before = if start == 0 { base } else { resolved[start - 1] };
+        let before = if start == 0 {
+            base
+        } else {
+            resolved[start - 1]
+        };
         let after = if i == n { base } else { raw[i] };
         let dir = if before == after { before } else { base };
         for r in resolved.iter_mut().take(i).skip(start) {

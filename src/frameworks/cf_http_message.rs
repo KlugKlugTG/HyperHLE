@@ -49,14 +49,16 @@
 
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::core_foundation::cf_allocator::{kCFAllocatorDefault, CFAllocatorRef};
-use crate::frameworks::core_foundation::cf_data::{CFDataCreate, CFDataGetBytePtr, CFDataGetLength};
+use crate::frameworks::core_foundation::cf_data::{
+    CFDataCreate, CFDataGetBytePtr, CFDataGetLength,
+};
 use crate::frameworks::core_foundation::cf_string::CFStringRef;
 use crate::frameworks::core_foundation::cf_url::CFURLRef;
 use crate::frameworks::core_foundation::{CFIndex, CFRelease, CFRetain, CFTypeRef};
 use crate::frameworks::foundation::ns_string::{from_rust_string, to_rust_string};
 use crate::mem::{ConstPtr, MutPtr};
 use crate::objc::{
-    id, msg, msg_class, nil, objc_classes, retain, release, ClassExports, HostObject,
+    id, msg, msg_class, nil, objc_classes, release, retain, ClassExports, HostObject,
 };
 use crate::Environment;
 
@@ -134,7 +136,11 @@ fn version_string(env: &mut Environment, version: CFStringRef) -> String {
         "HTTP/1.1".to_string()
     } else {
         let v = to_rust_string(env, version).into_owned();
-        if v.is_empty() { "HTTP/1.1".to_string() } else { v }
+        if v.is_empty() {
+            "HTTP/1.1".to_string()
+        } else {
+            v
+        }
     }
 }
 
@@ -350,11 +356,7 @@ fn CFHTTPMessageCopyBody(env: &mut Environment, msg: CFHTTPMessageRef) -> CFType
     if msg.is_null() {
         return nil;
     }
-    let bytes = env
-        .objc
-        .borrow::<CFHTTPMessageHostObject>(msg)
-        .body
-        .clone();
+    let bytes = env.objc.borrow::<CFHTTPMessageHostObject>(msg).body.clone();
     if bytes.is_empty() {
         return nil;
     }
@@ -362,9 +364,7 @@ fn CFHTTPMessageCopyBody(env: &mut Environment, msg: CFHTTPMessageRef) -> CFType
     // first.
     let len = bytes.len() as u32;
     let buf: MutPtr<u8> = env.mem.alloc(len).cast();
-    env.mem
-        .bytes_at_mut(buf, len)
-        .copy_from_slice(&bytes);
+    env.mem.bytes_at_mut(buf, len).copy_from_slice(&bytes);
     let data: CFTypeRef = CFDataCreate(env, kCFAllocatorDefault, buf.cast_const(), len as CFIndex);
     env.mem.free(buf.cast());
     data
@@ -379,10 +379,7 @@ fn CFHTTPMessageAppendBytes(
     if msg.is_null() || new_bytes.is_null() || new_bytes_len <= 0 {
         return false;
     }
-    let slice = env
-        .mem
-        .bytes_at(new_bytes, new_bytes_len as u32)
-        .to_vec();
+    let slice = env.mem.bytes_at(new_bytes, new_bytes_len as u32).to_vec();
 
     // The bytes are an on-the-wire HTTP message that the caller is feeding
     // us in chunks. We parse what we can: everything up to the first
@@ -478,18 +475,14 @@ fn CFHTTPMessageIsRequest(env: &mut Environment, msg: CFHTTPMessageRef) -> bool 
     if msg.is_null() {
         return false;
     }
-    env.objc
-        .borrow::<CFHTTPMessageHostObject>(msg)
-        .is_request
+    env.objc.borrow::<CFHTTPMessageHostObject>(msg).is_request
 }
 
 fn CFHTTPMessageGetResponseStatusCode(env: &mut Environment, msg: CFHTTPMessageRef) -> CFIndex {
     if msg.is_null() {
         return 0;
     }
-    env.objc
-        .borrow::<CFHTTPMessageHostObject>(msg)
-        .status_code
+    env.objc.borrow::<CFHTTPMessageHostObject>(msg).status_code
 }
 
 fn CFHTTPMessageCopyRequestMethod(env: &mut Environment, msg: CFHTTPMessageRef) -> CFStringRef {
@@ -586,9 +579,7 @@ fn CFHTTPMessageCopySerializedMessage(env: &mut Environment, msg: CFHTTPMessageR
     let len = bytes.len() as u32;
     let buf: MutPtr<u8> = env.mem.alloc(len.max(1)).cast();
     if len > 0 {
-        env.mem
-            .bytes_at_mut(buf, len)
-            .copy_from_slice(&bytes);
+        env.mem.bytes_at_mut(buf, len).copy_from_slice(&bytes);
     }
     let data: CFTypeRef = CFDataCreate(env, kCFAllocatorDefault, buf.cast_const(), len as CFIndex);
     env.mem.free(buf.cast());

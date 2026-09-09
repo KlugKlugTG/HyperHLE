@@ -15,8 +15,7 @@
 use super::ns_string::from_rust_string;
 use super::{NSInteger, NSUInteger};
 use crate::objc::{
-    autorelease, id, msg, msg_class, nil, objc_classes, retain, ClassExports, HostObject,
-    NSZonePtr,
+    autorelease, id, msg, msg_class, nil, objc_classes, retain, ClassExports, HostObject, NSZonePtr,
 };
 
 /// `NSNotFound` is `NSIntegerMax` (per Apple's `NSObjCRuntime.h`).

@@ -157,9 +157,7 @@ fn CFBundleCreateBundlesFromDirectory(
     // directory without bundles yields an empty array and callers iterate
     // the result unconditionally, so return an empty array instead of nil
     // to keep that iteration safe.
-    log_dbg!(
-        "CFBundleCreateBundlesFromDirectory: scan not implemented, returning empty array"
-    );
+    log_dbg!("CFBundleCreateBundlesFromDirectory: scan not implemented, returning empty array");
     let empty: CFArrayRef = msg_class![env; NSArray array];
     empty
 }
@@ -622,7 +620,10 @@ fn CFBundleLoadExecutable(_env: &mut Environment, bundle: CFBundleRef) -> bool {
     // The app binary is always "loaded"; other bundles have no code we could
     // load, but reporting success matches CFBundleIsExecutableLoaded above
     // and keeps callers out of their error-handling paths.
-    log_dbg!("CFBundleLoadExecutable({:?}) -> true (pretend success)", bundle);
+    log_dbg!(
+        "CFBundleLoadExecutable({:?}) -> true (pretend success)",
+        bundle
+    );
     true
 }
 

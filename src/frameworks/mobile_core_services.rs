@@ -88,10 +88,7 @@ pub const CONSTANTS: ConstantExports = &[
         HostConstant::NSString("com.apple.quicktime-movie"),
     ),
     ("_kUTTypeMPEG", HostConstant::NSString("public.mpeg")),
-    (
-        "_kUTTypeMPEG4",
-        HostConstant::NSString("public.mpeg-4"),
-    ),
+    ("_kUTTypeMPEG4", HostConstant::NSString("public.mpeg-4")),
     (
         "_kUTTypeMPEG4Audio",
         HostConstant::NSString("public.mpeg-4-audio"),
@@ -104,14 +101,8 @@ pub const CONSTANTS: ConstantExports = &[
         "_kUTTypeAppleProtectedMPEG4Video",
         HostConstant::NSString("com.apple.protected-mpeg-4-video"),
     ),
-    (
-        "_kUTTypeMP3",
-        HostConstant::NSString("public.mp3"),
-    ),
-    (
-        "_kUTTypeAVIMovie",
-        HostConstant::NSString("public.avi"),
-    ),
+    ("_kUTTypeMP3", HostConstant::NSString("public.mp3")),
+    ("_kUTTypeAVIMovie", HostConstant::NSString("public.avi")),
     (
         "_kUTTypeAudiovisualContent",
         HostConstant::NSString("public.audiovisual-content"),
@@ -124,10 +115,7 @@ pub const CONSTANTS: ConstantExports = &[
         "_kUTTypeAIFFAudio",
         HostConstant::NSString("public.aiff-audio"),
     ),
-    (
-        "_kUTTypeAUAudio",
-        HostConstant::NSString("public.au-audio"),
-    ),
+    ("_kUTTypeAUAudio", HostConstant::NSString("public.au-audio")),
     (
         "_kUTTypeMIDIAudio",
         HostConstant::NSString("public.midi-audio"),
@@ -135,14 +123,8 @@ pub const CONSTANTS: ConstantExports = &[
     // Content/format/abstract types.
     ("_kUTTypeContent", HostConstant::NSString("public.content")),
     ("_kUTTypeItem", HostConstant::NSString("public.item")),
-    (
-        "_kUTTypeArchive",
-        HostConstant::NSString("public.archive"),
-    ),
-    (
-        "_kUTTypeFolder",
-        HostConstant::NSString("public.folder"),
-    ),
+    ("_kUTTypeArchive", HostConstant::NSString("public.archive")),
+    ("_kUTTypeFolder", HostConstant::NSString("public.folder")),
     (
         "_kUTTypeDirectory",
         HostConstant::NSString("public.directory"),
@@ -151,10 +133,7 @@ pub const CONSTANTS: ConstantExports = &[
         "_kUTTypeApplication",
         HostConstant::NSString("com.apple.application"),
     ),
-    (
-        "_kUTTypeBundle",
-        HostConstant::NSString("com.apple.bundle"),
-    ),
+    ("_kUTTypeBundle", HostConstant::NSString("com.apple.bundle")),
     (
         "_kUTTypeFramework",
         HostConstant::NSString("com.apple.framework"),
@@ -164,7 +143,10 @@ pub const CONSTANTS: ConstantExports = &[
         HostConstant::NSString("public.executable"),
     ),
     // Document types.
-    ("_kUTTypeUTF8PlainText", HostConstant::NSString("public.utf8-plain-text")),
+    (
+        "_kUTTypeUTF8PlainText",
+        HostConstant::NSString("public.utf8-plain-text"),
+    ),
     (
         "_kUTTypeUTF16PlainText",
         HostConstant::NSString("public.utf16-plain-text"),
@@ -186,19 +168,13 @@ pub const CONSTANTS: ConstantExports = &[
         HostConstant::NSString("com.apple.binary-property-list"),
     ),
     ("_kUTTypePDF", HostConstant::NSString("com.adobe.pdf")),
-    (
-        "_kUTTypeVCard",
-        HostConstant::NSString("public.vcard"),
-    ),
+    ("_kUTTypeVCard", HostConstant::NSString("public.vcard")),
     // VCS / source / build artefacts occasionally referenced by IDE-style apps.
     (
         "_kUTTypeSourceCode",
         HostConstant::NSString("public.source-code"),
     ),
-    (
-        "_kUTTypeCSource",
-        HostConstant::NSString("public.c-source"),
-    ),
+    ("_kUTTypeCSource", HostConstant::NSString("public.c-source")),
     (
         "_kUTTypeObjectiveCSource",
         HostConstant::NSString("public.objective-c-source"),

@@ -137,7 +137,8 @@ fn backtrace_symbols_fd(env: &mut Environment, array: ConstPtr<u32>, size: i32, 
         // Hand off to write(2). Failing writes are silently dropped,
         // matching libsystem_c's behaviour.
         let bytes: MutPtr<u8> = env.mem.alloc(line.len() as u32).cast();
-        env.mem.bytes_at_mut(bytes, line.len() as u32)
+        env.mem
+            .bytes_at_mut(bytes, line.len() as u32)
             .copy_from_slice(line.as_bytes());
         let _ = crate::libc::posix_io::write(env, fd, bytes.cast().cast_const(), line.len() as u32);
         env.mem.free(bytes.cast());

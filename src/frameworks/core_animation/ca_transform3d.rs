@@ -446,10 +446,7 @@ fn CATransform3DIsAffine(_env: &mut Environment, t: CATransform3D) -> bool {
     t.is_affine()
 }
 
-fn CATransform3DGetAffineTransform(
-    _env: &mut Environment,
-    t: CATransform3D,
-) -> CGAffineTransform {
+fn CATransform3DGetAffineTransform(_env: &mut Environment, t: CATransform3D) -> CGAffineTransform {
     if t.is_affine() {
         t.to_affine()
     } else {

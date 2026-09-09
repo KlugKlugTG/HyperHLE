@@ -177,12 +177,7 @@ fn sem_trywait(env: &mut Environment, sem: MutPtr<sem_t>) -> i32 {
     // two failure modes by checking whether the semaphore is tracked at all.
     if env.sem_decrement(sem, false) {
         0 // success
-    } else if env
-        .libc_state
-        .semaphore
-        .open_semaphores
-        .contains_key(&sem)
-    {
+    } else if env.libc_state.semaphore.open_semaphores.contains_key(&sem) {
         set_errno(env, EAGAIN);
         -1
     } else {
@@ -215,7 +210,10 @@ pub fn sem_close(env: &mut Environment, sem: MutPtr<sem_t>) -> i32 {
             sem
         );
         std::mem::drop(host_sem);
-        env.libc_state.semaphore.open_semaphores.insert(sem, host_sem_rc);
+        env.libc_state
+            .semaphore
+            .open_semaphores
+            .insert(sem, host_sem_rc);
         set_errno(env, EINVAL);
         return -1;
     }

@@ -15,7 +15,8 @@ use std::sync::{LazyLock, Mutex};
 /// who don't have access to ADB, so we also write to a log file.
 pub fn get_log_file() -> &'static Mutex<File> {
     static LOG_FILE: LazyLock<Mutex<File>> = LazyLock::new(|| {
-        let file = File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap();
+        let file =
+            File::create(crate::paths::user_data_base_path().join("touchHLE_log.txt")).unwrap();
         #[cfg(unix)]
         crate::crash_handler::set_log_fd(std::os::fd::AsRawFd::as_raw_fd(&file));
         Mutex::new(file)
@@ -119,9 +120,4 @@ macro_rules! echo_no_panic {
 
 /// Put modules to enable [log_dbg] for here, e.g. "touchHLE::mem" to see when
 /// memory is allocated and freed.
-pub const ENABLED_MODULES: &[&str] = &[
-    "touchHLE::frameworks::uikit::ui_view",
-    "touchHLE::frameworks::uikit::ui_view_controller",
-    "touchHLE::frameworks::foundation::ns_run_loop",
-    "touchHLE::frameworks::core_animation::ca_display_link",
-];
+pub const ENABLED_MODULES: &[&str] = &[];

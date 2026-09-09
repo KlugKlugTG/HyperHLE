@@ -343,7 +343,6 @@ fn decode_caf_to_pcm_inner(file: Cursor<Vec<u8>>) -> Result<SymphoniaDecodedToPc
     })
 }
 
-
 /// Decode a single 8-bit µ-law (G.711) sample to 16-bit signed linear PCM.
 ///
 /// Implementation follows the ITU-T G.711 specification and the canonical
@@ -426,4 +425,3 @@ fn alaw_to_linear(a_val: u8) -> i16 {
         -(t as i16)
     }
 }
-

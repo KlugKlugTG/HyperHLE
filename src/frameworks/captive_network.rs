@@ -58,9 +58,7 @@ fn CNCopySupportedInterfaces(env: &mut Environment) -> CFArrayRef {
 /// network rather than failing the call outright.
 fn CNCopyCurrentNetworkInfo(env: &mut Environment, interface: CFStringRef) -> CFDictionaryRef {
     let interface_name = to_rust_string(env, interface.cast());
-    log_dbg!(
-        "CNCopyCurrentNetworkInfo({interface_name:?}) — reporting placeholder Wi-Fi network",
-    );
+    log_dbg!("CNCopyCurrentNetworkInfo({interface_name:?}) — reporting placeholder Wi-Fi network",);
 
     let ssid = get_static_str(env, "touchHLE");
     let bssid = get_static_str(env, "02:00:00:00:00:00");

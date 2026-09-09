@@ -223,11 +223,7 @@ const GET_PARAMS: ParamTable = ParamTable(&[
     // OES_read_format: we can only guarantee what our ReadPixels path
     // handles natively, which is RGBA/UNSIGNED_BYTE (the commonly-reported
     // combination on iPhone OS PowerVR drivers as well).
-    (
-        IMPLEMENTATION_COLOR_READ_FORMAT_OES,
-        ParamType::Int,
-        1,
-    ),
+    (IMPLEMENTATION_COLOR_READ_FORMAT_OES, ParamType::Int, 1),
     (IMPLEMENTATION_COLOR_READ_TYPE_OES, ParamType::Int, 1),
     (gl21::LIGHT_MODEL_AMBIENT, ParamType::Color, 4),
     (gl21::LIGHT_MODEL_TWO_SIDE, ParamType::Boolean, 1),

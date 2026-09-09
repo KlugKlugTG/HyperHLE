@@ -27,7 +27,11 @@ fn c_string_from_gl(pointer: *const GLubyte) -> String {
     if pointer.is_null() {
         return String::new();
     }
-    unsafe { CStr::from_ptr(pointer as *const _).to_string_lossy().into_owned() }
+    unsafe {
+        CStr::from_ptr(pointer as *const _)
+            .to_string_lossy()
+            .into_owned()
+    }
 }
 
 pub struct GLES1NativeContext {
@@ -304,7 +308,9 @@ impl GLES for GLES1Native<'_> {
                 CString::new(filtered).ok()
             })
             .as_ref()
-            .map_or(std::ptr::null(), |extensions| extensions.as_ptr() as *const GLubyte)
+            .map_or(std::ptr::null(), |extensions| {
+                extensions.as_ptr() as *const GLubyte
+            })
     }
 
     // Other state manipulation
@@ -874,9 +880,11 @@ impl GLES for GLES1Native<'_> {
                 let palette_entry_count: usize = if index_is_nibble { 16 } else { 256 };
                 let palette_size = palette_entry_size * palette_entry_count;
 
-                let Some(index_count) = (usize::try_from(width).ok())
-                    .and_then(|width| usize::try_from(height).ok().and_then(|height| width.checked_mul(height)))
-                else {
+                let Some(index_count) = (usize::try_from(width).ok()).and_then(|width| {
+                    usize::try_from(height)
+                        .ok()
+                        .and_then(|height| width.checked_mul(height))
+                }) else {
                     log!(
                         "Warning: GLES1Native::CompressedTexImage2D: invalid paletted texture dimensions {width}x{height}; skipping upload."
                     );

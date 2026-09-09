@@ -39,10 +39,7 @@ pub const CONSTANTS: ConstantExports = &[
         "_SKStoreProductParameterAdvertisingPartnerToken",
         HostConstant::NSString("advertisingPartnerToken"),
     ),
-    (
-        "_SKErrorDomain",
-        HostConstant::NSString("SKErrorDomain"),
-    ),
+    ("_SKErrorDomain", HostConstant::NSString("SKErrorDomain")),
 ];
 
 pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {

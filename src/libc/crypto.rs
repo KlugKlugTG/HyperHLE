@@ -19,6 +19,4 @@ fn CC_MD5(env: &mut Environment, data: ConstVoidPtr, len: u32, md: MutPtr<u8>) -
     md
 }
 
-pub const FUNCTIONS: FunctionExports = &[
-    export_c_func!(CC_MD5(_, _, _)),
-];
+pub const FUNCTIONS: FunctionExports = &[export_c_func!(CC_MD5(_, _, _))];

@@ -1364,7 +1364,6 @@ unsafe fn guard_client_vertex_arrays(gles: &mut dyn GLES, mem: &Mem) -> Vec<GLui
     disabled
 }
 
-
 /// Valid primitive modes for GLES1/2 draw calls. A guest passing anything else
 /// would raise GL_INVALID_ENUM (0x500) on the host driver; we filter those
 /// draws out with a one-time warning instead of feeding the driver garbage.
@@ -1396,7 +1395,6 @@ fn warn_invalid_draw_mode(what: &str, mode: GLenum) {
         );
     }
 }
-
 
 fn glDrawArrays(env: &mut Environment, mode: GLenum, first: GLint, count: GLsizei) {
     {
@@ -2803,13 +2801,15 @@ fn glMapBufferOES(env: &mut Environment, target: GLenum, access: GLenum) -> MutP
             });
             // Re-borrow because with_ctx_and_mem dropped our reference.
             let current_ctx_host_object = env.objc.borrow_mut::<EAGLContextHostObject>(current_ctx);
-            current_ctx_host_object
-                .mapped_buffers
-                .insert((target, buffer_object_name), (guest_buffer, host_buffer, buffer_size));
+            current_ctx_host_object.mapped_buffers.insert(
+                (target, buffer_object_name),
+                (guest_buffer, host_buffer, buffer_size),
+            );
         } else {
-            current_ctx_host_object
-                .mapped_buffers
-                .insert((target, buffer_object_name), (guest_buffer, host_buffer, buffer_size));
+            current_ctx_host_object.mapped_buffers.insert(
+                (target, buffer_object_name),
+                (guest_buffer, host_buffer, buffer_size),
+            );
         }
         guest_buffer
     }
@@ -2841,8 +2841,9 @@ fn unmap_buffer(env: &mut Environment, target: GLenum, oes: bool) -> GLboolean {
     };
     unsafe {
         host_buffer.copy_from(
-            env.mem.bytes_at(guest_buffer.cast(), buffer_size as GuestUSize).as_ptr()
-                as *mut GLvoid,
+            env.mem
+                .bytes_at(guest_buffer.cast(), buffer_size as GuestUSize)
+                .as_ptr() as *mut GLvoid,
             buffer_size,
         );
     }
@@ -3019,13 +3020,65 @@ fn glLinkProgram(env: &mut Environment, program: GLuint) {
     with_ctx_and_mem(env, |gles, _mem| unsafe {
         if gles.is_es2() {
             for (index, names) in [
-                (0, &["position", "a_position", "aPosition", "inPosition", "rm_Vertex"][..]),
-                (1, &["normal", "a_normal", "aNormal", "inNormal", "rm_Normal"][..]),
-                (2, &["color", "a_color", "aColor", "inColor", "rm_Color"][..]),
-                (3, &["texCoord", "texcoord", "a_texCoord", "aTexCoord", "inTexCoord", "rm_TexCoord0"][..]),
-                (4, &["texCoord1", "a_texCoord1", "aTexCoord1", "inTexCoord1", "rm_TexCoord1"][..]),
-                (5, &["tangent", "a_tangent", "aTangent", "inTangent", "rm_Tangent"][..]),
-                (6, &["binormal", "a_binormal", "aBinormal", "inBinormal", "rm_Binormal"][..]),
+                (
+                    0,
+                    &[
+                        "position",
+                        "a_position",
+                        "aPosition",
+                        "inPosition",
+                        "rm_Vertex",
+                    ][..],
+                ),
+                (
+                    1,
+                    &["normal", "a_normal", "aNormal", "inNormal", "rm_Normal"][..],
+                ),
+                (
+                    2,
+                    &["color", "a_color", "aColor", "inColor", "rm_Color"][..],
+                ),
+                (
+                    3,
+                    &[
+                        "texCoord",
+                        "texcoord",
+                        "a_texCoord",
+                        "aTexCoord",
+                        "inTexCoord",
+                        "rm_TexCoord0",
+                    ][..],
+                ),
+                (
+                    4,
+                    &[
+                        "texCoord1",
+                        "a_texCoord1",
+                        "aTexCoord1",
+                        "inTexCoord1",
+                        "rm_TexCoord1",
+                    ][..],
+                ),
+                (
+                    5,
+                    &[
+                        "tangent",
+                        "a_tangent",
+                        "aTangent",
+                        "inTangent",
+                        "rm_Tangent",
+                    ][..],
+                ),
+                (
+                    6,
+                    &[
+                        "binormal",
+                        "a_binormal",
+                        "aBinormal",
+                        "inBinormal",
+                        "rm_Binormal",
+                    ][..],
+                ),
             ] {
                 for name in names {
                     let name = std::ffi::CString::new(*name).unwrap();
@@ -3501,7 +3554,9 @@ fn glVertexAttrib1f(env: &mut Environment, index: GLuint, x: GLfloat) {
 }
 fn glVertexAttrib1fv(env: &mut Environment, index: GLuint, values: ConstPtr<GLfloat>) {
     let value = env.mem.read(values);
-    with_ctx_and_mem(env, |gles, _mem| unsafe { gles.VertexAttrib1fv(index, &value) });
+    with_ctx_and_mem(env, |gles, _mem| unsafe {
+        gles.VertexAttrib1fv(index, &value)
+    });
 }
 fn glVertexAttrib2f(env: &mut Environment, index: GLuint, x: GLfloat, y: GLfloat) {
     with_ctx_and_mem(env, |gles, _mem| unsafe {
@@ -3527,15 +3582,21 @@ fn glVertexAttrib4f(
 }
 fn glVertexAttrib2fv(env: &mut Environment, index: GLuint, values: ConstPtr<GLfloat>) {
     let value = env.mem.read(values);
-    with_ctx_and_mem(env, |gles, _mem| unsafe { gles.VertexAttrib2fv(index, &value) });
+    with_ctx_and_mem(env, |gles, _mem| unsafe {
+        gles.VertexAttrib2fv(index, &value)
+    });
 }
 fn glVertexAttrib3fv(env: &mut Environment, index: GLuint, values: ConstPtr<GLfloat>) {
     let value = env.mem.read(values);
-    with_ctx_and_mem(env, |gles, _mem| unsafe { gles.VertexAttrib3fv(index, &value) });
+    with_ctx_and_mem(env, |gles, _mem| unsafe {
+        gles.VertexAttrib3fv(index, &value)
+    });
 }
 fn glVertexAttrib4fv(env: &mut Environment, index: GLuint, values: ConstPtr<GLfloat>) {
     let value = env.mem.read(values);
-    with_ctx_and_mem(env, |gles, _mem| unsafe { gles.VertexAttrib4fv(index, &value) });
+    with_ctx_and_mem(env, |gles, _mem| unsafe {
+        gles.VertexAttrib4fv(index, &value)
+    });
 }
 fn glUniform1i(env: &mut Environment, location: GLint, v0: GLint) {
     with_ctx_and_mem(env, |gles, _mem| unsafe { gles.Uniform1i(location, v0) });
@@ -3988,7 +4049,9 @@ fn glMapBufferRange(
     let guest_buf: MutPtr<GLvoid> = env.mem.alloc(length_usize as GuestUSize).cast();
     unsafe {
         let host_slice = from_raw_parts(host_ptr as *const u8, length_usize);
-        let guest_slice = env.mem.bytes_at_mut(guest_buf.cast(), length_usize as GuestUSize);
+        let guest_slice = env
+            .mem
+            .bytes_at_mut(guest_buf.cast(), length_usize as GuestUSize);
         guest_slice.copy_from_slice(host_slice);
     }
     let current_ctx: Option<crate::objc::id> = *env
@@ -4004,10 +4067,10 @@ fn glMapBufferRange(
     };
     let buffer_object_name = _get_currently_bound_buffer_object_name(env, target);
     let host_obj = env.objc.borrow_mut::<EAGLContextHostObject>(ctx);
-    if let Some((old_guest_buf, _, _)) = host_obj
-        .mapped_buffers
-        .insert((target, buffer_object_name), (guest_buf, host_ptr, length_usize))
-    {
+    if let Some((old_guest_buf, _, _)) = host_obj.mapped_buffers.insert(
+        (target, buffer_object_name),
+        (guest_buf, host_ptr, length_usize),
+    ) {
         env.mem.free(old_guest_buf);
     }
     guest_buf.cast()
@@ -4531,7 +4594,12 @@ fn glGetQueryivEXT(env: &mut Environment, target: GLenum, pname: GLenum, params:
     glGetQueryiv(env, target, pname, params)
 }
 
-fn glGetQueryObjectuivEXT(env: &mut Environment, id: GLuint, pname: GLenum, params: MutPtr<GLuint>) {
+fn glGetQueryObjectuivEXT(
+    env: &mut Environment,
+    id: GLuint,
+    pname: GLenum,
+    params: MutPtr<GLuint>,
+) {
     glGetQueryObjectuiv(env, id, pname, params)
 }
 
@@ -5678,7 +5746,10 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(glUnmapBuffer(_)),
     export_c_func_aliased!("glMapBufferRangeEXT", glMapBufferRange(_, _, _, _)),
     export_c_func!(glMapBufferRange(_, _, _, _)),
-    export_c_func_aliased!("glFlushMappedBufferRangeEXT", glFlushMappedBufferRange(_, _, _)),
+    export_c_func_aliased!(
+        "glFlushMappedBufferRangeEXT",
+        glFlushMappedBufferRange(_, _, _)
+    ),
     export_c_func!(glFlushMappedBufferRange(_, _, _)),
     export_c_func!(glCopyBufferSubData(_, _, _, _, _)),
     export_c_func!(glBindBufferBase(_, _, _)),

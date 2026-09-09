@@ -16,8 +16,8 @@ pub mod ui_control;
 pub mod ui_image_view;
 pub mod ui_label;
 pub mod ui_page_control;
-pub mod ui_refresh_control;
 pub mod ui_picker_view;
+pub mod ui_refresh_control;
 pub mod ui_scroll_view;
 pub mod ui_table_view;
 pub mod ui_text_selection_view;
@@ -200,9 +200,10 @@ fn init_common(env: &mut Environment, this: id) -> id {
     this
 }
 
-
 fn touchhle_cocos_view_class_name(env: &mut Environment, view: id) -> String {
-    if view == nil { return String::new(); }
+    if view == nil {
+        return String::new();
+    }
     let cls: crate::objc::Class = msg![env; view class];
     env.objc.get_class_name(cls).to_owned()
 }
@@ -210,8 +211,14 @@ fn touchhle_cocos_view_class_name(env: &mut Environment, view: id) -> String {
 fn touchhle_cocos_is_gl_or_game_view_name(class_name: &str) -> bool {
     matches!(
         class_name,
-        "CCGLView" | "CCEAGLView" | "EAGLView" | "GLKView" |
-        "Cocos2dxGLView" | "Cocos2dView" | "CCUIViewWrapper" | "DirectorView"
+        "CCGLView"
+            | "CCEAGLView"
+            | "EAGLView"
+            | "GLKView"
+            | "Cocos2dxGLView"
+            | "Cocos2dView"
+            | "CCUIViewWrapper"
+            | "DirectorView"
     ) || class_name.contains("EAGL")
         || class_name.contains("GLView")
         || class_name.contains("Cocos")
@@ -226,7 +233,9 @@ fn touchhle_cocos_is_gl_or_game_view_name(class_name: &str) -> bool {
 }
 
 fn touchhle_cocos_landscape_rect(env: &Environment) -> CGRect {
-    let size = std::env::var("TOUCHHLE_COCOS_LANDSCAPE_SIZE").or_else(|_| std::env::var("TOUCHHLE_UNITY_LANDSCAPE_SIZE")).or_else(|_| std::env::var("TOUCHHLE_ENGINE_LANDSCAPE_SIZE"))
+    let size = std::env::var("TOUCHHLE_COCOS_LANDSCAPE_SIZE")
+        .or_else(|_| std::env::var("TOUCHHLE_UNITY_LANDSCAPE_SIZE"))
+        .or_else(|_| std::env::var("TOUCHHLE_ENGINE_LANDSCAPE_SIZE"))
         .ok()
         .and_then(|v| {
             let mut parts = v.split(|c| c == 'x' || c == 'X' || c == ',');
@@ -237,18 +246,25 @@ fn touchhle_cocos_landscape_rect(env: &Environment) -> CGRect {
         .unwrap_or_else(|| {
             match env.bundle.bundle_identifier() {
                 // Existing known iPad-ish Cocos clones keep using their old safe size.
-                "com.apprisetec9.minionjump" | "com.risinghighapps.kingdomprincepro" => (1024.0, 768.0),
+                "com.apprisetec9.minionjump" | "com.risinghighapps.kingdomprincepro" => {
+                    (1024.0, 768.0)
+                }
                 _ => (480.0, 320.0),
             }
         });
     CGRect {
         origin: CGPoint { x: 0.0, y: 0.0 },
-        size: CGSize { width: size.0, height: size.1 },
+        size: CGSize {
+            width: size.0,
+            height: size.1,
+        },
     }
 }
 
 fn touchhle_cocos_should_force_landscape_view(env: &mut Environment, view: id) -> bool {
-    if view == nil { return false; }
+    if view == nil {
+        return false;
+    }
 
     let class_name = touchhle_cocos_view_class_name(env, view);
     if !touchhle_cocos_is_gl_or_game_view_name(&class_name) && class_name != "UIWindow" {
@@ -272,10 +288,18 @@ fn touchhle_cocos_should_force_landscape_view(env: &mut Environment, view: id) -
 
 fn touchhle_cocos_sanitize_rect(rect: CGRect) -> CGRect {
     let mut r = rect;
-    if !r.origin.x.is_finite() { r.origin.x = 0.0; }
-    if !r.origin.y.is_finite() { r.origin.y = 0.0; }
-    if !r.size.width.is_finite() || r.size.width < 0.0 { r.size.width = 0.0; }
-    if !r.size.height.is_finite() || r.size.height < 0.0 { r.size.height = 0.0; }
+    if !r.origin.x.is_finite() {
+        r.origin.x = 0.0;
+    }
+    if !r.origin.y.is_finite() {
+        r.origin.y = 0.0;
+    }
+    if !r.size.width.is_finite() || r.size.width < 0.0 {
+        r.size.width = 0.0;
+    }
+    if !r.size.height.is_finite() || r.size.height < 0.0 {
+        r.size.height = 0.0;
+    }
     r
 }
 
@@ -294,7 +318,10 @@ fn ultrahle_minionjump_force_landscape_ccglview(env: &mut Environment, this: id)
 fn ultrahle_minionjump_landscape_rect() -> CGRect {
     CGRect {
         origin: CGPoint { x: 0.0, y: 0.0 },
-        size: CGSize { width: 1024.0, height: 768.0 },
+        size: CGSize {
+            width: 1024.0,
+            height: 768.0,
+        },
     }
 }
 

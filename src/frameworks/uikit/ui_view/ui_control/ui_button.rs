@@ -199,7 +199,10 @@ fn set_type(env: &mut Environment, button: id, type_: UIButtonType) {
             // screen and can receive taps.
             let bounds = CGRect {
                 origin: CGPoint { x: 0.0, y: 0.0 },
-                size: CGSize { width: 18.0, height: 19.0 },
+                size: CGSize {
+                    width: 18.0,
+                    height: 19.0,
+                },
             };
             () = msg![env; button setBounds:bounds];
             let title = get_static_str(env, "i");
@@ -209,14 +212,20 @@ fn set_type(env: &mut Environment, button: id, type_: UIButtonType) {
             // System "+" button (type 5). Canonical iOS size is 29×29.
             let bounds = CGRect {
                 origin: CGPoint { x: 0.0, y: 0.0 },
-                size: CGSize { width: 29.0, height: 29.0 },
+                size: CGSize {
+                    width: 29.0,
+                    height: 29.0,
+                },
             };
             () = msg![env; button setBounds:bounds];
             let title = get_static_str(env, "+");
             () = msg![env; button setTitle:title forState:UIControlStateNormal];
         }
         _ => {
-            log!("Warning: Unhandled UIButtonType {} in set_type, treating as Custom", type_);
+            log!(
+                "Warning: Unhandled UIButtonType {} in set_type, treating as Custom",
+                type_
+            );
         }
     }
 }

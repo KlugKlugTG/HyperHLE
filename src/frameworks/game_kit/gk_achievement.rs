@@ -14,8 +14,7 @@
 
 use crate::frameworks::foundation::ns_string;
 use crate::objc::{
-    autorelease, id, nil, objc_classes, release, retain, ClassExports, HostObject,
-    NSZonePtr,
+    autorelease, id, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr,
 };
 
 #[derive(Default)]

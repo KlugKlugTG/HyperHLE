@@ -16,8 +16,8 @@ use crate::frameworks::foundation::NSUInteger;
 use crate::frameworks::uikit::ui_application::UIInterfaceOrientation;
 use crate::frameworks::uikit::ui_view::set_view_controller;
 use crate::objc::{
-    autorelease, id, msg, msg_class, msg_super, nil, objc_classes, release, retain,
-    Class, ClassExports, HostObject, NSZonePtr,
+    autorelease, id, msg, msg_class, msg_super, nil, objc_classes, release, retain, Class,
+    ClassExports, HostObject, NSZonePtr,
 };
 use crate::Environment;
 
@@ -1047,9 +1047,13 @@ pub(crate) fn promote_storyboard_placeholder(
 /// storyboard is retained so the view controller can be returned without
 /// the user having to keep a reference to it themselves.
 pub(crate) fn set_storyboard(env: &mut Environment, vc: id, storyboard: id) {
-    if storyboard != nil { retain(env, storyboard); }
+    if storyboard != nil {
+        retain(env, storyboard);
+    }
     let host = env.objc.borrow_mut::<UIViewControllerHostObject>(vc);
     let old = host.storyboard;
     host.storyboard = storyboard;
-    if old != nil { release(env, old); }
+    if old != nil {
+        release(env, old);
+    }
 }

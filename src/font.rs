@@ -145,7 +145,9 @@ impl Font {
     /// returns a zero rect.
     pub fn glyph_bbox(&self, glyph_id: GlyphId) -> (f32, f32, f32, f32) {
         let upm = self.units_per_em() as f32;
-        let g = self.rt().glyph(glyph_id)
+        let g = self
+            .rt()
+            .glyph(glyph_id)
             .scaled(Scale::uniform(upm))
             .positioned(Point { x: 0.0, y: 0.0 });
         match g.pixel_bounding_box() {
@@ -281,13 +283,13 @@ impl Font {
     pub fn sans_bold_ar() -> Font {
         Self::from_resource_file("NotoSansArabic-Bold.ttf")
     }
-pub fn sans_regular_zh() -> Font {
-    Self::from_resource_file("NotoSansSC-Regular.otf")
-}
+    pub fn sans_regular_zh() -> Font {
+        Self::from_resource_file("NotoSansSC-Regular.otf")
+    }
 
-pub fn sans_bold_zh() -> Font {
-    Self::from_resource_file("NotoSansSC-Bold.otf")
-}
+    pub fn sans_bold_zh() -> Font {
+        Self::from_resource_file("NotoSansSC-Bold.otf")
+    }
 
     pub fn ascent(&self, font_size: f32) -> f32 {
         let v_metrics = self.rt().v_metrics(scale(font_size));
@@ -317,7 +319,10 @@ pub fn sans_bold_zh() -> Font {
         // will actually be drawn (see [arabic::shape_line_for_display]).
         let line = arabic::shape_line_for_display(line);
 
-        for glyph in self.rt().layout(&line, scale(font_size), Default::default()) {
+        for glyph in self
+            .rt()
+            .layout(&line, scale(font_size), Default::default())
+        {
             let position = glyph.position();
             let h_metrics = glyph.unpositioned().h_metrics();
 
@@ -613,15 +618,15 @@ pub fn sans_bold_zh() -> Font {
 
         let start = Point { x: 0.0, y: 0.0 };
         // This code is adapted from documentation of [rusttype::Font::layout].
-        let iter = self.rt().glyphs_for(glyphs.into_iter())
+        let iter = self
+            .rt()
+            .glyphs_for(glyphs.into_iter())
             .scan((None, 0.0), |(last, x), g| {
                 let g = g.scaled(scale(font_size * tmp_font_scale));
                 if let Some(last) = last {
-                    *x += self.rt().pair_kerning(
-                        scale(font_size * tmp_font_scale),
-                        *last,
-                        g.id(),
-                    );
+                    *x += self
+                        .rt()
+                        .pair_kerning(scale(font_size * tmp_font_scale), *last, g.id());
                 }
                 let w = g.h_metrics().advance_width;
                 let next = g.positioned(start + vector(*x, 0.0));
@@ -740,7 +745,9 @@ pub fn sans_bold_zh() -> Font {
             let x = origin.0 + pos.0;
             let y = origin.1 + pos.1;
 
-            let g = self.rt().glyph(*glyph_id)
+            let g = self
+                .rt()
+                .glyph(*glyph_id)
                 .scaled(scale(font_size))
                 .positioned(Point { x, y: 0.0 });
 
@@ -791,7 +798,9 @@ pub fn sans_bold_zh() -> Font {
         let mut current_y = origin.1;
 
         for (i, glyph_id) in glyphs.iter().enumerate() {
-            let g = self.rt().glyph(*glyph_id)
+            let g = self
+                .rt()
+                .glyph(*glyph_id)
                 .scaled(scale(font_size))
                 .positioned(Point {
                     x: current_x,
@@ -947,44 +956,264 @@ fn parse_table_from_raw(data: &[u8], tag: u32) -> Option<Vec<u8>> {
 // Standard PostScript glyph names for glyph indices 0..257 (Macintosh
 // standard ordering) used by 'post' table format 1.0 and 2.0.
 const STANDARD_MAC_GLYPH_NAMES: &[&str] = &[
-    ".notdef", ".null", "nonmarkingreturn", "space", "exclam", "quotedbl",
-    "numbersign", "dollar", "percent", "ampersand", "quotesingle", "parenleft",
-    "parenright", "asterisk", "plus", "comma", "hyphen", "period", "slash",
-    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight",
-    "nine", "colon", "semicolon", "less", "equal", "greater", "question", "at",
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
-    "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-    "bracketleft", "backslash", "bracketright", "asciicircum", "underscore",
-    "grave", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l",
-    "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-    "braceleft", "bar", "braceright", "asciitilde", "Adieresis", "Aring",
-    "Ccedilla", "Eacute", "Ntilde", "Odieresis", "Udieresis", "aacute",
-    "agrave", "acircumflex", "adieresis", "atilde", "aring", "ccedilla",
-    "eacute", "egrave", "ecircumflex", "edieresis", "iacute", "igrave",
-    "icircumflex", "idieresis", "ntilde", "oacute", "ograve", "ocircumflex",
-    "odieresis", "otilde", "uacute", "ugrave", "ucircumflex", "udieresis",
-    "dagger", "degree", "cent", "sterling", "section", "bullet", "paragraph",
-    "germandbls", "registered", "copyright", "trademark", "acute", "dieresis",
-    "notequal", "AE", "Oslash", "infinity", "plusminus", "lessequal",
-    "greaterequal", "yen", "mu", "partialdiff", "summation", "product", "pi",
-    "integral", "ordfeminine", "ordmasculine", "Omega", "ae", "oslash",
-    "questiondown", "exclamdown", "logicalnot", "radical", "florin",
-    "approxequal", "Delta", "guillemotleft", "guillemotright", "ellipsis",
-    "nonbreakingspace", "Agrave", "Atilde", "Otilde", "OE", "oe", "endash",
-    "emdash", "quotedblleft", "quotedblright", "quoteleft", "quoteright",
-    "divide", "lozenge", "ydieresis", "Ydieresis", "fraction", "currency",
-    "guilsinglleft", "guilsinglright", "fi", "fl", "daggerdbl", "periodcentered",
-    "quotesinglbase", "quotedblbase", "perthousand", "Acircumflex",
-    "Ecircumflex", "Aacute", "Edieresis", "Egrave", "Iacute", "Icircumflex",
-    "Idieresis", "Igrave", "Oacute", "Ocircumflex", "apple", "Ograve",
-    "Uacute", "Ucircumflex", "Ugrave", "dotlessi", "circumflex", "tilde",
-    "macron", "breve", "dotaccent", "ring", "cedilla", "hungarumlaut",
-    "ogonek", "caron", "Lslash", "lslash", "Scaron", "scaron", "Zcaron",
-    "zcaron", "brokenbar", "Eth", "eth", "Yacute", "yacute", "Thorn",
-    "thorn", "minus", "multiply", "onesuperior", "twosuperior", "threesuperior",
-    "onehalf", "onequarter", "threequarters", "franc", "Gbreve", "gbreve",
-    "Idotaccent", "Scedilla", "scedilla", "Cacute", "cacute", "Ccaron",
-    "ccaron", "dcroat",
+    ".notdef",
+    ".null",
+    "nonmarkingreturn",
+    "space",
+    "exclam",
+    "quotedbl",
+    "numbersign",
+    "dollar",
+    "percent",
+    "ampersand",
+    "quotesingle",
+    "parenleft",
+    "parenright",
+    "asterisk",
+    "plus",
+    "comma",
+    "hyphen",
+    "period",
+    "slash",
+    "zero",
+    "one",
+    "two",
+    "three",
+    "four",
+    "five",
+    "six",
+    "seven",
+    "eight",
+    "nine",
+    "colon",
+    "semicolon",
+    "less",
+    "equal",
+    "greater",
+    "question",
+    "at",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    "bracketleft",
+    "backslash",
+    "bracketright",
+    "asciicircum",
+    "underscore",
+    "grave",
+    "a",
+    "b",
+    "c",
+    "d",
+    "e",
+    "f",
+    "g",
+    "h",
+    "i",
+    "j",
+    "k",
+    "l",
+    "m",
+    "n",
+    "o",
+    "p",
+    "q",
+    "r",
+    "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
+    "y",
+    "z",
+    "braceleft",
+    "bar",
+    "braceright",
+    "asciitilde",
+    "Adieresis",
+    "Aring",
+    "Ccedilla",
+    "Eacute",
+    "Ntilde",
+    "Odieresis",
+    "Udieresis",
+    "aacute",
+    "agrave",
+    "acircumflex",
+    "adieresis",
+    "atilde",
+    "aring",
+    "ccedilla",
+    "eacute",
+    "egrave",
+    "ecircumflex",
+    "edieresis",
+    "iacute",
+    "igrave",
+    "icircumflex",
+    "idieresis",
+    "ntilde",
+    "oacute",
+    "ograve",
+    "ocircumflex",
+    "odieresis",
+    "otilde",
+    "uacute",
+    "ugrave",
+    "ucircumflex",
+    "udieresis",
+    "dagger",
+    "degree",
+    "cent",
+    "sterling",
+    "section",
+    "bullet",
+    "paragraph",
+    "germandbls",
+    "registered",
+    "copyright",
+    "trademark",
+    "acute",
+    "dieresis",
+    "notequal",
+    "AE",
+    "Oslash",
+    "infinity",
+    "plusminus",
+    "lessequal",
+    "greaterequal",
+    "yen",
+    "mu",
+    "partialdiff",
+    "summation",
+    "product",
+    "pi",
+    "integral",
+    "ordfeminine",
+    "ordmasculine",
+    "Omega",
+    "ae",
+    "oslash",
+    "questiondown",
+    "exclamdown",
+    "logicalnot",
+    "radical",
+    "florin",
+    "approxequal",
+    "Delta",
+    "guillemotleft",
+    "guillemotright",
+    "ellipsis",
+    "nonbreakingspace",
+    "Agrave",
+    "Atilde",
+    "Otilde",
+    "OE",
+    "oe",
+    "endash",
+    "emdash",
+    "quotedblleft",
+    "quotedblright",
+    "quoteleft",
+    "quoteright",
+    "divide",
+    "lozenge",
+    "ydieresis",
+    "Ydieresis",
+    "fraction",
+    "currency",
+    "guilsinglleft",
+    "guilsinglright",
+    "fi",
+    "fl",
+    "daggerdbl",
+    "periodcentered",
+    "quotesinglbase",
+    "quotedblbase",
+    "perthousand",
+    "Acircumflex",
+    "Ecircumflex",
+    "Aacute",
+    "Edieresis",
+    "Egrave",
+    "Iacute",
+    "Icircumflex",
+    "Idieresis",
+    "Igrave",
+    "Oacute",
+    "Ocircumflex",
+    "apple",
+    "Ograve",
+    "Uacute",
+    "Ucircumflex",
+    "Ugrave",
+    "dotlessi",
+    "circumflex",
+    "tilde",
+    "macron",
+    "breve",
+    "dotaccent",
+    "ring",
+    "cedilla",
+    "hungarumlaut",
+    "ogonek",
+    "caron",
+    "Lslash",
+    "lslash",
+    "Scaron",
+    "scaron",
+    "Zcaron",
+    "zcaron",
+    "brokenbar",
+    "Eth",
+    "eth",
+    "Yacute",
+    "yacute",
+    "Thorn",
+    "thorn",
+    "minus",
+    "multiply",
+    "onesuperior",
+    "twosuperior",
+    "threesuperior",
+    "onehalf",
+    "onequarter",
+    "threequarters",
+    "franc",
+    "Gbreve",
+    "gbreve",
+    "Idotaccent",
+    "Scedilla",
+    "scedilla",
+    "Cacute",
+    "cacute",
+    "Ccaron",
+    "ccaron",
+    "dcroat",
 ];
 
 /// Look up a glyph index from a 'post' table by PostScript name.
@@ -1010,8 +1239,7 @@ fn glyph_id_from_post_table(post_data: &[u8], name: &str, _glyph_count: u32) -> 
             if post_data.len() < 34 {
                 return None;
             }
-            let num_glyphs =
-                u16::from_be_bytes([post_data[32], post_data[33]]) as usize;
+            let num_glyphs = u16::from_be_bytes([post_data[32], post_data[33]]) as usize;
             let indices_start = 34;
             let indices_end = indices_start + num_glyphs * 2;
             if post_data.len() < indices_end {
@@ -1034,10 +1262,8 @@ fn glyph_id_from_post_table(post_data: &[u8], name: &str, _glyph_count: u32) -> 
 
             for glyph_idx in 0..num_glyphs {
                 let idx_offset = indices_start + glyph_idx * 2;
-                let name_index = u16::from_be_bytes([
-                    post_data[idx_offset],
-                    post_data[idx_offset + 1],
-                ]) as usize;
+                let name_index =
+                    u16::from_be_bytes([post_data[idx_offset], post_data[idx_offset + 1]]) as usize;
 
                 let glyph_name = if name_index < 258 {
                     STANDARD_MAC_GLYPH_NAMES
@@ -1081,8 +1307,7 @@ fn glyph_name_from_post_table(
             if post_data.len() < 34 {
                 return None;
             }
-            let num_glyphs =
-                u16::from_be_bytes([post_data[32], post_data[33]]) as usize;
+            let num_glyphs = u16::from_be_bytes([post_data[32], post_data[33]]) as usize;
             if glyph_index as usize >= num_glyphs {
                 return None;
             }
@@ -1093,10 +1318,8 @@ fn glyph_name_from_post_table(
             }
 
             let idx_offset = indices_start + glyph_index as usize * 2;
-            let name_index = u16::from_be_bytes([
-                post_data[idx_offset],
-                post_data[idx_offset + 1],
-            ]) as usize;
+            let name_index =
+                u16::from_be_bytes([post_data[idx_offset], post_data[idx_offset + 1]]) as usize;
 
             if name_index < 258 {
                 return STANDARD_MAC_GLYPH_NAMES

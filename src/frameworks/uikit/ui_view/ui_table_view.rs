@@ -110,7 +110,9 @@ fn maybe_auto_reload(env: &mut crate::Environment, this: id) {
     if bw <= 0.0 || bh <= 0.0 {
         return;
     }
-    env.objc.borrow_mut::<UITableViewHostObject>(this).auto_reloaded = true;
+    env.objc
+        .borrow_mut::<UITableViewHostObject>(this)
+        .auto_reloaded = true;
     () = msg![env; this reloadData];
 }
 
@@ -138,7 +140,10 @@ fn clear_cells(env: &mut crate::Environment, this: id, remove_subviews: bool) {
 fn make_rect(x: f32, y: f32, w: f32, h: f32) -> CGRect {
     CGRect {
         origin: CGPoint { x, y },
-        size: CGSize { width: w, height: h },
+        size: CGSize {
+            width: w,
+            height: h,
+        },
     }
 }
 
@@ -189,7 +194,10 @@ fn layout_cell_contents(env: &mut crate::Environment, this: id) {
 /// `UIImageView`) with a transparent background so the cell shows through,
 /// add it to the content view, and store it in `slot`.
 fn ensure_cell_subview(env: &mut crate::Environment, this: id, class_name: &str) -> id {
-    let content_view = env.objc.borrow::<UITableViewCellHostObject>(this).content_view;
+    let content_view = env
+        .objc
+        .borrow::<UITableViewCellHostObject>(this)
+        .content_view;
     let class = env.objc.get_known_class(class_name, &mut env.mem);
     let view: id = msg![env; class alloc];
     let view: id = msg![env; view init];

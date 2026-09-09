@@ -11,8 +11,8 @@ use super::GLES;
 use crate::matrix::Matrix;
 use std::time::{Duration, Instant};
 
-use std::sync::OnceLock;
 use std::sync::Mutex;
+use std::sync::OnceLock;
 
 pub struct FpsCounter {
     time: std::time::Instant,
@@ -46,11 +46,7 @@ impl FpsCounter {
         if duration >= Duration::from_secs(1) {
             self.time = now;
             let fps = std::mem::take(&mut self.frames) as f32 / duration.as_secs_f32();
-            echo!(
-                "touchHLE: {} FPS: {:.2}",
-                label,
-                fps
-            );
+            echo!("touchHLE: {} FPS: {:.2}", label, fps);
             // Update global text cache for on-screen overlay if enabled via
             // environment variable or the runtime flag.
             let onscreen_env = std::env::var_os("TOUCHHLE_ONSCREEN_FPS").is_some();
@@ -72,7 +68,9 @@ impl FpsCounter {
 
 /// Runtime API: enable/disable the on-screen FPS overlay at runtime.
 pub fn set_onscreen_fps_enabled(enabled: bool) {
-    ONSCREEN_FPS_ENABLED.get_or_init(|| AtomicBool::new(false)).store(enabled, Ordering::SeqCst);
+    ONSCREEN_FPS_ENABLED
+        .get_or_init(|| AtomicBool::new(false))
+        .store(enabled, Ordering::SeqCst);
 }
 
 /// Present the the latest frame (e.g. the app's splash screen or rendering
@@ -122,14 +120,7 @@ pub unsafe fn present_frame(
     gles.EnableClientState(gles11::VERTEX_ARRAY);
     gles.VertexPointer(2, gles11::FLOAT, 0, vertices.as_ptr() as *const GLvoid);
 
-    let tex_coords: [f32; 12] = [
-        0.0, 0.0,
-        0.0, 1.0,
-        1.0, 0.0,
-        1.0, 0.0,
-        0.0, 1.0,
-        1.0, 1.0,
-    ];
+    let tex_coords: [f32; 12] = [0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0];
     gles.EnableClientState(gles11::TEXTURE_COORD_ARRAY);
     gles.TexCoordPointer(2, gles11::FLOAT, 0, tex_coords.as_ptr() as *const GLvoid);
     // Apply the device-rotation matrix to the TEXTURE matrix, but rotate
@@ -211,35 +202,35 @@ const GLYPH_CHARS: &str = "0123456789:.FPS";
 // Each glyph is 8 bytes, each bit is a pixel (MSB left).
 const GLYPH_BITMAPS: &[[u8; 8]] = &[
     // 0
-    [0x3C,0x66,0x6E,0x7E,0x76,0x66,0x3C,0x00],
+    [0x3C, 0x66, 0x6E, 0x7E, 0x76, 0x66, 0x3C, 0x00],
     // 1
-    [0x18,0x38,0x18,0x18,0x18,0x18,0x7E,0x00],
+    [0x18, 0x38, 0x18, 0x18, 0x18, 0x18, 0x7E, 0x00],
     // 2
-    [0x3C,0x66,0x06,0x0C,0x18,0x30,0x7E,0x00],
+    [0x3C, 0x66, 0x06, 0x0C, 0x18, 0x30, 0x7E, 0x00],
     // 3
-    [0x3C,0x66,0x06,0x1C,0x06,0x66,0x3C,0x00],
+    [0x3C, 0x66, 0x06, 0x1C, 0x06, 0x66, 0x3C, 0x00],
     // 4
-    [0x0C,0x1C,0x3C,0x6C,0x7E,0x0C,0x1E,0x00],
+    [0x0C, 0x1C, 0x3C, 0x6C, 0x7E, 0x0C, 0x1E, 0x00],
     // 5
-    [0x7E,0x60,0x7C,0x06,0x06,0x66,0x3C,0x00],
+    [0x7E, 0x60, 0x7C, 0x06, 0x06, 0x66, 0x3C, 0x00],
     // 6
-    [0x3C,0x66,0x60,0x7C,0x66,0x66,0x3C,0x00],
+    [0x3C, 0x66, 0x60, 0x7C, 0x66, 0x66, 0x3C, 0x00],
     // 7
-    [0x7E,0x66,0x0C,0x18,0x18,0x18,0x18,0x00],
+    [0x7E, 0x66, 0x0C, 0x18, 0x18, 0x18, 0x18, 0x00],
     // 8
-    [0x3C,0x66,0x66,0x3C,0x66,0x66,0x3C,0x00],
+    [0x3C, 0x66, 0x66, 0x3C, 0x66, 0x66, 0x3C, 0x00],
     // 9
-    [0x3C,0x66,0x66,0x3E,0x06,0x66,0x3C,0x00],
+    [0x3C, 0x66, 0x66, 0x3E, 0x06, 0x66, 0x3C, 0x00],
     // : (colon)
-    [0x00,0x18,0x18,0x00,0x00,0x18,0x18,0x00],
+    [0x00, 0x18, 0x18, 0x00, 0x00, 0x18, 0x18, 0x00],
     // . (dot)
-    [0x00,0x00,0x00,0x00,0x00,0x18,0x18,0x00],
+    [0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x18, 0x00],
     // F
-    [0x7E,0x60,0x60,0x7C,0x60,0x60,0x60,0x00],
+    [0x7E, 0x60, 0x60, 0x7C, 0x60, 0x60, 0x60, 0x00],
     // P
-    [0x7C,0x66,0x66,0x7C,0x60,0x60,0x60,0x00],
+    [0x7C, 0x66, 0x66, 0x7C, 0x60, 0x60, 0x60, 0x00],
     // S
-    [0x3C,0x66,0x30,0x1C,0x06,0x66,0x3C,0x00],
+    [0x3C, 0x66, 0x30, 0x1C, 0x06, 0x66, 0x3C, 0x00],
 ];
 
 fn glyph_index(ch: char) -> Option<usize> {
@@ -297,10 +288,26 @@ unsafe fn ensure_glyph_textures(gles: &mut dyn GLES) -> Option<Vec<u32>> {
             gles11::UNSIGNED_BYTE,
             data.as_ptr() as *const _,
         );
-        gles.TexParameteri(gles11::TEXTURE_2D, gles11::TEXTURE_MIN_FILTER, gles11::NEAREST as _);
-        gles.TexParameteri(gles11::TEXTURE_2D, gles11::TEXTURE_MAG_FILTER, gles11::NEAREST as _);
-        gles.TexParameteri(gles11::TEXTURE_2D, gles11::TEXTURE_WRAP_S, gles11::CLAMP_TO_EDGE as _);
-        gles.TexParameteri(gles11::TEXTURE_2D, gles11::TEXTURE_WRAP_T, gles11::CLAMP_TO_EDGE as _);
+        gles.TexParameteri(
+            gles11::TEXTURE_2D,
+            gles11::TEXTURE_MIN_FILTER,
+            gles11::NEAREST as _,
+        );
+        gles.TexParameteri(
+            gles11::TEXTURE_2D,
+            gles11::TEXTURE_MAG_FILTER,
+            gles11::NEAREST as _,
+        );
+        gles.TexParameteri(
+            gles11::TEXTURE_2D,
+            gles11::TEXTURE_WRAP_S,
+            gles11::CLAMP_TO_EDGE as _,
+        );
+        gles.TexParameteri(
+            gles11::TEXTURE_2D,
+            gles11::TEXTURE_WRAP_T,
+            gles11::CLAMP_TO_EDGE as _,
+        );
         texs.push(tex);
     }
     *guard = Some(texs.clone());
@@ -317,7 +324,9 @@ unsafe fn draw_onscreen_text(gles: &mut dyn GLES, viewport: (u32, u32, u32, u32)
 
     // Ensure textures
     let texs_opt = ensure_glyph_textures(gles);
-    if texs_opt.is_none() { return; }
+    if texs_opt.is_none() {
+        return;
+    }
     let texs = texs_opt.unwrap();
 
     // Save state

@@ -76,11 +76,20 @@ fn state(env: &mut Environment) -> &mut State {
     &mut env.framework_state.media_toolbox
 }
 
-fn tap_id(tap: MTAudioProcessingTapRef) -> u32 { tap.to_bits() }
+fn tap_id(tap: MTAudioProcessingTapRef) -> u32 {
+    tap.to_bits()
+}
 
-fn callback_is_null(callback: GuestFunction) -> bool { callback.addr_with_thumb_bit() == 0 }
+fn callback_is_null(callback: GuestFunction) -> bool {
+    callback.addr_with_thumb_bit() == 0
+}
 
-fn create_tap(env: &mut Environment, callbacks: MutPtr<MTAudioProcessingTapCallbacks>, flags: u32, out: MutPtr<MTAudioProcessingTapRef>) -> OSStatus {
+fn create_tap(
+    env: &mut Environment,
+    callbacks: MutPtr<MTAudioProcessingTapCallbacks>,
+    flags: u32,
+    out: MutPtr<MTAudioProcessingTapRef>,
+) -> OSStatus {
     if callbacks.is_null() || out.is_null() || flags != PRE_EFFECTS && flags != POST_EFFECTS {
         return PARAM_ERR;
     }
@@ -92,7 +101,14 @@ fn create_tap(env: &mut Environment, callbacks: MutPtr<MTAudioProcessingTapCallb
     let id = tap_id(tap);
     let init = callbacks.init;
     let client_info = callbacks.client_info;
-    state(env).taps.insert(id, TapState { callbacks, storage: MutVoidPtr::null(), prepared: false });
+    state(env).taps.insert(
+        id,
+        TapState {
+            callbacks,
+            storage: MutVoidPtr::null(),
+            prepared: false,
+        },
+    );
     env.mem.write(out, tap);
     if !callback_is_null(init) {
         let storage = env.mem.alloc(0u32).cast_void();
@@ -103,15 +119,30 @@ fn create_tap(env: &mut Environment, callbacks: MutPtr<MTAudioProcessingTapCallb
 }
 
 fn get_storage(env: &mut Environment, tap: MTAudioProcessingTapRef) -> MutVoidPtr {
-    state(env).taps.get(&tap_id(tap)).map(|t| t.storage).unwrap_or(MutVoidPtr::null())
+    state(env)
+        .taps
+        .get(&tap_id(tap))
+        .map(|t| t.storage)
+        .unwrap_or(MutVoidPtr::null())
 }
 
-fn prepare_tap(env: &mut Environment, tap: MTAudioProcessingTapRef, max_frames: i32, format: ConstVoidPtr) {
+fn prepare_tap(
+    env: &mut Environment,
+    tap: MTAudioProcessingTapRef,
+    max_frames: i32,
+    format: ConstVoidPtr,
+) {
     let id = tap_id(tap);
-    let callback = state(env).taps.get(&id).map(|entry| entry.callbacks.prepare);
+    let callback = state(env)
+        .taps
+        .get(&id)
+        .map(|entry| entry.callbacks.prepare);
     if let Some(callback) = callback {
         if !callback_is_null(callback) {
-            let _: () = <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef, i32, ConstVoidPtr)>>::call_from_host(&callback, env, (tap, max_frames, format));
+            let _: () = <GuestFunction as CallFromHost<
+                (),
+                (MTAudioProcessingTapRef, i32, ConstVoidPtr),
+            >>::call_from_host(&callback, env, (tap, max_frames, format));
         }
     }
     if let Some(entry) = state(env).taps.get_mut(&id) {
@@ -121,10 +152,18 @@ fn prepare_tap(env: &mut Environment, tap: MTAudioProcessingTapRef, max_frames: 
 
 fn unprepare_tap(env: &mut Environment, tap: MTAudioProcessingTapRef) {
     let id = tap_id(tap);
-    let callback = state(env).taps.get(&id).map(|entry| (entry.callbacks.unprepare, entry.prepared));
+    let callback = state(env)
+        .taps
+        .get(&id)
+        .map(|entry| (entry.callbacks.unprepare, entry.prepared));
     if let Some((callback, prepared)) = callback {
         if prepared && !callback_is_null(callback) {
-            let _: () = <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef,)>>::call_from_host(&callback, env, (tap,));
+            let _: () =
+                <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef,)>>::call_from_host(
+                    &callback,
+                    env,
+                    (tap,),
+                );
         }
     }
     if let Some(entry) = state(env).taps.get_mut(&id) {
@@ -133,23 +172,51 @@ fn unprepare_tap(env: &mut Environment, tap: MTAudioProcessingTapRef) {
 }
 
 fn destroy_tap(env: &mut Environment, tap: MTAudioProcessingTapRef) {
-    let Some(entry) = state(env).taps.remove(&tap_id(tap)) else { return };
+    let Some(entry) = state(env).taps.remove(&tap_id(tap)) else {
+        return;
+    };
     let unprepare = entry.callbacks.unprepare;
     let finalize = entry.callbacks.finalize;
     if entry.prepared && !callback_is_null(unprepare) {
-        let _: () = <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef,)>>::call_from_host(&unprepare, env, (tap,));
+        let _: () = <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef,)>>::call_from_host(
+            &unprepare,
+            env,
+            (tap,),
+        );
     }
     if !callback_is_null(finalize) {
-        let _: () = <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef,)>>::call_from_host(&finalize, env, (tap,));
+        let _: () = <GuestFunction as CallFromHost<(), (MTAudioProcessingTapRef,)>>::call_from_host(
+            &finalize,
+            env,
+            (tap,),
+        );
     }
 }
 
-fn get_source_audio(env: &mut Environment, tap: MTAudioProcessingTapRef, number_frames: i32, buffer_list: MutPtr<AudioBufferList<1>>, flags_out: MutPtr<u32>, time_range_out: MutPtr<CMTimeRange>, frames_out: MutPtr<i32>) -> OSStatus {
-    let Some(entry) = state(env).taps.get(&tap_id(tap)) else { return PARAM_ERR };
-    if callback_is_null(entry.callbacks.process) || buffer_list.is_null() { return PARAM_ERR; }
-    if !flags_out.is_null() { env.mem.write(flags_out, 0); }
-    if !time_range_out.is_null() { env.mem.write(time_range_out, CMTimeRange::default()); }
-    if !frames_out.is_null() { env.mem.write(frames_out, number_frames); }
+fn get_source_audio(
+    env: &mut Environment,
+    tap: MTAudioProcessingTapRef,
+    number_frames: i32,
+    buffer_list: MutPtr<AudioBufferList<1>>,
+    flags_out: MutPtr<u32>,
+    time_range_out: MutPtr<CMTimeRange>,
+    frames_out: MutPtr<i32>,
+) -> OSStatus {
+    let Some(entry) = state(env).taps.get(&tap_id(tap)) else {
+        return PARAM_ERR;
+    };
+    if callback_is_null(entry.callbacks.process) || buffer_list.is_null() {
+        return PARAM_ERR;
+    }
+    if !flags_out.is_null() {
+        env.mem.write(flags_out, 0);
+    }
+    if !time_range_out.is_null() {
+        env.mem.write(time_range_out, CMTimeRange::default());
+    }
+    if !frames_out.is_null() {
+        env.mem.write(frames_out, number_frames);
+    }
     0
 }
 
@@ -160,10 +227,36 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(MTAudioProcessingTapGetSourceAudio(_, _, _, _, _, _)),
 ];
 
-fn MTAudioProcessingTapGetTypeID(_env: &mut Environment) -> u32 { 0x54415001 }
-fn MTAudioProcessingTapCreate(env: &mut Environment, allocator: ConstVoidPtr, callbacks: MutPtr<MTAudioProcessingTapCallbacks>, flags: u32, out: MutPtr<MTAudioProcessingTapRef>) -> OSStatus { let _ = allocator; create_tap(env, callbacks, flags, out) }
-fn MTAudioProcessingTapGetStorage(env: &mut Environment, tap: MTAudioProcessingTapRef) -> MutVoidPtr { get_storage(env, tap) }
-fn MTAudioProcessingTapGetSourceAudio(env: &mut Environment, tap: MTAudioProcessingTapRef, frames: i32, buffers: MutPtr<AudioBufferList<1>>, flags: MutPtr<u32>, range: MutPtr<CMTimeRange>, out: MutPtr<i32>) -> OSStatus { get_source_audio(env, tap, frames, buffers, flags, range, out) }
+fn MTAudioProcessingTapGetTypeID(_env: &mut Environment) -> u32 {
+    0x54415001
+}
+fn MTAudioProcessingTapCreate(
+    env: &mut Environment,
+    allocator: ConstVoidPtr,
+    callbacks: MutPtr<MTAudioProcessingTapCallbacks>,
+    flags: u32,
+    out: MutPtr<MTAudioProcessingTapRef>,
+) -> OSStatus {
+    let _ = allocator;
+    create_tap(env, callbacks, flags, out)
+}
+fn MTAudioProcessingTapGetStorage(
+    env: &mut Environment,
+    tap: MTAudioProcessingTapRef,
+) -> MutVoidPtr {
+    get_storage(env, tap)
+}
+fn MTAudioProcessingTapGetSourceAudio(
+    env: &mut Environment,
+    tap: MTAudioProcessingTapRef,
+    frames: i32,
+    buffers: MutPtr<AudioBufferList<1>>,
+    flags: MutPtr<u32>,
+    range: MutPtr<CMTimeRange>,
+    out: MutPtr<i32>,
+) -> OSStatus {
+    get_source_audio(env, tap, frames, buffers, flags, range, out)
+}
 
 pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {
     path: "/System/Library/Frameworks/MediaToolbox.framework/MediaToolbox",

@@ -108,7 +108,6 @@ fn task_set_exception_ports(
     KERN_SUCCESS
 }
 
-
 fn thread_get_state(
     env: &mut Environment,
     target_thread: thread_act_t,

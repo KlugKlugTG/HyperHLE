@@ -138,6 +138,4 @@ impl GuestArg for CATransform3D {
 }
 impl_GuestRet_for_large_struct!(CATransform3D);
 
-pub const FUNCTIONS: FunctionExports = &[
-    export_c_func!(CACurrentMediaTime()),
-];
+pub const FUNCTIONS: FunctionExports = &[export_c_func!(CACurrentMediaTime())];

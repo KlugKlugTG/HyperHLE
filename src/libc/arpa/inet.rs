@@ -154,13 +154,15 @@ fn inet_pton(env: &mut Environment, af: i32, src: ConstPtr<u8>, dst: MutVoidPtr)
                 1
             }
             Err(_) => {
-                log!("inet_pton AF_INET {:?}: invalid, returning 0", s);
+                log_dbg!("inet_pton AF_INET {:?}: invalid, returning 0", s);
                 0
             }
         },
         x if x == AF_INET6 => match s.parse::<Ipv6Addr>() {
             Ok(addr) => {
-                env.mem.bytes_at_mut(dst.cast::<u8>(), 16).copy_from_slice(&addr.octets());
+                env.mem
+                    .bytes_at_mut(dst.cast::<u8>(), 16)
+                    .copy_from_slice(&addr.octets());
                 log_dbg!("inet_pton AF_INET6 {:?} => 1", s);
                 1
             }
@@ -168,7 +170,7 @@ fn inet_pton(env: &mut Environment, af: i32, src: ConstPtr<u8>, dst: MutVoidPtr)
                 log!("inet_pton AF_INET6 {:?}: invalid, returning 0", s);
                 0
             }
-        }
+        },
         _ => {
             log!("inet_pton: unsupported address family {}, returning -1", af);
             -1

@@ -1046,7 +1046,9 @@ fn path_for_resource_helper(
     let data_path: id = msg![env; path stringByAppendingPathComponent:data_component];
     let data_path: id = msg![env; data_path stringByAppendingPathComponent:name];
     let data_path_exists: bool = msg![env; file_manager fileExistsAtPath:data_path];
-    log!(
+    // This fires hundreds of times per app launch for games that probe many
+    // resource names; keep it out of the user-facing log.
+    log_dbg!(
         "NSBundle resource lookup: {:?} missing, Unity Data fallback {:?} exists={}",
         path,
         data_path,
@@ -1095,7 +1097,10 @@ fn load_strings_as_standard_format(env: &mut Environment, dict_url: id) -> id {
     let length: NSUInteger = msg![env; data length];
     if length <= 2 {
         // Too small to hold anything but a BOM: treat as an empty table.
-        log_dbg!("load_strings_as_standard_format: file too small ({} bytes)", length);
+        log_dbg!(
+            "load_strings_as_standard_format: file too small ({} bytes)",
+            length
+        );
         return res;
     }
     let bytes: ConstVoidPtr = msg![env; data bytes];

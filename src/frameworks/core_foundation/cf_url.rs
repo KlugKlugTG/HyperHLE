@@ -13,8 +13,7 @@ use super::cf_allocator::{kCFAllocatorDefault, CFAllocatorRef};
 use super::{CFIndex, CFRelease, CFRetain};
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::frameworks::core_foundation::cf_string::{
-    kCFStringEncodingUTF8, CFStringConvertEncodingToNSStringEncoding,
-    CFStringEncoding, CFStringRef,
+    kCFStringEncodingUTF8, CFStringConvertEncodingToNSStringEncoding, CFStringEncoding, CFStringRef,
 };
 use crate::frameworks::foundation::ns_string::{
     from_rust_string, get_static_str, to_rust_string, NSUTF8StringEncoding,
@@ -821,8 +820,7 @@ fn CFURLGetBytes(
     // Get the UTF-8 byte count from the string itself instead of scanning
     // guest memory byte by byte for the NUL terminator, which could run away
     // if the terminator were ever missing.
-    let length: NSUInteger =
-        msg![env; url_string lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+    let length: NSUInteger = msg![env; url_string lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
     // Keep room for the NUL terminator within CFIndex (i32) arithmetic.
     let length: CFIndex = length.min((CFIndex::MAX - 1) as NSUInteger) as CFIndex;
 
@@ -1134,7 +1132,6 @@ fn CFURLCreateStringByAddingPercentEscapes(
         }
     }
 
-    
     from_rust_string(env, result)
 }
 

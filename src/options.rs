@@ -211,8 +211,8 @@ impl Options {
                 self.auto_device_family = true;
                 self.device_family = None;
             } else {
-                let parsed =
-                    DeviceFamily::try_from(value).map_err(|_| "Invalid device family".to_string())?;
+                let parsed = DeviceFamily::try_from(value)
+                    .map_err(|_| "Invalid device family".to_string())?;
                 self.auto_device_family = false;
                 self.device_family = Some(parsed);
             }
@@ -228,9 +228,11 @@ impl Options {
                 .ok_or_else(|| "--ios-version= requires MAJOR.MINOR[.PATCH]".to_string())?
                 .parse()
                 .map_err(|_| "Invalid minor version for --ios-version=".to_string())?;
-            let patch: i32 = parts.next().unwrap_or("0").parse().map_err(|_| {
-                "Invalid patch version for --ios-version=".to_string()
-            })?;
+            let patch: i32 = parts
+                .next()
+                .unwrap_or("0")
+                .parse()
+                .map_err(|_| "Invalid patch version for --ios-version=".to_string())?;
             if parts.next().is_some() || major < 1 || minor < 0 || patch < 0 {
                 return Err("Invalid value for --ios-version=".to_string());
             }

@@ -33,9 +33,8 @@ fn sigaction(env: &mut Environment, _signum: i32, _act: ConstVoidPtr, _old_act: 
 fn signal(env: &mut Environment, signum: i32, handler: MutVoidPtr) -> MutVoidPtr {
     set_errno(env, 0);
     // Честная эмуляция: сохраняем новый обработчик и возвращаем старый.
-    
-    env
-        .libc_state
+
+    env.libc_state
         .signal
         .handlers
         .insert(signum, handler)

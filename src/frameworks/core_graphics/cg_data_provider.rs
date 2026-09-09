@@ -169,9 +169,7 @@ pub(super) fn borrow_bytes(env: &mut Environment, provider: CGDataProviderRef) -
         CGDataProviderHostObject::DataWithSize { data, size, .. } => {
             env.mem.bytes_at(data.cast(), size)
         }
-        CGDataProviderHostObject::Direct { data, size, .. } => {
-            env.mem.bytes_at(data.cast(), size)
-        }
+        CGDataProviderHostObject::Direct { data, size, .. } => env.mem.bytes_at(data.cast(), size),
         CGDataProviderHostObject::CGImage(cg_image) => {
             cg_image::borrow_image(&env.objc, cg_image).pixels()
         }
@@ -332,7 +330,9 @@ fn CGDataProviderCreateSequential(
         if bytes_read == 0 {
             break;
         }
-        let slice = env.mem.bytes_at(tmp_buf.cast::<u8>().cast_const(), bytes_read);
+        let slice = env
+            .mem
+            .bytes_at(tmp_buf.cast::<u8>().cast_const(), bytes_read);
         all_data.extend_from_slice(slice);
         if bytes_read < CHUNK_SIZE {
             break;
@@ -442,7 +442,9 @@ fn CGDataProviderCreateDirect(
 
     log_dbg!(
         "CGDataProviderCreateDirect: info={:?}, size={}, data={:?}",
-        info, size, data_ptr
+        info,
+        size,
+        data_ptr
     );
 
     let class = env

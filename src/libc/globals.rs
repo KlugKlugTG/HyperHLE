@@ -62,8 +62,7 @@ fn daylight_ptr(env: &mut Environment) -> ConstVoidPtr {
 /// memory, then point the array elements at the buffers. `tzset()`
 /// updates the buffer contents and array pointers later.
 fn tzname_ptr(env: &mut Environment) -> ConstVoidPtr {
-    let arr_ptr: MutPtr<ConstPtr<u8>> =
-        env.mem.alloc(2 * guest_size_of::<ConstPtr<u8>>()).cast();
+    let arr_ptr: MutPtr<ConstPtr<u8>> = env.mem.alloc(2 * guest_size_of::<ConstPtr<u8>>()).cast();
     env.libc_state.time.tzname_array_ptr = Some(arr_ptr);
 
     let std_buf: MutPtr<u8> = env.mem.alloc(32).cast();

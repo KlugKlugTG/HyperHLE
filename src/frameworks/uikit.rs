@@ -1048,26 +1048,26 @@ pub fn handle_events(env: &mut Environment) -> Option<Instant> {
                 // returns; only `AppWillTerminate` (Android `onDestroy`) is
                 // treated as a real shutdown.
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillresignactive(_:)
-                log!("Handling app-will-resign-active event.");
+                log_dbg!("Handling app-will-resign-active event.");
                 ui_application::handle_will_resign_active(env);
             }
             Event::AppDidEnterBackground => {
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidenterbackground(_:)
-                log!("Handling app-did-enter-background event.");
+                log_dbg!("Handling app-did-enter-background event.");
                 ui_application::handle_did_enter_background(env);
             }
             Event::AppWillEnterForeground => {
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillenterforeground(_:)
-                log!("Handling app-will-enter-foreground event.");
+                log_dbg!("Handling app-will-enter-foreground event.");
                 ui_application::handle_will_enter_foreground(env);
             }
             Event::AppDidBecomeActive => {
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidbecomeactive(_:)
-                log!("Handling app-did-become-active event.");
+                log_dbg!("Handling app-did-become-active event.");
                 ui_application::handle_did_become_active(env);
             }
             Event::AppWillTerminate => {
-                log!("Handling app-will-terminate event.");
+                log_dbg!("Handling app-will-terminate event.");
                 ui_application::exit(env);
             }
             Event::EnterDebugger => {

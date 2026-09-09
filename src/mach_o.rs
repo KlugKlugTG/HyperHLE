@@ -745,7 +745,9 @@ impl MachO {
                             log!(
                                 "Warning: {} dyld_info range starts at {:#x} past host usize \
                                  in {:?}; skipping.",
-                                kind, off, name
+                                kind,
+                                off,
+                                name
                             );
                             return &[];
                         };
@@ -753,7 +755,9 @@ impl MachO {
                             log!(
                                 "Warning: {} dyld_info range size {:#x} past host usize \
                                  in {:?}; skipping.",
-                                kind, size, name
+                                kind,
+                                size,
+                                name
                             );
                             return &[];
                         };
@@ -761,7 +765,11 @@ impl MachO {
                             log!(
                                 "Warning: {} dyld_info range {:#x}..{:#x}+{:#x} overflows \
                                  in {:?}; skipping.",
-                                kind, off_usize, off_usize, size_usize, name
+                                kind,
+                                off_usize,
+                                off_usize,
+                                size_usize,
+                                name
                             );
                             return &[];
                         };
@@ -769,7 +777,11 @@ impl MachO {
                             log!(
                                 "Warning: {} dyld_info range {:#x}..{:#x} past end of \
                                  Mach-O file ({:#x}) in {:?}; skipping.",
-                                kind, off_usize, end, bytes.len(), name
+                                kind,
+                                off_usize,
+                                end,
+                                bytes.len(),
+                                name
                             );
                             return &[];
                         }
@@ -777,7 +789,13 @@ impl MachO {
                     }
 
                     let rebase_opcodes = Rebase::parse(
-                        checked_dyld_info_slice(bytes, rebase_off as u64, rebase_size as u64, "rebase", &name),
+                        checked_dyld_info_slice(
+                            bytes,
+                            rebase_off as u64,
+                            rebase_size as u64,
+                            "rebase",
+                            &name,
+                        ),
                         size_of::<GuestUSize>(),
                     );
 
@@ -807,7 +825,13 @@ impl MachO {
                     }
 
                     let bind_opcodes = Bind::parse(
-                        checked_dyld_info_slice(bytes, bind_off as u64, bind_size as u64, "bind", &name),
+                        checked_dyld_info_slice(
+                            bytes,
+                            bind_off as u64,
+                            bind_size as u64,
+                            "bind",
+                            &name,
+                        ),
                         size_of::<GuestUSize>(),
                     );
                     for symb in bind_opcodes {

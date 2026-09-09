@@ -20,14 +20,14 @@ use crate::Environment;
 
 /// Calendar unit for weekday (used by [NSCalendar components:fromDate:]).
 pub type NSCalendarUnit = NSUInteger;
-pub const NSEraCalendarUnit: NSUInteger = 1 << 1;    // kCFCalendarUnitEra
-pub const NSYearCalendarUnit: NSUInteger = 1 << 2;   // kCFCalendarUnitYear
-pub const NSMonthCalendarUnit: NSUInteger = 1 << 3;  // kCFCalendarUnitMonth
-pub const NSDayCalendarUnit: NSUInteger = 1 << 4;    // kCFCalendarUnitDay
-pub const NSHourCalendarUnit: NSUInteger = 1 << 5;   // kCFCalendarUnitHour
+pub const NSEraCalendarUnit: NSUInteger = 1 << 1; // kCFCalendarUnitEra
+pub const NSYearCalendarUnit: NSUInteger = 1 << 2; // kCFCalendarUnitYear
+pub const NSMonthCalendarUnit: NSUInteger = 1 << 3; // kCFCalendarUnitMonth
+pub const NSDayCalendarUnit: NSUInteger = 1 << 4; // kCFCalendarUnitDay
+pub const NSHourCalendarUnit: NSUInteger = 1 << 5; // kCFCalendarUnitHour
 pub const NSMinuteCalendarUnit: NSUInteger = 1 << 6; // kCFCalendarUnitMinute
 pub const NSSecondCalendarUnit: NSUInteger = 1 << 7; // kCFCalendarUnitSecond
-pub const NSWeekCalendarUnit: NSUInteger = 1 << 8;   // kCFCalendarUnitWeek
+pub const NSWeekCalendarUnit: NSUInteger = 1 << 8; // kCFCalendarUnitWeek
 pub const NSWeekdayCalendarUnit: NSUInteger = 1 << 9; // kCFCalendarUnitWeekday
 pub const NSWeekdayOrdinalCalendarUnit: NSUInteger = 1 << 10;
 pub const NSWeekOfMonthCalendarUnit: NSUInteger = 1 << 12;

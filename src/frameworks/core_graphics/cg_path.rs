@@ -440,11 +440,7 @@ fn CGPathAddArcToPoint(
     };
 
     elems.push(PathElement::LineTo(t1));
-    elems.push(PathElement::CurveTo {
-        c1,
-        c2,
-        to: t2,
-    });
+    elems.push(PathElement::CurveTo { c1, c2, to: t2 });
 }
 
 fn CGPathAddPath(

@@ -128,11 +128,7 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
         // C11 §7.21.6.1: a negative field-width argument (via `*`) is
         // equivalent to a `-` flag followed by the absolute value, i.e. the
         // result is left-justified within a field of that width.
-        let left_justified = if pad_width < 0 {
-            true
-        } else {
-            left_justified
-        };
+        let left_justified = if pad_width < 0 { true } else { left_justified };
         let pad_width = pad_width.unsigned_abs().min(MAX_FIELD_WIDTH);
 
         let precision = if get_format_char(&env.mem, format_char_idx) == b'.' {
@@ -374,7 +370,7 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 // rather than aborting (matches glibc / Apple behaviour).
                 let _ = prepend_sign;
                 // Убрали assert!(length_modifier.is_none());
-                                // Only the "C" locale is supported, but apps sometimes
+                // Only the "C" locale is supported, but apps sometimes
                 // request e.g. "UTF-8"; tolerate a mismatch rather than
                 // aborting the emulator (pragmatic hardcoding).
                 let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
@@ -467,13 +463,10 @@ locale; treating it as 'C'."
                 if description != nil {
                     // Copy the code units and decode lossily ourselves so a
                     // description with lone surrogates can't panic.
-                    let description_len: crate::mem::GuestUSize =
-                        msg![env; description length];
+                    let description_len: crate::mem::GuestUSize = msg![env; description length];
                     // Fetch each code unit individually rather than
                     // borrowing a buffer.
-                    let mut units_vec = Vec::with_capacity(
-                        description_len as usize,
-                    );
+                    let mut units_vec = Vec::with_capacity(description_len as usize);
                     for idx in 0..description_len {
                         let unit: u16 = msg![env; description
                             characterAtIndex:idx];
@@ -720,8 +713,7 @@ locale; treating it as 'C'."
                 if P > X && X >= -4 {
                     // Saturating math: P and X are guest-influenced, and an
                     // overflow here would panic in debug builds.
-                    let precision: usize =
-                        P.saturating_sub(X).saturating_sub(1).max(0) as usize;
+                    let precision: usize = P.saturating_sub(X).saturating_sub(1).max(0) as usize;
                     let result = f_format(float, pad_width, pad_char, precision, left_justified);
 
                     // With the '#' (alternative representation) flag the
@@ -744,8 +736,7 @@ locale; treating it as 'C'."
                     } else {
                         trimmed_result.to_string()
                     };
-                    let trimmed_result =
-                        apply_float_sign(&trimmed_result, float, prepend_sign);
+                    let trimmed_result = apply_float_sign(&trimmed_result, float, prepend_sign);
                     res.extend_from_slice(trimmed_result.as_bytes());
                 } else {
                     let precision: usize = P.saturating_sub(1).max(0) as usize;
@@ -1152,10 +1143,14 @@ fn vsnprintf(
     // using `n` directly for the slice would go out of bounds and either
     // panic or silently discard the write.
     let write_count: GuestUSize = (middle.len() + 1).try_into().unwrap();
-    let Some(dest_slice) = env.mem.get_bytes_fallible_mut(dest.cast().cast_const(), write_count) else {
+    let Some(dest_slice) = env
+        .mem
+        .get_bytes_fallible_mut(dest.cast().cast_const(), write_count)
+    else {
         log!(
             "Warning: vsnprintf: destination {:?} out of range for {} bytes; skipping write.",
-            dest, write_count
+            dest,
+            write_count
         );
         return res.len().try_into().unwrap();
     };
@@ -1365,13 +1360,11 @@ fn vswprintf(
     // errno is cleared optimistically; ISO C does not define errno for
     // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
-        // Only the "C" locale is supported, but apps sometimes request e.g.
+    // Only the "C" locale is supported, but apps sometimes request e.g.
     // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
     if env.mem.read(ctype_locale) != b'C' {
-        log!(
-            "non-'C' LC_CTYPE locale set; treating it as 'C'."
-        );
+        log!("non-'C' LC_CTYPE locale set; treating it as 'C'.");
     }
 
     let wcstr_format = env.mem.wcstr_at(format);
@@ -1415,13 +1408,11 @@ fn wprintf(env: &mut Environment, format: ConstPtr<wchar_t>, args: DotDotDot) ->
     // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
 
-        // Only the "C" locale is supported, but apps sometimes request e.g.
+    // Only the "C" locale is supported, but apps sometimes request e.g.
     // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
     if env.mem.read(ctype_locale) != b'C' {
-        log!(
-            "non-'C' LC_CTYPE locale set; treating it as 'C'."
-        );
+        log!("non-'C' LC_CTYPE locale set; treating it as 'C'.");
     }
 
     let wcstr_format = env.mem.wcstr_at(format);
@@ -2212,13 +2203,11 @@ fn swscanf(
     // errno is cleared optimistically; ISO C does not define errno for
     // the printf family, and error paths set it where it is meaningful.
     set_errno(env, 0);
-        // Only the "C" locale is supported, but apps sometimes request e.g.
+    // Only the "C" locale is supported, but apps sometimes request e.g.
     // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
     if env.mem.read(ctype_locale) != b'C' {
-        log!(
-            "non-'C' LC_CTYPE locale set; treating it as 'C'."
-        );
+        log!("non-'C' LC_CTYPE locale set; treating it as 'C'.");
     }
 
     let w_string = env.mem.wcstr_at(ws);
@@ -2380,9 +2369,7 @@ fn vwprintf(env: &mut Environment, format: ConstPtr<wchar_t>, arg: VaList) -> i3
     // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
     if env.mem.read(ctype_locale) != b'C' {
-        log!(
-            "non-'C' LC_CTYPE locale set; treating it as 'C'."
-        );
+        log!("non-'C' LC_CTYPE locale set; treating it as 'C'.");
     }
 
     let wcstr_format = env.mem.wcstr_at(format);

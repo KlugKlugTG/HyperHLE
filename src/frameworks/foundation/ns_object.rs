@@ -89,9 +89,7 @@ fn NSCopyObject(
 /// Exports `NSCopyObject` for the dynamic linker. `NSAllocateObject` is
 /// already exported from `ns_file_manager::FUNCTIONS` — do not duplicate it
 /// here or the linker will see two definitions for the same symbol.
-pub const FUNCTIONS: FunctionExports = &[
-    export_c_func!(NSCopyObject(_, _, _)),
-];
+pub const FUNCTIONS: FunctionExports = &[export_c_func!(NSCopyObject(_, _, _))];
 
 /// Builds a KVO change dictionary and sends
 /// `observeValueForKeyPath:ofObject:change:context:` to one observer.

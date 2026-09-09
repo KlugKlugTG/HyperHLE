@@ -308,11 +308,17 @@ fn CFStringCreateWithBytes(
             }
             kCFStringEncodingUTF32 => {
                 // Check for UTF-32 BOM
-                if len >= 4 && raw[0] == 0xFF && raw[1] == 0xFE && raw[2] == 0x00 && raw[3] == 0x00 {
+                if len >= 4 && raw[0] == 0xFF && raw[1] == 0xFE && raw[2] == 0x00 && raw[3] == 0x00
+                {
                     // Little-endian BOM — skip 4 bytes
                     let new_ptr = ConstPtr::<u8>::from_bits(bytes.to_bits() + 4);
                     (new_ptr, (len - 4) as CFIndex, kCFStringEncodingUTF32LE)
-                } else if len >= 4 && raw[0] == 0x00 && raw[1] == 0x00 && raw[2] == 0xFE && raw[3] == 0xFF {
+                } else if len >= 4
+                    && raw[0] == 0x00
+                    && raw[1] == 0x00
+                    && raw[2] == 0xFE
+                    && raw[3] == 0xFF
+                {
                     // Big-endian BOM — skip 4 bytes
                     let new_ptr = ConstPtr::<u8>::from_bits(bytes.to_bits() + 4);
                     (new_ptr, (len - 4) as CFIndex, kCFStringEncodingUTF32BE)
@@ -930,11 +936,12 @@ fn cf_string_bytes_for_encoding(
             rust_string.as_bytes().to_vec()
         }
         // (NSUnicodeStringEncoding == NSUTF16StringEncoding)
-        ns_string::NSUTF16LittleEndianStringEncoding
-        | ns_string::NSUTF16StringEncoding => rust_string
-            .encode_utf16()
-            .flat_map(u16::to_le_bytes)
-            .collect(),
+        ns_string::NSUTF16LittleEndianStringEncoding | ns_string::NSUTF16StringEncoding => {
+            rust_string
+                .encode_utf16()
+                .flat_map(u16::to_le_bytes)
+                .collect()
+        }
         ns_string::NSUTF16BigEndianStringEncoding => rust_string
             .encode_utf16()
             .flat_map(u16::to_be_bytes)
@@ -1526,7 +1533,11 @@ fn CFStringTransform(
     }
 
     let transform_name = ns_string::to_rust_string(env, transform);
-    log_dbg!("CFStringTransform('{}', reverse={})", transform_name, reverse);
+    log_dbg!(
+        "CFStringTransform('{}', reverse={})",
+        transform_name,
+        reverse
+    );
 
     // Apple's public constants (e.g. kCFStringTransformStripDiacritics) hold
     // names without a "StringTransform" prefix, but guest code may also pass
@@ -1572,7 +1583,10 @@ fn CFStringTransform(
             true
         }
         _ => {
-            log_dbg!("CFStringTransform: unsupported transform '{}'; returning false", name);
+            log_dbg!(
+                "CFStringTransform: unsupported transform '{}'; returning false",
+                name
+            );
             false
         }
     }
@@ -1670,16 +1684,16 @@ fn canonical_combining_class(ch: char) -> u8 {
         0x0315 => 232,          // Above Right
         0x0316..=0x0319 => 220, // Below
         0x031A => 232,
-        0x031B => 216,          // Attached Below Left (horn)
+        0x031B => 216, // Attached Below Left (horn)
         0x031C..=0x0320 => 220,
         0x0321..=0x0322 => 202, // Attached Below
         0x0323..=0x0326 => 220,
         0x0327..=0x0328 => 202, // Attached Below (cedilla, ogonek)
         0x0329..=0x0333 => 220,
-        0x0334..=0x0338 => 1,   // Overlay
+        0x0334..=0x0338 => 1, // Overlay
         0x0339..=0x033C => 220,
         0x033D..=0x0344 => 230,
-        0x0345 => 240,          // Iota subscript
+        0x0345 => 240, // Iota subscript
         0x0346..=0x034E => 230,
         0x0350..=0x0352 => 230,
         0x0353..=0x0356 => 220,
@@ -1728,7 +1742,7 @@ fn canonical_combining_class(ch: char) -> u8 {
         // Combining Diacritical Marks Extended / Supplement (common ones)
         0x1DC0..=0x1DFF => 230,
         0x20D0..=0x20DC => 230,
-        0x20DD..=0x20E0 => 0,   // Enclosing marks
+        0x20DD..=0x20E0 => 0, // Enclosing marks
         0x20E1 => 230,
         0x20E2..=0x20E4 => 0,
         0x20E5..=0x20F0 => 230,
@@ -1799,59 +1813,218 @@ fn decompose_canonical(ch: char, output: &mut Vec<char>) {
     // Common precomposed Latin characters (NFC -> NFD mappings)
     // This covers the vast majority of characters apps will encounter.
     match ch {
-        '\u{00C0}' => { output.push('A'); output.push('\u{0300}'); } // À
-        '\u{00C1}' => { output.push('A'); output.push('\u{0301}'); } // Á
-        '\u{00C2}' => { output.push('A'); output.push('\u{0302}'); } // Â
-        '\u{00C3}' => { output.push('A'); output.push('\u{0303}'); } // Ã
-        '\u{00C4}' => { output.push('A'); output.push('\u{0308}'); } // Ä
-        '\u{00C5}' => { output.push('A'); output.push('\u{030A}'); } // Å
-        '\u{00C7}' => { output.push('C'); output.push('\u{0327}'); } // Ç
-        '\u{00C8}' => { output.push('E'); output.push('\u{0300}'); } // È
-        '\u{00C9}' => { output.push('E'); output.push('\u{0301}'); } // É
-        '\u{00CA}' => { output.push('E'); output.push('\u{0302}'); } // Ê
-        '\u{00CB}' => { output.push('E'); output.push('\u{0308}'); } // Ë
-        '\u{00CC}' => { output.push('I'); output.push('\u{0300}'); } // Ì
-        '\u{00CD}' => { output.push('I'); output.push('\u{0301}'); } // Í
-        '\u{00CE}' => { output.push('I'); output.push('\u{0302}'); } // Î
-        '\u{00CF}' => { output.push('I'); output.push('\u{0308}'); } // Ï
-        '\u{00D1}' => { output.push('N'); output.push('\u{0303}'); } // Ñ
-        '\u{00D2}' => { output.push('O'); output.push('\u{0300}'); } // Ò
-        '\u{00D3}' => { output.push('O'); output.push('\u{0301}'); } // Ó
-        '\u{00D4}' => { output.push('O'); output.push('\u{0302}'); } // Ô
-        '\u{00D5}' => { output.push('O'); output.push('\u{0303}'); } // Õ
-        '\u{00D6}' => { output.push('O'); output.push('\u{0308}'); } // Ö
-        '\u{00D9}' => { output.push('U'); output.push('\u{0300}'); } // Ù
-        '\u{00DA}' => { output.push('U'); output.push('\u{0301}'); } // Ú
-        '\u{00DB}' => { output.push('U'); output.push('\u{0302}'); } // Û
-        '\u{00DC}' => { output.push('U'); output.push('\u{0308}'); } // Ü
-        '\u{00DD}' => { output.push('Y'); output.push('\u{0301}'); } // Ý
-        '\u{00E0}' => { output.push('a'); output.push('\u{0300}'); } // à
-        '\u{00E1}' => { output.push('a'); output.push('\u{0301}'); } // á
-        '\u{00E2}' => { output.push('a'); output.push('\u{0302}'); } // â
-        '\u{00E3}' => { output.push('a'); output.push('\u{0303}'); } // ã
-        '\u{00E4}' => { output.push('a'); output.push('\u{0308}'); } // ä
-        '\u{00E5}' => { output.push('a'); output.push('\u{030A}'); } // å
-        '\u{00E7}' => { output.push('c'); output.push('\u{0327}'); } // ç
-        '\u{00E8}' => { output.push('e'); output.push('\u{0300}'); } // è
-        '\u{00E9}' => { output.push('e'); output.push('\u{0301}'); } // é
-        '\u{00EA}' => { output.push('e'); output.push('\u{0302}'); } // ê
-        '\u{00EB}' => { output.push('e'); output.push('\u{0308}'); } // ë
-        '\u{00EC}' => { output.push('i'); output.push('\u{0300}'); } // ì
-        '\u{00ED}' => { output.push('i'); output.push('\u{0301}'); } // í
-        '\u{00EE}' => { output.push('i'); output.push('\u{0302}'); } // î
-        '\u{00EF}' => { output.push('i'); output.push('\u{0308}'); } // ï
-        '\u{00F1}' => { output.push('n'); output.push('\u{0303}'); } // ñ
-        '\u{00F2}' => { output.push('o'); output.push('\u{0300}'); } // ò
-        '\u{00F3}' => { output.push('o'); output.push('\u{0301}'); } // ó
-        '\u{00F4}' => { output.push('o'); output.push('\u{0302}'); } // ô
-        '\u{00F5}' => { output.push('o'); output.push('\u{0303}'); } // õ
-        '\u{00F6}' => { output.push('o'); output.push('\u{0308}'); } // ö
-        '\u{00F9}' => { output.push('u'); output.push('\u{0300}'); } // ù
-        '\u{00FA}' => { output.push('u'); output.push('\u{0301}'); } // ú
-        '\u{00FB}' => { output.push('u'); output.push('\u{0302}'); } // û
-        '\u{00FC}' => { output.push('u'); output.push('\u{0308}'); } // ü
-        '\u{00FD}' => { output.push('y'); output.push('\u{0301}'); } // ý
-        '\u{00FF}' => { output.push('y'); output.push('\u{0308}'); } // ÿ
+        '\u{00C0}' => {
+            output.push('A');
+            output.push('\u{0300}');
+        } // À
+        '\u{00C1}' => {
+            output.push('A');
+            output.push('\u{0301}');
+        } // Á
+        '\u{00C2}' => {
+            output.push('A');
+            output.push('\u{0302}');
+        } // Â
+        '\u{00C3}' => {
+            output.push('A');
+            output.push('\u{0303}');
+        } // Ã
+        '\u{00C4}' => {
+            output.push('A');
+            output.push('\u{0308}');
+        } // Ä
+        '\u{00C5}' => {
+            output.push('A');
+            output.push('\u{030A}');
+        } // Å
+        '\u{00C7}' => {
+            output.push('C');
+            output.push('\u{0327}');
+        } // Ç
+        '\u{00C8}' => {
+            output.push('E');
+            output.push('\u{0300}');
+        } // È
+        '\u{00C9}' => {
+            output.push('E');
+            output.push('\u{0301}');
+        } // É
+        '\u{00CA}' => {
+            output.push('E');
+            output.push('\u{0302}');
+        } // Ê
+        '\u{00CB}' => {
+            output.push('E');
+            output.push('\u{0308}');
+        } // Ë
+        '\u{00CC}' => {
+            output.push('I');
+            output.push('\u{0300}');
+        } // Ì
+        '\u{00CD}' => {
+            output.push('I');
+            output.push('\u{0301}');
+        } // Í
+        '\u{00CE}' => {
+            output.push('I');
+            output.push('\u{0302}');
+        } // Î
+        '\u{00CF}' => {
+            output.push('I');
+            output.push('\u{0308}');
+        } // Ï
+        '\u{00D1}' => {
+            output.push('N');
+            output.push('\u{0303}');
+        } // Ñ
+        '\u{00D2}' => {
+            output.push('O');
+            output.push('\u{0300}');
+        } // Ò
+        '\u{00D3}' => {
+            output.push('O');
+            output.push('\u{0301}');
+        } // Ó
+        '\u{00D4}' => {
+            output.push('O');
+            output.push('\u{0302}');
+        } // Ô
+        '\u{00D5}' => {
+            output.push('O');
+            output.push('\u{0303}');
+        } // Õ
+        '\u{00D6}' => {
+            output.push('O');
+            output.push('\u{0308}');
+        } // Ö
+        '\u{00D9}' => {
+            output.push('U');
+            output.push('\u{0300}');
+        } // Ù
+        '\u{00DA}' => {
+            output.push('U');
+            output.push('\u{0301}');
+        } // Ú
+        '\u{00DB}' => {
+            output.push('U');
+            output.push('\u{0302}');
+        } // Û
+        '\u{00DC}' => {
+            output.push('U');
+            output.push('\u{0308}');
+        } // Ü
+        '\u{00DD}' => {
+            output.push('Y');
+            output.push('\u{0301}');
+        } // Ý
+        '\u{00E0}' => {
+            output.push('a');
+            output.push('\u{0300}');
+        } // à
+        '\u{00E1}' => {
+            output.push('a');
+            output.push('\u{0301}');
+        } // á
+        '\u{00E2}' => {
+            output.push('a');
+            output.push('\u{0302}');
+        } // â
+        '\u{00E3}' => {
+            output.push('a');
+            output.push('\u{0303}');
+        } // ã
+        '\u{00E4}' => {
+            output.push('a');
+            output.push('\u{0308}');
+        } // ä
+        '\u{00E5}' => {
+            output.push('a');
+            output.push('\u{030A}');
+        } // å
+        '\u{00E7}' => {
+            output.push('c');
+            output.push('\u{0327}');
+        } // ç
+        '\u{00E8}' => {
+            output.push('e');
+            output.push('\u{0300}');
+        } // è
+        '\u{00E9}' => {
+            output.push('e');
+            output.push('\u{0301}');
+        } // é
+        '\u{00EA}' => {
+            output.push('e');
+            output.push('\u{0302}');
+        } // ê
+        '\u{00EB}' => {
+            output.push('e');
+            output.push('\u{0308}');
+        } // ë
+        '\u{00EC}' => {
+            output.push('i');
+            output.push('\u{0300}');
+        } // ì
+        '\u{00ED}' => {
+            output.push('i');
+            output.push('\u{0301}');
+        } // í
+        '\u{00EE}' => {
+            output.push('i');
+            output.push('\u{0302}');
+        } // î
+        '\u{00EF}' => {
+            output.push('i');
+            output.push('\u{0308}');
+        } // ï
+        '\u{00F1}' => {
+            output.push('n');
+            output.push('\u{0303}');
+        } // ñ
+        '\u{00F2}' => {
+            output.push('o');
+            output.push('\u{0300}');
+        } // ò
+        '\u{00F3}' => {
+            output.push('o');
+            output.push('\u{0301}');
+        } // ó
+        '\u{00F4}' => {
+            output.push('o');
+            output.push('\u{0302}');
+        } // ô
+        '\u{00F5}' => {
+            output.push('o');
+            output.push('\u{0303}');
+        } // õ
+        '\u{00F6}' => {
+            output.push('o');
+            output.push('\u{0308}');
+        } // ö
+        '\u{00F9}' => {
+            output.push('u');
+            output.push('\u{0300}');
+        } // ù
+        '\u{00FA}' => {
+            output.push('u');
+            output.push('\u{0301}');
+        } // ú
+        '\u{00FB}' => {
+            output.push('u');
+            output.push('\u{0302}');
+        } // û
+        '\u{00FC}' => {
+            output.push('u');
+            output.push('\u{0308}');
+        } // ü
+        '\u{00FD}' => {
+            output.push('y');
+            output.push('\u{0301}');
+        } // ý
+        '\u{00FF}' => {
+            output.push('y');
+            output.push('\u{0308}');
+        } // ÿ
         // Hangul decomposition (LV and LVT syllables)
         ch if ('\u{AC00}'..='\u{D7A3}').contains(&ch) => {
             let s_index = ch as u32 - 0xAC00;
@@ -1874,20 +2047,45 @@ fn decompose_canonical(ch: char, output: &mut Vec<char>) {
 fn decompose_compatible(ch: char, output: &mut Vec<char>) {
     match ch {
         // Compatibility mappings for common characters
-        '\u{FB01}' => { output.push('f'); output.push('i'); }  // ﬁ
-        '\u{FB02}' => { output.push('f'); output.push('l'); }  // ﬂ
-        '\u{00B2}' => output.push('2'),  // ²
-        '\u{00B3}' => output.push('3'),  // ³
-        '\u{00B9}' => output.push('1'),  // ¹
-        '\u{00BC}' => { output.push('1'); output.push('/'); output.push('4'); }
-        '\u{00BD}' => { output.push('1'); output.push('/'); output.push('2'); }
-        '\u{00BE}' => { output.push('3'); output.push('/'); output.push('4'); }
-        '\u{2002}' => output.push(' '),  // En space
-        '\u{2003}' => output.push(' '),  // Em space
-        '\u{2004}'..='\u{200A}' => output.push(' '),  // Various spaces
-        '\u{2024}' => output.push('.'),  // One dot leader
-        '\u{2025}' => { output.push('.'); output.push('.'); }  // Two dot leader
-        '\u{2026}' => { output.push('.'); output.push('.'); output.push('.'); }  // Ellipsis
+        '\u{FB01}' => {
+            output.push('f');
+            output.push('i');
+        } // ﬁ
+        '\u{FB02}' => {
+            output.push('f');
+            output.push('l');
+        } // ﬂ
+        '\u{00B2}' => output.push('2'), // ²
+        '\u{00B3}' => output.push('3'), // ³
+        '\u{00B9}' => output.push('1'), // ¹
+        '\u{00BC}' => {
+            output.push('1');
+            output.push('/');
+            output.push('4');
+        }
+        '\u{00BD}' => {
+            output.push('1');
+            output.push('/');
+            output.push('2');
+        }
+        '\u{00BE}' => {
+            output.push('3');
+            output.push('/');
+            output.push('4');
+        }
+        '\u{2002}' => output.push(' '),              // En space
+        '\u{2003}' => output.push(' '),              // Em space
+        '\u{2004}'..='\u{200A}' => output.push(' '), // Various spaces
+        '\u{2024}' => output.push('.'),              // One dot leader
+        '\u{2025}' => {
+            output.push('.');
+            output.push('.');
+        } // Two dot leader
+        '\u{2026}' => {
+            output.push('.');
+            output.push('.');
+            output.push('.');
+        } // Ellipsis
         // For everything else, fall through to canonical decomposition
         _ => decompose_canonical(ch, output),
     }
@@ -1967,7 +2165,10 @@ fn compose_pair(a: char, b: char) -> Option<char> {
         return char::from_u32(s);
     }
     // LVT composition (LV syllable + trailing jamo)
-    if (0xAC00..=0xD7A3).contains(&l) && (l - 0xAC00).is_multiple_of(28) && (0x11A8..=0x11C2).contains(&v) {
+    if (0xAC00..=0xD7A3).contains(&l)
+        && (l - 0xAC00).is_multiple_of(28)
+        && (0x11A8..=0x11C2).contains(&v)
+    {
         let t_index = v - 0x11A7;
         return char::from_u32(l + t_index);
     }

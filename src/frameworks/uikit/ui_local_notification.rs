@@ -7,9 +7,7 @@
 
 use crate::dyld::{ConstantExports, HostConstant};
 use crate::frameworks::foundation::NSUInteger;
-use crate::objc::{
-    id, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr,
-};
+use crate::objc::{id, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr};
 
 #[derive(Default)]
 pub(super) struct UILocalNotificationHostObject {

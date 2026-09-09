@@ -10,6 +10,7 @@ use super::{
     _nib_archive_decoder, ns_keyed_unarchiver, NSComparisonResult, NSOrderedSame, NSRange,
     NSUInteger,
 };
+use crate::frameworks::core_animation::ca_transform3d::CATransform3D;
 use crate::frameworks::core_foundation::cf_number::{
     kCFNumberCFIndexType,
     kCFNumberCGFloatType,
@@ -29,7 +30,6 @@ use crate::frameworks::core_foundation::cf_number::{
     kCFNumberShortType,
     CFNumberType,
 };
-use crate::frameworks::core_animation::ca_transform3d::CATransform3D;
 use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
 use crate::frameworks::foundation::NSInteger;
 use crate::mem::{ConstPtr, ConstVoidPtr, MutVoidPtr};
@@ -147,22 +147,14 @@ fn decode_scalar_number(
     let type_byte = env.mem.read(type_ptr.cast::<u8>());
     Some(match type_byte {
         b'i' | b'l' => NSNumberHostObject::Int(env.mem.read(value.cast::<i32>())),
-        b'I' | b'L' => {
-            NSNumberHostObject::UnsignedInt(env.mem.read(value.cast::<u32>()))
-        }
+        b'I' | b'L' => NSNumberHostObject::UnsignedInt(env.mem.read(value.cast::<u32>())),
         b'q' => NSNumberHostObject::LongLong(env.mem.read(value.cast::<i64>())),
-        b'Q' => {
-            NSNumberHostObject::UnsignedLongLong(env.mem.read(value.cast::<u64>()))
-        }
+        b'Q' => NSNumberHostObject::UnsignedLongLong(env.mem.read(value.cast::<u64>())),
         b'f' => NSNumberHostObject::Float(env.mem.read(value.cast::<f32>())),
         b'd' => NSNumberHostObject::Double(env.mem.read(value.cast::<f64>())),
         b's' => NSNumberHostObject::Short(env.mem.read(value.cast::<i16>())),
-        b'S' => {
-            NSNumberHostObject::UnsignedShort(env.mem.read(value.cast::<u16>()))
-        }
-        b'c' | b'C' | b'B' => {
-            NSNumberHostObject::Char(env.mem.read(value.cast::<i8>()))
-        }
+        b'S' => NSNumberHostObject::UnsignedShort(env.mem.read(value.cast::<u16>())),
+        b'c' | b'C' | b'B' => NSNumberHostObject::Char(env.mem.read(value.cast::<i8>())),
         _ => return None,
     })
 }
@@ -1220,4 +1212,3 @@ pub fn is_conversion_lossless(env: &mut Environment, this: id, type_: CFNumberTy
     };
     msg![env; this isEqualToNumber:num2]
 }
-

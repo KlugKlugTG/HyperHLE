@@ -9,9 +9,7 @@
 use std::time::Instant;
 
 use crate::audio::openal::al_types::{ALuint, ALvoid};
-use crate::audio::openal::{
-    AL_BUFFERS_PROCESSED, AL_BUFFERS_QUEUED, AL_PLAYING, AL_SOURCE_STATE,
-};
+use crate::audio::openal::{AL_BUFFERS_PROCESSED, AL_BUFFERS_QUEUED, AL_PLAYING, AL_SOURCE_STATE};
 
 const AL_POSITION: i32 = 0x1004;
 const AL_REFERENCE_DISTANCE: i32 = 0x1020;

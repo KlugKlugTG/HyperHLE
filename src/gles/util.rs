@@ -132,7 +132,9 @@ impl ParamTable {
         // On the other hand, fixed-to-float/float-to-fixed conversion is always
         // the same even for the weird float-ish values.
         match type_ {
-            ParamType::Float | ParamType::Color | ParamType::FloatSpecial => setf(fixed_to_float(param)),
+            ParamType::Float | ParamType::Color | ParamType::FloatSpecial => {
+                setf(fixed_to_float(param))
+            }
             _ => seti(param),
         }
     }

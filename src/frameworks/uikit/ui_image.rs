@@ -13,11 +13,11 @@ use crate::frameworks::foundation::{ns_data, ns_string, NSInteger};
 use crate::frameworks::uikit::ui_graphics::UIGraphicsGetCurrentContext;
 use crate::fs::GuestPath;
 use crate::image::Image;
+use crate::mem::MutVoidPtr;
 use crate::objc::{
     autorelease, id, msg, msg_class, msg_send, nil, objc_classes, release, retain, ClassExports,
     HostObject, NSZonePtr, SEL,
 };
-use crate::mem::MutVoidPtr;
 use crate::Environment;
 use std::collections::HashMap;
 
@@ -406,7 +406,14 @@ fn UIImageWriteToSavedPhotosAlbum(
     if image == nil {
         log!("UIImageWriteToSavedPhotosAlbum: nil image, ignoring.");
         // Still invoke callback if requested, with nil error
-        invoke_save_completion(env, completion_target, completion_selector, image, nil, context_info);
+        invoke_save_completion(
+            env,
+            completion_target,
+            completion_selector,
+            image,
+            nil,
+            context_info,
+        );
         return;
     }
 
@@ -440,14 +447,17 @@ fn UIImageWriteToSavedPhotosAlbum(
                 Ok(()) => {
                     log!(
                         "UIImageWriteToSavedPhotosAlbum: saved {}x{} image to {}",
-                        w, h, docs_path
+                        w,
+                        h,
+                        docs_path
                     );
                     true
                 }
                 Err(e) => {
                     log!(
                         "UIImageWriteToSavedPhotosAlbum: failed to write {}: {:?}",
-                        docs_path, e
+                        docs_path,
+                        e
                     );
                     false
                 }
@@ -473,7 +483,14 @@ fn UIImageWriteToSavedPhotosAlbum(
                                                        userInfo:nil];
         error
     };
-    invoke_save_completion(env, completion_target, completion_selector, image, error, context_info);
+    invoke_save_completion(
+        env,
+        completion_target,
+        completion_selector,
+        image,
+        error,
+        context_info,
+    );
 }
 
 /// Invokes the `UIImageWriteToSavedPhotosAlbum` completion callback. Per

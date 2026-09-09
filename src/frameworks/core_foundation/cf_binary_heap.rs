@@ -80,7 +80,10 @@ fn CFBinaryHeapAddValue(env: &mut Environment, heap: MutVoidPtr, value: ConstVoi
         .heaps
         .get_mut(&id)
     else {
-        log!("Warning: CFBinaryHeapAddValue called with invalid heap {:?}", heap);
+        log!(
+            "Warning: CFBinaryHeapAddValue called with invalid heap {:?}",
+            heap
+        );
         return;
     };
     heap_vec.push(value);

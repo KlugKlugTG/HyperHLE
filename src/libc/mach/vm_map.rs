@@ -176,18 +176,20 @@ fn vm_remap(
     let src: ConstPtr<u8> = Ptr::from_bits(src_address);
     let dst: MutPtr<u8> = Ptr::from_bits(address);
     let bytes: Vec<u8> = env.mem.bytes_at(src, copy_len).to_vec();
-    env.mem
-        .bytes_at_mut(dst, copy_len)
-        .copy_from_slice(&bytes);
+    env.mem.bytes_at_mut(dst, copy_len).copy_from_slice(&bytes);
 
     env.mem.write(target_address, address);
     if !cur_protection.is_null() {
-        env.mem
-            .write(cur_protection, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE);
+        env.mem.write(
+            cur_protection,
+            VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
+        );
     }
     if !max_protection.is_null() {
-        env.mem
-            .write(max_protection, VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE);
+        env.mem.write(
+            max_protection,
+            VM_PROT_READ | VM_PROT_WRITE | VM_PROT_EXECUTE,
+        );
     }
 
     assert!(!env.libc_state.mach_vm.allocations.contains_key(&address));

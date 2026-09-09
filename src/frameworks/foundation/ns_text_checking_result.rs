@@ -13,9 +13,7 @@
 //! Reference: <https://developer.apple.com/documentation/foundation/nstextcheckingresult>
 
 use super::{NSRange, NSUInteger};
-use crate::objc::{
-    autorelease, id, objc_classes, ClassExports, HostObject, NSZonePtr,
-};
+use crate::objc::{autorelease, id, objc_classes, ClassExports, HostObject, NSZonePtr};
 
 /// The NSNotFound sentinel value used in NSRange when a capture group didn't
 /// participate in the match.

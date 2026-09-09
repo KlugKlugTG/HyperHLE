@@ -457,7 +457,10 @@ fn plist_read_error(env: &mut Environment) -> id {
 /// Sends an optional, no-result delegate method (`sel_name`) to the
 /// unarchiver's delegate, if the delegate implements it.
 fn notify_delegate(env: &mut Environment, unarchiver: id, sel_name: &str) {
-    let delegate = env.objc.borrow::<NSKeyedUnarchiverHostObject>(unarchiver).delegate;
+    let delegate = env
+        .objc
+        .borrow::<NSKeyedUnarchiverHostObject>(unarchiver)
+        .delegate;
     if delegate == nil {
         return;
     }
@@ -470,15 +473,17 @@ fn notify_delegate(env: &mut Environment, unarchiver: id, sel_name: &str) {
     {
         return;
     }
-    let _: () =
-        crate::objc::msg_send_no_type_checking(env, (delegate, sel, unarchiver));
+    let _: () = crate::objc::msg_send_no_type_checking(env, (delegate, sel, unarchiver));
 }
 
 /// Notifies the delegate that an object has been decoded via the optional
 /// `unarchiver:didDecodeObject:` method. Returns the delegate's replacement
 /// object if one was supplied, or `object` otherwise.
 fn notify_did_decode_object(env: &mut Environment, unarchiver: id, object: id) -> id {
-    let delegate = env.objc.borrow::<NSKeyedUnarchiverHostObject>(unarchiver).delegate;
+    let delegate = env
+        .objc
+        .borrow::<NSKeyedUnarchiverHostObject>(unarchiver)
+        .delegate;
     if delegate == nil {
         return object;
     }
@@ -491,10 +496,8 @@ fn notify_did_decode_object(env: &mut Environment, unarchiver: id, object: id) -
     {
         return object;
     }
-    let replacement: id = crate::objc::msg_send_no_type_checking(
-        env,
-        (delegate, sel, unarchiver, object),
-    );
+    let replacement: id =
+        crate::objc::msg_send_no_type_checking(env, (delegate, sel, unarchiver, object));
     if replacement == nil {
         object
     } else {
@@ -522,10 +525,16 @@ fn get_value_to_decode_for_key(env: &mut Environment, unarchiver: id, key: id) -
 fn number_from_plist_value(value: &Value) -> Option<NSNumberHostObject> {
     match value {
         Value::Boolean(value) => Some(NSNumberHostObject::Bool(*value)),
-        Value::Integer(value) => value
-            .as_signed()
-            .map(NSNumberHostObject::LongLong)
-            .or_else(|| value.as_unsigned().map(NSNumberHostObject::UnsignedLongLong)),
+        Value::Integer(value) => {
+            value
+                .as_signed()
+                .map(NSNumberHostObject::LongLong)
+                .or_else(|| {
+                    value
+                        .as_unsigned()
+                        .map(NSNumberHostObject::UnsignedLongLong)
+                })
+        }
         Value::Real(value) => Some(NSNumberHostObject::Double(*value)),
         _ => None,
     }
@@ -547,21 +556,41 @@ pub(super) fn decode_current_number(
         return value
             .as_boolean()
             .map(NSNumberHostObject::Bool)
-            .or_else(|| value.as_signed_integer().map(|value| NSNumberHostObject::Bool(value != 0)))
-            .or_else(|| value.as_unsigned_integer().map(|value| NSNumberHostObject::Bool(value != 0)));
+            .or_else(|| {
+                value
+                    .as_signed_integer()
+                    .map(|value| NSNumberHostObject::Bool(value != 0))
+            })
+            .or_else(|| {
+                value
+                    .as_unsigned_integer()
+                    .map(|value| NSNumberHostObject::Bool(value != 0))
+            });
     }
     if let Some(value) = item.get("NS.intval") {
         return value
             .as_signed_integer()
             .map(NSNumberHostObject::LongLong)
-            .or_else(|| value.as_unsigned_integer().map(NSNumberHostObject::UnsignedLongLong));
+            .or_else(|| {
+                value
+                    .as_unsigned_integer()
+                    .map(NSNumberHostObject::UnsignedLongLong)
+            });
     }
     if let Some(value) = item.get("NS.dblval") {
         return value
             .as_real()
             .map(NSNumberHostObject::Double)
-            .or_else(|| value.as_signed_integer().map(|value| NSNumberHostObject::Double(value as f64)))
-            .or_else(|| value.as_unsigned_integer().map(|value| NSNumberHostObject::Double(value as f64)));
+            .or_else(|| {
+                value
+                    .as_signed_integer()
+                    .map(|value| NSNumberHostObject::Double(value as f64))
+            })
+            .or_else(|| {
+                value
+                    .as_unsigned_integer()
+                    .map(|value| NSNumberHostObject::Double(value as f64))
+            });
     }
 
     item.get("NS.numbervalue")
@@ -649,7 +678,10 @@ fn unarchive_key(env: &mut Environment, unarchiver: id, key: Uid) -> id {
                     // is ultimately owned by ObjC via the host object
                     let class_name = class_name.to_string();
                     if class_name.is_empty() {
-                        log!("Warning: unarchive_key: empty $classname for class uid {}.", class_key.get());
+                        log!(
+                            "Warning: unarchive_key: empty $classname for class uid {}.",
+                            class_key.get()
+                        );
                     }
                     env.objc.get_known_class(&class_name, &mut env.mem)
                 };
@@ -790,8 +822,8 @@ pub fn decode_current_date(env: &mut Environment, unarchiver: id) -> id {
     let key = get_static_str(env, "NS.time");
     // A corrupt or missing NS.time entry must not panic the host; return nil
     // so [NSDate initWithCoder:] fails gracefully.
-    let Some(timestamp) = get_value_to_decode_for_key(env, unarchiver, key)
-        .and_then(|value| value.as_real())
+    let Some(timestamp) =
+        get_value_to_decode_for_key(env, unarchiver, key).and_then(|value| value.as_real())
     else {
         log!("Warning: decode_current_date: NS.time missing or not a real; returning nil.");
         return nil;
@@ -816,7 +848,10 @@ pub fn decode_current_data(env: &mut Environment, unarchiver: id, is_mutable: bo
     };
     let Ok(len) = bytes.len().try_into() else {
         // A >4 GiB entry cannot exist in guest memory.
-        log!("Warning: decode_current_data: data of length {} exceeds u32; returning nil.", bytes.len());
+        log!(
+            "Warning: decode_current_data: data of length {} exceeds u32; returning nil.",
+            bytes.len()
+        );
         return nil;
     };
     let guest_bytes: MutVoidPtr = env.mem.alloc(len);
@@ -857,4 +892,3 @@ fn keys_for_key(env: &mut Environment, unarchiver: id, key: &str) -> Vec<Uid> {
         .filter_map(|value| value.as_uid().copied())
         .collect()
 }
-

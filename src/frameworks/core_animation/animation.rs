@@ -101,24 +101,23 @@ impl State {
             // games use, so it must be treated as "forever" rather than being
             // rejected as invalid (which would clamp it to a single play-through
             // and stop looping animations after one cycle).
-            let effective_repeat_count = if repeat_count == f32::INFINITY
-                || repeat_count == f32::MAX
-            {
-                f32::INFINITY
-            } else if repeat_count.is_finite() && repeat_count > 0.0 {
-                repeat_count
-            } else {
-                // 0 means "no explicit repeat" (play once); a negative or NaN
-                // value is undefined per the docs, so also fall back to one
-                // play-through instead of crashing the host.
-                if repeat_count.is_nan() || repeat_count < 0.0 {
-                    log!(
-                        "Warning: CABasicAnimation: invalid repeatCount {}; treating as 1.",
-                        repeat_count
-                    );
-                }
-                1.0
-            };
+            let effective_repeat_count =
+                if repeat_count == f32::INFINITY || repeat_count == f32::MAX {
+                    f32::INFINITY
+                } else if repeat_count.is_finite() && repeat_count > 0.0 {
+                    repeat_count
+                } else {
+                    // 0 means "no explicit repeat" (play once); a negative or NaN
+                    // value is undefined per the docs, so also fall back to one
+                    // play-through instead of crashing the host.
+                    if repeat_count.is_nan() || repeat_count < 0.0 {
+                        log!(
+                            "Warning: CABasicAnimation: invalid repeatCount {}; treating as 1.",
+                            repeat_count
+                        );
+                    }
+                    1.0
+                };
 
             let duration: CFTimeInterval = msg![env; animation duration];
             let current_repeat = (((current_time - effective_begin_time).max(0.0) / duration)

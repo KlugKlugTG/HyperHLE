@@ -27,9 +27,13 @@ fn raw_fd() -> i32 {
 }
 
 #[cfg(unix)]
-fn write_size_t(n: usize) -> libc::size_t { n as libc::size_t }
+fn write_size_t(n: usize) -> libc::size_t {
+    n as libc::size_t
+}
 #[cfg(windows)]
-fn write_size_t(n: usize) -> libc::c_uint { n as libc::c_uint }
+fn write_size_t(n: usize) -> libc::c_uint {
+    n as libc::c_uint
+}
 
 pub fn append_to_log(msg: &str) {
     use std::io::Write;
@@ -150,8 +154,16 @@ mod imp {
             if off >= buf.len() {
                 buf.resize(buf.len() * 2, 0);
             }
-            let n = unsafe { libc::read(fd, buf.as_mut_ptr().add(off) as *mut libc::c_void, buf.len() - off) };
-            if n <= 0 { break; }
+            let n = unsafe {
+                libc::read(
+                    fd,
+                    buf.as_mut_ptr().add(off) as *mut libc::c_void,
+                    buf.len() - off,
+                )
+            };
+            if n <= 0 {
+                break;
+            }
             off += n as usize;
         }
         unsafe { libc::close(fd) };
@@ -162,8 +174,15 @@ mod imp {
             let mut it = line.splitn(2, ' ');
             if let Some(range) = it.next() {
                 let mut parts = range.split('-');
-                let (Some(start), Some(end)) = (parts.next(), parts.next()) else { continue };
-                let (Ok(start), Ok(end)) = (usize::from_str_radix(start, 16), usize::from_str_radix(end, 16)) else { continue };
+                let (Some(start), Some(end)) = (parts.next(), parts.next()) else {
+                    continue;
+                };
+                let (Ok(start), Ok(end)) = (
+                    usize::from_str_radix(start, 16),
+                    usize::from_str_radix(end, 16),
+                ) else {
+                    continue;
+                };
                 if addrs.iter().any(|a| {
                     let a = *a as usize;
                     a >= start && a < end

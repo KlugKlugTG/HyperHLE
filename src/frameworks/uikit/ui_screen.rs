@@ -35,7 +35,6 @@ fn screen_size_for_current_orientation(env: &mut crate::Environment) -> (u32, u3
     (portrait_width, portrait_height)
 }
 
-
 /// Per Apple documentation for `-setBrightness:`, values are clamped to the
 /// documented 0.0-1.0 range by the setter below.
 fn clamp_brightness(value: CGFloat) -> CGFloat {

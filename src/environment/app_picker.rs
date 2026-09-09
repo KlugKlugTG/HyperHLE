@@ -10,8 +10,7 @@ use crate::frameworks::core_graphics::cg_bitmap_context::{
 use crate::frameworks::core_graphics::cg_color_space::CGColorSpaceCreateDeviceRGB;
 use crate::frameworks::core_graphics::cg_context::{
     CGContextFillRect, CGContextRelease, CGContextRestoreGState, CGContextSaveGState,
-    CGContextScaleCTM, CGContextSetRGBFillColor,
-    CGContextTranslateCTM,
+    CGContextScaleCTM, CGContextSetRGBFillColor, CGContextTranslateCTM,
 };
 use crate::frameworks::core_graphics::cg_image::{self, kCGImageAlphaPremultipliedLast};
 use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
@@ -509,10 +508,7 @@ fn app_picker_inner(
     };
 
     let title_frame = CGRect {
-        origin: CGPoint {
-            x: 12.0,
-            y: 8.0,
-        },
+        origin: CGPoint { x: 12.0, y: 8.0 },
         size: CGSize {
             width: app_frame.size.width - 24.0,
             height: 34.0,
@@ -915,10 +911,8 @@ fn app_picker_inner(
                 if let Ok(new_apps) = enumerate_apps(&apps_dir) {
                     if let Some(grid) = icon_grid_stuff.as_mut() {
                         let mut new_apps = new_apps;
-                        grid.pages = compute_pages(
-                            grid.icon_buttons_and_labels.len(),
-                            new_apps.len(),
-                        );
+                        grid.pages =
+                            compute_pages(grid.icon_buttons_and_labels.len(), new_apps.len());
                         if current_page >= grid.pages.len() {
                             current_page = grid.pages.len() - 1;
                         }
@@ -1215,7 +1209,9 @@ fn make_icon_from_glyph(
     // This radius should match the one in src/bundle.rs, adjusted for the
     // bitmap resolution.
     cg_image::borrow_image_mut(&mut env.objc, cg_image).round_corners(
-        12.0 * ui_scale, /* four_corners: */ true, /* add_sheen: */ true,
+        12.0 * ui_scale,
+        /* four_corners: */ true,
+        /* add_sheen: */ true,
     );
     CGContextRelease(env, context);
 
@@ -1260,7 +1256,9 @@ fn update_icon_grid(
         });
         () = msg![env; icon_button setImage:image forState:UIControlStateNormal];
         () = msg![env; label setText:(ns_string::get_static_str(env, ""))];
-        icon_grid_stuff.icon_map.insert(icon_button, TappedIcon::AddIpa);
+        icon_grid_stuff
+            .icon_map
+            .insert(icon_button, TappedIcon::AddIpa);
     }
 
     for app_idx in app_idx_range.clone() {
