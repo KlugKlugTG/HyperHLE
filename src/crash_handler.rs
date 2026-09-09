@@ -26,6 +26,11 @@ fn raw_fd() -> i32 {
     -1
 }
 
+#[cfg(unix)]
+fn write_size_t(n: usize) -> libc::size_t { n as libc::size_t }
+#[cfg(windows)]
+fn write_size_t(n: usize) -> libc::c_uint { n as libc::c_uint }
+
 pub fn append_to_log(msg: &str) {
     use std::io::Write;
     // First try the normal locked path...
@@ -48,7 +53,7 @@ pub fn append_to_log(msg: &str) {
                 libc::write(
                     fd,
                     line.as_ptr().add(written) as *const libc::c_void,
-                    (line.len() - written) as libc::c_uint,
+                    (line.len() - written) as write_size_t(line.len() - written),
                 )
             };
             if n <= 0 {
