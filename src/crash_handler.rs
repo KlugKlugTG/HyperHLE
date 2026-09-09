@@ -129,7 +129,47 @@ mod imp {
         for i in 0..n as usize {
             lines.push_str(&format!("  #{}: {:#x}\n", i, addrs[i] as usize));
         }
+        lines.push_str(&maps_for(&addrs[..n as usize]));
         lines
+    }
+
+    /// Dump the /proc/self/maps lines whose ranges contain one of `addrs`,
+    /// so each backtrace frame can be attributed to a loaded library.
+    /// Only open/read/close are used — good enough in an abort handler.
+    fn maps_for(addrs: &[*mut libc::c_void]) -> String {
+        let path = b"/proc/self/maps\0";
+        let fd = unsafe { libc::open(path.as_ptr() as *const libc::c_char, libc::O_RDONLY) };
+        if fd < 0 {
+            return String::new();
+        }
+        let mut buf = vec![0u8; 1 << 16];
+        let mut off = 0usize;
+        loop {
+            let n = unsafe { libc::read(fd, buf.as_mut_ptr().add(off) as *mut libc::c_void, buf.len() - off) };
+            if n <= 0 { break; }
+            off += n as usize;
+            if off >= buf.len() { break; }
+        }
+        unsafe { libc::close(fd) };
+        let text = String::from_utf8_lossy(&buf[..off]).into_owned();
+        let mut out = String::from("relevant /proc/self/maps entries:\n");
+        for line in text.lines() {
+            // "start-end perms offset dev inode path"
+            let mut it = line.splitn(2, ' ');
+            if let Some(range) = it.next() {
+                let mut parts = range.split('-');
+                let (Some(start), Some(end)) = (parts.next(), parts.next()) else { continue };
+                let (Ok(start), Ok(end)) = (usize::from_str_radix(start, 16), usize::from_str_radix(end, 16)) else { continue };
+                if addrs.iter().any(|a| {
+                    let a = *a as usize;
+                    a >= start && a < end
+                }) {
+                    out.push_str(line);
+                    out.push('\n');
+                }
+            }
+        }
+        out
     }
 
     pub fn log_fd() -> i32 {
