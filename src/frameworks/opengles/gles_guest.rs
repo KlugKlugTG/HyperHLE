@@ -446,7 +446,11 @@ fn glGetString(env: &mut Environment, name: GLenum) -> ConstPtr<GLubyte> {
             // desktop GL; reference it by numeric literal so we don't have
             // to pull in the ES 2.0 enum table here.
             0x8B8C => b"OpenGL ES GLSL ES 1.00",
-            gles11::EXTENSIONS => b"GL_APPLE_texture_max_level GL_EXT_debug_label GL_EXT_discard_framebuffer GL_EXT_occlusion_query_boolean GL_EXT_texture_filter_anisotropic GL_EXT_texture_lod_bias GL_IMG_read_format GL_IMG_texture_compression_pvrtc GL_IMG_texture_format_BGRA8888 GL_OES_depth24 GL_OES_depth_texture GL_OES_packed_depth_stencil GL_OES_rgb8_rgba8 GL_OES_standard_derivatives GL_OES_texture_float GL_OES_texture_half_float GL_OES_vertex_array_object GL_OES_vertex_half_float ",
+            // GAMELOFT BYPASS (from XaViewDnK/touchHLE-XaView-fork): the
+            // Asphalt 8 engine feature-tests for GL_APPLE_framebuffer_multisample
+            // and GL_OES_element_index_uint before selecting its renderer; without
+            // them it never submits any draw calls and the screen stays black.
+            gles11::EXTENSIONS => b"GL_APPLE_framebuffer_multisample GL_APPLE_texture_max_level GL_EXT_debug_label GL_EXT_discard_framebuffer GL_EXT_occlusion_query_boolean GL_EXT_texture_filter_anisotropic GL_EXT_texture_lod_bias GL_IMG_read_format GL_IMG_texture_compression_pvrtc GL_IMG_texture_format_BGRA8888 GL_OES_depth24 GL_OES_depth_texture GL_OES_element_index_uint GL_OES_packed_depth_stencil GL_OES_rgb8_rgba8 GL_OES_standard_derivatives GL_OES_texture_float GL_OES_texture_half_float GL_OES_vertex_array_object GL_OES_vertex_half_float ",
             _ => b"Unknown",
         }
     };

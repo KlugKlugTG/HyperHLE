@@ -772,6 +772,13 @@ Type mismatch when sending message {} to {:?}!
             ) {
                 return;
             }
+            // XaView A8 fix (2e1549e3): messages to the unimplemented
+            // GCController class behave as if sent to nil, instead of
+            // panicking the guest.
+            if class_name_for_log == "GCController" {
+                env.cpu.regs_mut()[0..2].fill(0);
+                return;
+            }
             log!(
                 "Class \"{}\" ({:?}) is unimplemented. Call to {} method \"{}\".",
                 class_name_for_log,

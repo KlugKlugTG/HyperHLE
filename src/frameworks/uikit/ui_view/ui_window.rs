@@ -236,10 +236,24 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())makeKeyAndVisible {
-    // TODO: We don't currently have send any non-touch events to windows,
-    // so there's no meaning in it yet.
+    // MakeKeyVisibleFix (from XaViewDnK fork): some engines (e.g. Asphalt 8's
+    // Jet) create the window with a zero frame and only size it via
+    // `makeKeyAndVisible`. Without this, the window stays 0x0 and every
+    // layer composite is empty => black screen.
+    let screen: id = msg_class![env; UIScreen mainScreen];
+    let bounds: CGRect = msg![env; screen bounds];
+    let frame: CGRect = msg![env; this frame];
+    if frame.size.width <= 0.0 || frame.size.height <= 0.0 {
+        log!("Fixing empty window frame to {:?}", bounds);
+        () = msg![env; this setFrame:bounds];
+    }
 
-    // FIXME: This should also bump the window to the top of the list.
+    // Bump the window to the top of the touch list (was a FIXME upstream).
+    let list = &mut env.framework_state.uikit.ui_view.ui_window.windows;
+    if let Some(idx) = list.iter().position(|&w| w == this) {
+        let w = list.remove(idx);
+        list.push(w);
+    }
 
     () = msg![env; this makeKeyWindow];
     () = msg![env; this setHidden:false];
