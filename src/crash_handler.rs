@@ -94,6 +94,11 @@ mod imp {
             std::str::from_utf8(&name[..name.len() - 1]).unwrap_or("SIGNAL"),
             addr
         );
+        let msg = format!(
+            "{}last guest PC: {:#x} (see CPU loop)\n",
+            msg,
+            crate::environment::LAST_GUEST_PC.load(Ordering::Relaxed)
+        );
         let bytes = msg.as_bytes();
         unsafe {
             // Best-effort write to both stderr and the log file. write(2) is

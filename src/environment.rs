@@ -86,6 +86,10 @@ impl std::fmt::Debug for Thread {
     }
 }
 
+/// Last guest PC seen by the CPU loop, for crash diagnostics.
+pub static LAST_GUEST_PC: std::sync::atomic::AtomicU32 =
+    std::sync::atomic::AtomicU32::new(0);
+
 /// The struct containing the entire emulator state. Methods are provided for
 /// execution and management of threads.
 pub struct Environment {
@@ -2222,6 +2226,11 @@ impl Environment {
                 let state = self
                     .cpu
                     .run_or_step(&mut self.mem, self.remaining_ticks.as_mut());
+                std::sync::atomic::AtomicU32::store(
+                    &crate::environment::LAST_GUEST_PC,
+                    self.cpu.regs()[crate::cpu::Cpu::PC],
+                    std::sync::atomic::Ordering::Relaxed,
+                );
 
                 // Asphalt 8 (com.gameloft.asphalt8) v1.1.0 compatibility hacks,
                 // ported from the touchHLE-XaView fork. The game deliberately

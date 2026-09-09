@@ -843,9 +843,19 @@ impl Window {
                         sdl2::sensor::SensorType::Gyroscope
                         | sdl2::sensor::SensorType::LeftGyroscope
                         | sdl2::sensor::SensorType::RightGyroscope => {
+                            #[cfg(not(target_os = "android"))]
                             if gyroscope.is_none() {
                                 log!("Gyroscope detected: {}.", sensor.name());
                                 gyroscope = Some(sensor);
+                            }
+                            #[cfg(target_os = "android")]
+                            {
+                                // On Android, polling the NDK gyroscope sensor
+                                // natively aborts the process (observed with
+                                // Asphalt 8). Keep the gyro "available" from the
+                                // app's perspective (CoreMotion reports it as
+                                // present) but feed it stationary stub data.
+                                let _ = &gyroscope;
                             }
                         }
                         _ => {}
