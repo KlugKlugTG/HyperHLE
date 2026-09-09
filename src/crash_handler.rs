@@ -16,12 +16,40 @@
 /// Append a message to the log file (and stderr). Safe to call from a panic
 /// hook; uses file-level locking via try_lock so re-entrant panics don't
 /// deadlock — on contention the message is dropped rather than deadlocked.
+fn raw_fd() -> i32 {
+    imp::log_fd()
+}
+
 pub fn append_to_log(msg: &str) {
     use std::io::Write;
+    // First try the normal locked path...
     if let Ok(mut log_file) = crate::log::get_log_file().try_lock() {
         let _ = log_file.write_all(msg.as_bytes());
         let _ = log_file.write_all(b"\n");
         let _ = log_file.flush();
+    }
+    // ...but if the mutex is held by some other thread (very likely right
+    // before a crash, since logging is what the guest threads spend their
+    // time on), fall back to a raw fd write. O_APPEND-style writes of whole
+    // small lines are atomic enough for diagnostics.
+    let fd = raw_fd();
+    if fd >= 0 {
+        let mut line = msg.as_bytes().to_vec();
+        line.push(b'\n');
+        let mut written = 0usize;
+        while written < line.len() {
+            let n = unsafe {
+                libc::write(
+                    fd,
+                    line.as_ptr().add(written) as *const libc::c_void,
+                    line.len() - written,
+                )
+            };
+            if n <= 0 {
+                break;
+            }
+            written += n as usize;
+        }
     }
     #[cfg(not(target_os = "android"))]
     {
@@ -62,6 +90,10 @@ mod imp {
     /// Raw fd of the touchHLE log file, so the signal handler (which cannot
     /// safely use the `Mutex<File>` in `log::get_log_file()`) can append to it.
     static LOG_FD: AtomicI32 = AtomicI32::new(-1);
+
+    pub fn log_fd() -> i32 {
+        LOG_FD.load(Ordering::SeqCst)
+    }
 
     /// Register the raw fd of the log file. Called after the log file is
     /// created; async-signal-safe `write(2)` then targets it.
