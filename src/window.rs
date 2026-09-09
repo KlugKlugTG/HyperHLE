@@ -113,7 +113,10 @@ impl DeviceFamily {
     }
 
     pub fn is_phone_568(&self) -> bool {
-        matches!(self, DeviceFamily::iPhone5 | DeviceFamily::iPhone5c | DeviceFamily::iPodTouch5)
+        matches!(
+            self,
+            DeviceFamily::iPhone5 | DeviceFamily::iPhone5c | DeviceFamily::iPodTouch5
+        )
     }
 
     pub fn is_retina(&self) -> bool {
@@ -219,9 +222,7 @@ impl DeviceFamily {
             // intentionally cap this at 1 GiB even though the address space is
             // 4 GiB, leaving headroom for the guest heap, stacks and mapped
             // libraries.
-            DeviceFamily::iPad5
-            | DeviceFamily::iPadMini2
-            | DeviceFamily::iPadMini3 => 1024 * MIB,
+            DeviceFamily::iPad5 | DeviceFamily::iPadMini2 | DeviceFamily::iPadMini3 => 1024 * MIB,
         }
     }
 
@@ -773,7 +774,8 @@ impl Window {
         let device_family = options.device_family.unwrap_or(DeviceFamily::iPhone);
         let device_orientation = options.initial_orientation;
         let fullscreen = options.fullscreen;
-        let portrait_screen_size = host_screen_size.unwrap_or_else(|| device_family.portrait_size());
+        let portrait_screen_size =
+            host_screen_size.unwrap_or_else(|| device_family.portrait_size());
 
         let mut window = if Self::rotatable_fullscreen() {
             // Without this, SDL will force fullscreen mode to be portrait.
@@ -797,8 +799,11 @@ impl Window {
                 .unwrap();
             window
         } else {
-            let (width, height) =
-                size_for_orientation_from_size(portrait_screen_size, device_orientation, scale_hack);
+            let (width, height) = size_for_orientation_from_size(
+                portrait_screen_size,
+                device_orientation,
+                scale_hack,
+            );
             let window = video_ctx
                 .window(title, width, height)
                 .position_centered()
@@ -843,19 +848,14 @@ impl Window {
                         sdl2::sensor::SensorType::Gyroscope
                         | sdl2::sensor::SensorType::LeftGyroscope
                         | sdl2::sensor::SensorType::RightGyroscope => {
-                            #[cfg(not(target_os = "android"))]
+                            // Gyroscope was previously disabled here under the
+                            // suspicion of a native abort; the real culprit was
+                            // batteryLevel -> SDL_GetPowerInfo -> JNI (see
+                            // get_battery_status cache below), so the sensor is
+                            // back.
                             if gyroscope.is_none() {
                                 log!("Gyroscope detected: {}.", sensor.name());
                                 gyroscope = Some(sensor);
-                            }
-                            #[cfg(target_os = "android")]
-                            {
-                                // On Android, polling the NDK gyroscope sensor
-                                // natively aborts the process (observed with
-                                // Asphalt 8). Keep the gyro "available" from the
-                                // app's perspective (CoreMotion reports it as
-                                // present) but feed it stationary stub data.
-                                let _ = &gyroscope;
                             }
                         }
                         _ => {}
@@ -863,6 +863,12 @@ impl Window {
                 }
             }
         }
+
+        // Populate the battery cache here, on the real SDLThread stack: guest
+        // code later calls [UIDevice batteryLevel] from a coroutine stack, and
+        // the JNI calls inside SDL_GetPowerInfo (Android_JNI_GetPowerInfo)
+        // abort ART when made from that context (pending StackOverflowError).
+        populate_battery_cache();
 
         #[cfg(target_os = "macos")]
         let max_height = window.size().1;
@@ -2181,8 +2187,11 @@ impl Window {
     /// The aspect ratio of this region always reflects the guest app's view of
     /// the world, but the scale and orientation might not.
     pub fn viewport(&self) -> (u32, u32, u32, u32) {
-        let (app_width, app_height) =
-            size_for_orientation_from_size(self.screen_size(), self.device_orientation, self.scale_hack);
+        let (app_width, app_height) = size_for_orientation_from_size(
+            self.screen_size(),
+            self.device_orientation,
+            self.scale_hack,
+        );
         if !self.fullscreen && !Self::rotatable_fullscreen() {
             return (0, 0, app_width, app_height);
         }
@@ -2393,7 +2402,38 @@ pub fn show_error_messagebox(window: Option<&Window>, error_message: &str) {
 /// - pct: i32 - percentage of battery remaining.
 /// - status: [BatteryState] - the current status of the battery
 ///   (unplugged, charging, full, etc.)
+/// Battery state cached once at window creation. Guest code runs on a
+/// coroutine stack where JNI calls abort on Android (see populate_battery_cache),
+/// so [UIDevice batteryLevel] must never reach SDL_GetPowerInfo directly.
+static BATTERY_CACHE: std::sync::OnceLock<(i32, BatteryState)> = std::sync::OnceLock::new();
+
+/// Read the battery once, from the real SDLThread stack. JNI (Android) is only
+/// safe here — this runs before guest emulation starts on a coroutine stack.
+pub fn populate_battery_cache() {
+    let mut pct = 0;
+    let status = unsafe { sdl2_sys::SDL_GetPowerInfo(null_mut(), &mut pct) };
+    let state = match status {
+        SDL_PowerState::SDL_POWERSTATE_UNKNOWN => BatteryState::Unknown,
+        SDL_PowerState::SDL_POWERSTATE_ON_BATTERY => BatteryState::OnBattery,
+        SDL_PowerState::SDL_POWERSTATE_NO_BATTERY => BatteryState::NoBattery,
+        SDL_PowerState::SDL_POWERSTATE_CHARGING => BatteryState::Charging,
+        SDL_PowerState::SDL_POWERSTATE_CHARGED => BatteryState::Full,
+    };
+    let _ = BATTERY_CACHE.set((pct, state));
+}
+
 pub fn get_battery_status() -> (i32, BatteryState) {
+    if let Some(&(pct, ref state)) = BATTERY_CACHE.get() {
+        let state = match *state {
+            BatteryState::Unknown => BatteryState::Unknown,
+            BatteryState::OnBattery => BatteryState::OnBattery,
+            BatteryState::NoBattery => BatteryState::NoBattery,
+            BatteryState::Charging => BatteryState::Charging,
+            BatteryState::Full => BatteryState::Full,
+        };
+        return (pct, state);
+    }
+    // Not cached yet (headless/window-less use): query directly.
     let mut pct = 0;
     // Unfortunately, Rust-SDL2 does not expose this function yet.
     // iPhoneOS does not measure the battery in seconds remaining,
