@@ -3030,6 +3030,7 @@ fn glLinkProgram(env: &mut Environment, program: GLuint) {
                     &[
                         "position",
                         "a_position",
+                        "inPos",
                         "aPosition",
                         "inPosition",
                         "rm_Vertex",
@@ -3041,13 +3042,14 @@ fn glLinkProgram(env: &mut Environment, program: GLuint) {
                 ),
                 (
                     2,
-                    &["color", "a_color", "aColor", "inColor", "rm_Color"][..],
+                    &["color", "a_color", "aColor", "inColor", "inVtxColor", "rm_Color"][..],
                 ),
                 (
                     3,
                     &[
                         "texCoord",
                         "texcoord",
+                        "inUV0",
                         "a_texCoord",
                         "aTexCoord",
                         "inTexCoord",

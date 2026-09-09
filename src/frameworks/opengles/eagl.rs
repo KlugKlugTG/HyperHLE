@@ -119,6 +119,11 @@ pub(super) struct EAGLContextHostObject {
     fps_counter: Option<FpsCounter>,
     next_frame_due: Option<Instant>,
     pub mapped_buffers: HashMap<(GLenum, GLuint), (MutPtr<GLvoid>, *mut GLvoid, usize)>,
+    /// Programs for which the guest app explicitly bound attribute locations
+    /// via `glBindAttribLocation` before linking. For these, `glLinkProgram`
+    /// must not force-rebind canonical attribute names, because that would
+    /// override the app's own vertex layout (e.g. Gameloft's Jet engine).
+    pub guest_bound_attribs: HashMap<GLuint, std::collections::HashSet<String>>,
 }
 impl HostObject for EAGLContextHostObject {}
 
@@ -168,6 +173,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         fps_counter: None,
         next_frame_due: None,
         mapped_buffers: HashMap::new(),
+        guest_bound_attribs: HashMap::new(),
     });
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
