@@ -343,11 +343,6 @@ com.wb.GreenLantern: --landscape-left --prefer-gles2-context
 # Where's My Water?: iPhone portrait OpenGL ES 1 profile.
 com.disney.SwampyGame: --device-family=iphone-3gs
 
-# Asphalt 8 Airborne 1.0.0
-# The old game targets a 480x320 iPhone 3GS surface. On Android, using the
-# physical phone resolution for the guest renderbuffer can exhaust memory
-# before the app creates its ES2 context; output scaling remains host-side.
-com.gameloft.asphalt8: --landscape-right --screen-size=480x320 --force-composition
 # LEGO Ninjago: The Final Battle
 # Uses OpenAL streaming audio; keep its fixed-function landscape profile and
 # force the compatibility texture filter on strict mobile GLES drivers.
