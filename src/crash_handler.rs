@@ -142,13 +142,17 @@ mod imp {
         if fd < 0 {
             return String::new();
         }
-        let mut buf = vec![0u8; 1 << 16];
+        // /proc/self/maps on Android with a loaded GPU driver stack is large;
+        // grow until EOF so late-loaded libs (GLES driver, openal) are present.
+        let mut buf: Vec<u8> = vec![0u8; 1 << 16];
         let mut off = 0usize;
         loop {
+            if off >= buf.len() {
+                buf.resize(buf.len() * 2, 0);
+            }
             let n = unsafe { libc::read(fd, buf.as_mut_ptr().add(off) as *mut libc::c_void, buf.len() - off) };
             if n <= 0 { break; }
             off += n as usize;
-            if off >= buf.len() { break; }
         }
         unsafe { libc::close(fd) };
         let text = String::from_utf8_lossy(&buf[..off]).into_owned();
