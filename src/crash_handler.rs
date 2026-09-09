@@ -96,11 +96,41 @@ pub fn install_panic_hook() {
 
 #[cfg(unix)]
 mod imp {
-    use std::sync::atomic::{AtomicI32, Ordering};
+    use std::sync::atomic::{AtomicI32, AtomicUsize, Ordering};
 
     /// Raw fd of the touchHLE log file, so the signal handler (which cannot
     /// safely use the `Mutex<File>` in `log::get_log_file()`) can append to it.
     static LOG_FD: AtomicI32 = AtomicI32::new(-1);
+
+    /// Runtime-resolved `backtrace()` (bionic exposes it on Android 12+,
+    /// glibc on desktop; resolving via dlsym avoids build-target cfg).
+    static BACKTRACE_SYM: AtomicUsize = AtomicUsize::new(0);
+
+    pub fn resolve_backtrace() {
+        unsafe {
+            let sym = libc::dlsym(
+                libc::RTLD_DEFAULT,
+                b"backtrace\0".as_ptr() as *const libc::c_char,
+            );
+            BACKTRACE_SYM.store(sym as usize, Ordering::SeqCst);
+        }
+    }
+
+    pub fn native_backtrace_lines() -> String {
+        let fptr = BACKTRACE_SYM.load(Ordering::Relaxed);
+        if fptr == 0 {
+            return "(native backtrace() not available on this device)\n".to_string();
+        }
+        type BacktraceFn = unsafe extern "C" fn(*mut *mut libc::c_void, libc::c_int) -> libc::c_int;
+        let bt: BacktraceFn = unsafe { std::mem::transmute(fptr) };
+        let mut addrs = [std::ptr::null_mut::<libc::c_void>(); 64];
+        let n = unsafe { bt(addrs.as_mut_ptr(), 64) };
+        let mut lines = format!("native backtrace ({} frames):\n", n);
+        for i in 0..n as usize {
+            lines.push_str(&format!("  #{}: {:#x}\n", i, addrs[i] as usize));
+        }
+        lines
+    }
 
     pub fn log_fd() -> i32 {
         LOG_FD.load(Ordering::SeqCst)
@@ -154,17 +184,7 @@ mod imp {
             // libc::gettid is Linux-only; pthread_self works everywhere.
             unsafe { libc::pthread_self() as u64 }
         );
-        #[cfg(all(unix, target_env = "gnu"))]
-        let msg = {
-            let msg = format!("{}native backtrace:\n", msg);
-            let mut bt = [std::ptr::null_mut::<libc::c_void>(); 48];
-            let n = unsafe { libc::backtrace(bt.as_mut_ptr(), 48) };
-            let mut lines = String::new();
-            for i in 0..n as usize {
-                lines.push_str(&format!("  #{}: {}\n", i, bt[i] as usize));
-            }
-            format!("{}{}", msg, lines)
-        };
+        let msg = format!("{}{}", msg, native_backtrace_lines());
         let msg = format!(
             "{}recent guest PCs:{}\n",
             msg,
@@ -201,6 +221,7 @@ mod imp {
 
     /// Install the diagnostic handlers for the fatal native signals.
     pub fn install() {
+        resolve_backtrace();
         let mut act: libc::sigaction = unsafe { std::mem::zeroed() };
         act.sa_flags = libc::SA_SIGINFO | libc::SA_NODEFER;
         act.sa_sigaction = handler as usize;
@@ -213,7 +234,7 @@ mod imp {
 }
 
 #[cfg(unix)]
-pub use imp::{install, set_log_fd};
+pub use imp::{install, native_backtrace_lines, set_log_fd};
 
 #[cfg(not(unix))]
 pub fn set_log_fd(_fd: i32) {}
