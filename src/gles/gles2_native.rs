@@ -1044,7 +1044,12 @@ impl GLES for GLES2Native<'_> {
     // `--prefer-gles2-context`, they end up here.
     unsafe fn MapBufferOES(&mut self, target: GLenum, access: GLenum) -> *mut GLvoid {
         if gles2::MapBufferOES::is_loaded() {
-            return gles2::MapBufferOES(target, access);
+            let mapped = gles2::MapBufferOES(target, access);
+            if !mapped.is_null() {
+                return mapped;
+            }
+            // Driver exports the entry point but refuses the map (common on
+            // Adreno): fall through to the staging-buffer path below.
         }
         // Fallback for drivers without `GL_OES_mapbuffer` (e.g. Asphalt 8's
         // Jet engine maps vertex/index buffers with GL_WRITE_ONLY_OES to
@@ -1062,14 +1067,15 @@ impl GLES for GLES2Native<'_> {
         ptr as *mut GLvoid
     }
     unsafe fn UnmapBufferOES(&mut self, target: GLenum) -> GLboolean {
-        if let Some((mapped_target, staging)) = self.map_buffer_staging.take() {
-            if mapped_target == target {
+        if let Some((mapped_target, staging)) = self.map_buffer_staging.as_ref() {
+            if *mapped_target == target {
                 gles2::BufferSubData(
                     target,
                     0,
                     staging.len() as GLsizeiptr,
                     staging.as_ptr() as *const GLvoid,
                 );
+                self.map_buffer_staging = None;
                 return gles2::TRUE;
             }
         }
