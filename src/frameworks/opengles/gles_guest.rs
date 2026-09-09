@@ -2831,13 +2831,18 @@ fn unmap_buffer(env: &mut Environment, target: GLenum, oes: bool) -> GLboolean {
         .mapped_buffers
         .remove(&(target, buffer_object_name));
     let Some((guest_buffer, host_buffer, buffer_size)) = mapping else {
-        return with_ctx_and_mem(env, |gles, _mem| unsafe {
-            if oes {
-                gles.UnmapBufferOES(target)
-            } else {
-                gles.UnmapBuffer(target)
-            }
-        });
+        // An unbalanced unmap (no guest mapping recorded for this buffer):
+        // every driver-side mapping is owned by a recorded guest mapping, so
+        // the buffer cannot be driver-mapped here. Forwarding the call would
+        // only raise a spurious GL_INVALID_OPERATION (seen with Asphalt 8's
+        // Jet engine, which unmaps buffers it failed to map). Treat it as a
+        // no-op reporting success, matching Apple's lenient behaviour.
+        log_dbg!(
+            "glUnmapBuffer{} on buffer {} with no matching mapping; ignoring",
+            if oes { "OES" } else { "" },
+            buffer_object_name
+        );
+        return gles11::TRUE;
     };
     unsafe {
         host_buffer.copy_from(

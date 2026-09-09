@@ -63,7 +63,7 @@ impl GLESContext for GLES2NativeContext {
                 _gl_lifetime: PhantomData,
                 pvrtc_native: self.pvrtc_native,
                 texture_lod_ext_supported: self.texture_lod_ext_supported,
-                map_buffer_staging: None,
+                map_buffer_stagings: Vec::new(),
             });
         }
         unsafe {
@@ -84,7 +84,7 @@ impl GLESContext for GLES2NativeContext {
             _gl_lifetime: PhantomData,
             pvrtc_native: self.pvrtc_native,
             texture_lod_ext_supported: self.texture_lod_ext_supported,
-            map_buffer_staging: None,
+            map_buffer_stagings: Vec::new(),
         })
     }
 
@@ -98,7 +98,7 @@ impl GLESContext for GLES2NativeContext {
                 _gl_lifetime: PhantomData,
                 pvrtc_native: self.pvrtc_native,
                 texture_lod_ext_supported: self.texture_lod_ext_supported,
-                map_buffer_staging: None,
+                map_buffer_stagings: Vec::new(),
             });
         }
         make_current_fn(&self.gl_ctx);
@@ -114,7 +114,7 @@ impl GLESContext for GLES2NativeContext {
             _gl_lifetime: PhantomData,
             pvrtc_native: self.pvrtc_native,
             texture_lod_ext_supported: self.texture_lod_ext_supported,
-            map_buffer_staging: None,
+            map_buffer_stagings: Vec::new(),
         })
     }
 }
@@ -401,8 +401,13 @@ pub struct GLES2Native<'gl_ctx> {
     pvrtc_native: bool,
     /// Whether `GL_EXT_shader_texture_lod` is advertised by the host driver.
     texture_lod_ext_supported: bool,
-    /// CPU staging buffer for the `glMapBufferOES` fallback (see below).
-    map_buffer_staging: Option<(GLenum, Vec<u8>)>,
+    /// CPU staging buffers for the `glMapBufferOES` fallback (see below).
+    ///
+    /// Games can legitimately have more than one buffer mapped at a time
+    /// (e.g. Asphalt 8's Jet engine maps the vertex and the index buffer
+    /// simultaneously), so this is keyed by buffer target instead of being
+    /// a single slot that would silently drop the first mapping.
+    map_buffer_stagings: Vec<(GLenum, Vec<u8>)>,
 }
 
 /// Returns `true` if `cap` is an ES 1.1 fixed-function capability that has
@@ -1063,21 +1068,28 @@ impl GLES for GLES2Native<'_> {
         }
         let staging = vec![0u8; size as usize];
         let ptr = staging.as_ptr();
-        self.map_buffer_staging = Some((target, staging));
+        // Replace any stale staging entry for this target (an unbalanced
+        // earlier map without unmap); keep other targets' entries intact.
+        match self.map_buffer_stagings.iter_mut().find(|(t, _)| *t == target) {
+            Some(entry) => *entry = (target, staging),
+            None => self.map_buffer_stagings.push((target, staging)),
+        }
         ptr as *mut GLvoid
     }
     unsafe fn UnmapBufferOES(&mut self, target: GLenum) -> GLboolean {
-        if let Some((mapped_target, staging)) = self.map_buffer_staging.as_ref() {
-            if *mapped_target == target {
-                gles2::BufferSubData(
-                    target,
-                    0,
-                    staging.len() as GLsizeiptr,
-                    staging.as_ptr() as *const GLvoid,
-                );
-                self.map_buffer_staging = None;
-                return gles2::TRUE;
-            }
+        if let Some(pos) = self
+            .map_buffer_stagings
+            .iter()
+            .position(|(mapped_target, _)| *mapped_target == target)
+        {
+            let (_, staging) = self.map_buffer_stagings.swap_remove(pos);
+            gles2::BufferSubData(
+                target,
+                0,
+                staging.len() as GLsizeiptr,
+                staging.as_ptr() as *const GLvoid,
+            );
+            return gles2::TRUE;
         }
         if gles2::UnmapBufferOES::is_loaded() {
             gles2::UnmapBufferOES(target)
