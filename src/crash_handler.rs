@@ -53,7 +53,7 @@ pub fn append_to_log(msg: &str) {
                 libc::write(
                     fd,
                     line.as_ptr().add(written) as *const libc::c_void,
-                    (line.len() - written) as write_size_t(line.len() - written),
+                    write_size_t(line.len() - written),
                 )
             };
             if n <= 0 {
