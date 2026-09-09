@@ -63,6 +63,7 @@ impl GLESContext for GLES2NativeContext {
                 _gl_lifetime: PhantomData,
                 pvrtc_native: self.pvrtc_native,
                 texture_lod_ext_supported: self.texture_lod_ext_supported,
+                map_buffer_staging: None,
             });
         }
         unsafe {
@@ -83,6 +84,7 @@ impl GLESContext for GLES2NativeContext {
             _gl_lifetime: PhantomData,
             pvrtc_native: self.pvrtc_native,
             texture_lod_ext_supported: self.texture_lod_ext_supported,
+            map_buffer_staging: None,
         })
     }
 
@@ -96,6 +98,7 @@ impl GLESContext for GLES2NativeContext {
                 _gl_lifetime: PhantomData,
                 pvrtc_native: self.pvrtc_native,
                 texture_lod_ext_supported: self.texture_lod_ext_supported,
+                map_buffer_staging: None,
             });
         }
         make_current_fn(&self.gl_ctx);
@@ -111,6 +114,7 @@ impl GLESContext for GLES2NativeContext {
             _gl_lifetime: PhantomData,
             pvrtc_native: self.pvrtc_native,
             texture_lod_ext_supported: self.texture_lod_ext_supported,
+            map_buffer_staging: None,
         })
     }
 }
@@ -397,6 +401,8 @@ pub struct GLES2Native<'gl_ctx> {
     pvrtc_native: bool,
     /// Whether `GL_EXT_shader_texture_lod` is advertised by the host driver.
     texture_lod_ext_supported: bool,
+    /// CPU staging buffer for the `glMapBufferOES` fallback (see below).
+    map_buffer_staging: Option<(GLenum, Vec<u8>)>,
 }
 
 /// Returns `true` if `cap` is an ES 1.1 fixed-function capability that has
@@ -1038,16 +1044,35 @@ impl GLES for GLES2Native<'_> {
     // `--prefer-gles2-context`, they end up here.
     unsafe fn MapBufferOES(&mut self, target: GLenum, access: GLenum) -> *mut GLvoid {
         if gles2::MapBufferOES::is_loaded() {
-            gles2::MapBufferOES(target, access)
-        } else {
-            log!(
-                "Warning: glMapBufferOES called but GL_OES_mapbuffer is not \
-                 available on this ES 2.0 driver; returning NULL"
-            );
-            std::ptr::null_mut()
+            return gles2::MapBufferOES(target, access);
         }
+        // Fallback for drivers without `GL_OES_mapbuffer` (e.g. Asphalt 8's
+        // Jet engine maps vertex/index buffers with GL_WRITE_ONLY_OES to
+        // upload geometry). ES 2.0 core has no buffer readback, but games
+        // only ever map for writing, so hand out a CPU staging buffer sized
+        // to the current buffer store and upload it in `UnmapBufferOES`.
+        let mut size: GLint = 0;
+        gles2::GetBufferParameteriv(target, gles2::BUFFER_SIZE, &mut size);
+        if size <= 0 {
+            return std::ptr::null_mut();
+        }
+        let staging = vec![0u8; size as usize];
+        let ptr = staging.as_ptr();
+        self.map_buffer_staging = Some((target, staging));
+        ptr as *mut GLvoid
     }
     unsafe fn UnmapBufferOES(&mut self, target: GLenum) -> GLboolean {
+        if let Some((mapped_target, staging)) = self.map_buffer_staging.take() {
+            if mapped_target == target {
+                gles2::BufferSubData(
+                    target,
+                    0,
+                    staging.len() as GLsizeiptr,
+                    staging.as_ptr() as *const GLvoid,
+                );
+                return gles2::TRUE;
+            }
+        }
         if gles2::UnmapBufferOES::is_loaded() {
             gles2::UnmapBufferOES(target)
         } else {

@@ -50,6 +50,7 @@ pub mod ui_search_bar;
 pub mod ui_split_view_controller;
 pub mod ui_storyboard;
 pub mod ui_tab_bar_controller;
+pub mod ui_text_input;
 pub mod ui_tab_bar_item;
 pub mod ui_touch;
 pub mod ui_view;
@@ -957,7 +958,7 @@ pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {
         ui_view::ui_label::CLASSES,
         ui_view::ui_page_control::CLASSES,
         ui_view::ui_refresh_control::CLASSES,
-        ui_view::ui_refresh_control::CLASSES,
+        ui_text_input::CLASSES,
         ui_view::ui_picker_view::CLASSES,
         ui_view::ui_scroll_view::CLASSES,
         ui_view::ui_scroll_view::ui_text_view::CLASSES,
