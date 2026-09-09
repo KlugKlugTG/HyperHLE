@@ -90,6 +90,19 @@ impl std::fmt::Debug for Thread {
 pub static LAST_GUEST_PC: std::sync::atomic::AtomicU32 =
     std::sync::atomic::AtomicU32::new(0);
 
+/// Last guest LR seen by the CPU loop, for crash diagnostics.
+pub static LAST_GUEST_LR: std::sync::atomic::AtomicU32 =
+    std::sync::atomic::AtomicU32::new(0);
+
+/// Ring buffer of the last N guest PCs, for crash diagnostics.
+pub static GUEST_PC_RING: [std::sync::atomic::AtomicU32; 32] = {
+    #[allow(clippy::declare_interior_mutable_const)]
+    const ZERO: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+    [ZERO; 32]
+};
+pub static GUEST_PC_RING_IDX: std::sync::atomic::AtomicUsize =
+    std::sync::atomic::AtomicUsize::new(0);
+
 /// The struct containing the entire emulator state. Methods are provided for
 /// execution and management of threads.
 pub struct Environment {
@@ -2226,9 +2239,29 @@ impl Environment {
                 let state = self
                     .cpu
                     .run_or_step(&mut self.mem, self.remaining_ticks.as_mut());
+                let diag_pc = self.cpu.regs()[crate::cpu::Cpu::PC];
                 std::sync::atomic::AtomicU32::store(
                     &crate::environment::LAST_GUEST_PC,
-                    self.cpu.regs()[crate::cpu::Cpu::PC],
+                    diag_pc,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                std::sync::atomic::AtomicU32::store(
+                    &crate::environment::LAST_GUEST_LR,
+                    self.cpu.regs()[crate::cpu::Cpu::LR],
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                let ring_i = std::sync::atomic::AtomicUsize::load(
+                    &crate::environment::GUEST_PC_RING_IDX,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                std::sync::atomic::AtomicU32::store(
+                    &crate::environment::GUEST_PC_RING[ring_i % 32],
+                    diag_pc,
+                    std::sync::atomic::Ordering::Relaxed,
+                );
+                std::sync::atomic::AtomicUsize::store(
+                    &crate::environment::GUEST_PC_RING_IDX,
+                    ring_i.wrapping_add(1),
                     std::sync::atomic::Ordering::Relaxed,
                 );
 

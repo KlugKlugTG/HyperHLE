@@ -127,9 +127,26 @@ mod imp {
             addr
         );
         let msg = format!(
-            "{}last guest PC: {:#x} (see CPU loop)\n",
+            "{}last guest PC: {:#x}, LR: {:#x}\n",
             msg,
-            crate::environment::LAST_GUEST_PC.load(Ordering::Relaxed)
+            crate::environment::LAST_GUEST_PC.load(Ordering::Relaxed),
+            crate::environment::LAST_GUEST_LR.load(Ordering::Relaxed)
+        );
+        let msg = format!(
+            "{}recent guest PCs:{}\n",
+            msg,
+            (0..32)
+                .map(|i| {
+                    let idx = (crate::environment::GUEST_PC_RING_IDX
+                        .load(Ordering::Relaxed)
+                        .wrapping_sub(1 - i as usize))
+                        % 32;
+                    format!(
+                        " {:#x}",
+                        crate::environment::GUEST_PC_RING[idx].load(Ordering::Relaxed)
+                    )
+                })
+                .collect::<String>()
         );
         let bytes = msg.as_bytes();
         unsafe {
