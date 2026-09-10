@@ -181,6 +181,7 @@ struct AppPickerDelegateHostObject {
     gles1_on_gles2: Option<bool>,
     show_fps: Option<bool>,
     trace_gl_errors: Option<bool>,
+    verbose_gles: Option<bool>,
     fullscreen: Option<bool>,
     device_model_tag: Option<i32>,
     device_model_toggle: bool,
@@ -280,6 +281,10 @@ const CLASSES: ClassExports = objc_classes! {
 - (())traceGLErrors:(id)switch { // UISwitch*
     let switch_state: bool = msg![env; switch isOn];
     env.objc.borrow_mut::<AppPickerDelegateHostObject>(this).trace_gl_errors = Some(switch_state);
+}
+- (())verboseGLES:(id)switch { // UISwitch*
+    let switch_state: bool = msg![env; switch isOn];
+    env.objc.borrow_mut::<AppPickerDelegateHostObject>(this).verbose_gles = Some(switch_state);
 }
 - (())showFPS:(id)switch { // UISwitch*
     let switch_state: bool = msg![env; switch isOn];
@@ -602,6 +607,7 @@ fn app_picker_inner(
     let mut quick_options_gles1_on_gles2 = false;
     let mut quick_options_show_fps = false;
     let mut quick_options_trace_gl_errors = false;
+    let mut quick_options_verbose_gles = false;
     let mut quick_options_device_tag: Option<i32> = None;
     let mut quick_options_device_model_open = false;
     let mut quick_options_device_model_scroll: isize = 0;
@@ -886,6 +892,8 @@ fn app_picker_inner(
             quick_options_show_fps = enabled;
         } else if let Some(trace_gl_errors) = std::mem::take(&mut host_obj.trace_gl_errors) {
             quick_options_trace_gl_errors = trace_gl_errors;
+        } else if let Some(verbose_gles) = std::mem::take(&mut host_obj.verbose_gles) {
+            quick_options_verbose_gles = verbose_gles;
         } else if let Some(fullscreen) = std::mem::take(&mut host_obj.fullscreen) {
             quick_options_fullscreen = match fullscreen {
                 false => None,
@@ -963,6 +971,9 @@ fn app_picker_inner(
 
     if quick_options_trace_gl_errors {
         option_args.push("--trace-gl-errors".to_string());
+    }
+    if quick_options_verbose_gles {
+        option_args.push("--verbose-gles".to_string());
     }
 
     if let Some(tag) = quick_options_device_tag {
@@ -1717,6 +1728,7 @@ fn setup_quick_options(
         RowKind::Switch("showFPS:", false),
         RowKind::Label("Trace GL errors"),
         RowKind::Switch("traceGLErrors:", false),
+        RowKind::Switch("verboseGLES:", false),
         RowKind::Label("Use analog sticks for tilt controls"),
         RowKind::Switch("analogStickTiltControls:", true),
         RowKind::Label("Use GLES1 → GLES2 translator"),
