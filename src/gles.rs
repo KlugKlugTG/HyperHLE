@@ -77,11 +77,9 @@ pub mod util;
 use touchHLE_gl_bindings::gl21compat as gl21compat_raw;
 use touchHLE_gl_bindings::gl33core as gl33core_raw;
 pub use touchHLE_gl_bindings::gles11 as gles11_raw;
-pub use touchHLE_gl_bindings::gles11::types::*;
 pub use touchHLE_gl_bindings::gles2 as gles2_raw;
-pub use touchHLE_gl_bindings::gles2::types::*;
 pub use touchHLE_gl_bindings::gles30 as gles30_raw;
-pub use touchHLE_gl_bindings::gles30::types::*;
+pub use touchHLE_gl_bindings::gles11::types::*;
 pub use util::try_decode_pvrtc;
 
 use crate::environment::Environment;
