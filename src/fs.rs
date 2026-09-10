@@ -713,12 +713,10 @@ impl Read for GuestFile {
                 std::io::ErrorKind::Unsupported,
                 "attempt to read from the write end of a pipe",
             )),
-            GuestFile::Directory => {
-                // Reading a directory yields no bytes (like an empty file);
-                // games mmap() directory fds and expect success, not EISDIR.
-                log_dbg!("Reading a directory as a guest file; returning EOF");
-                Ok(0)
-            }
+            GuestFile::Directory => Err(std::io::Error::new(
+                std::io::ErrorKind::IsADirectory,
+                "Attempt to read from a directory as a guest file",
+            )),
             GuestFile::Socket => Err(std::io::Error::new(
                 std::io::ErrorKind::Unsupported,
                 "read not supported on socket via GuestFile",
@@ -792,14 +790,17 @@ impl Seek for GuestFile {
             GuestFile::IpaBundleFile(file) => file.seek(pos),
             GuestFile::ResourceFile(file) => file.get().seek(pos),
             GuestFile::Directory => {
-                // Note: directories are supposed to be seekable on iOS!
+                // Note: directories as supposed to be seekable on iOS!
                 //
                 // https://stackoverflow.com/questions/65911066/what-does-lseek-mean-for-a-directory-file-descriptor
-                // Games (e.g. Gameloft titles) mmap() directory fds and only
-                // care that the call succeeds; report position 0 like a
-                // zero-length file instead of failing with EISDIR.
-                log_dbg!("Seeking a directory as a guest file; returning position 0");
-                Ok(0)
+                // As far as I can (f)tell, apps are really not using that
+                // properly and returning -1 on fseek/ftell is fine.
+                // TODO: implement seeking properly and return "cookie" values
+                log!("Warning: Seeking a directory as a guest file!");
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::IsADirectory,
+                    "Attempt to seek a directory as a guest file",
+                ))
             }
             // Seeking a character device is a no-op: the offset is
             // meaningless, so report position 0 rather than failing.
