@@ -8,19 +8,14 @@
 //! Handling of Objective-C messaging (`objc_msgSend` and friends).
 //!
 //! Resources:
-//! - Apple's [Objective-C Runtime Programming
-//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtHowMessagingWorks.html)
+//! - Apple's [Objective-C Runtime Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtHowMessagingWorks.html)
 //!
 //!
-//! - [Apple's documentation of
-//`objc_msgSend`](https://developer.apple.com/documentation/objectivec/1456712-objc_msgsend)
-//! - Mike Ash's [objc_msgSend's New
-//Prototype](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html)
+//! - [Apple's documentation of `objc_msgSend`](https://developer.apple.com/documentation/objectivec/1456712-objc_msgsend)
+//! - Mike Ash's [objc_msgSend's New Prototype](https://www.mikeash.com/pyblog/objc_msgsends-new-prototype.html)
 //!
 //!
-//! - Peter Steinberger's [Calling Super at Runtime in
-//Swift](https://steipete.com/posts/calling-super-at-runtime/) explains
-//`objc_msgSendSuper2`
+//! - Peter Steinberger's [Calling Super at Runtime in Swift](https://steipete.com/posts/calling-super-at-runtime/) explains `objc_msgSendSuper2`
 
 use super::{id, nil, Class, ObjC, IMP, SEL};
 use crate::abi::{CallFromHost, GuestRet};
@@ -34,8 +29,7 @@ use std::any::TypeId;
 /// > within the program. Superclasses receive this message before their
 /// > subclasses.
 ///
-///  See
-/// <https://developer.apple.com/documentation/objectivec/nsobject/1418639-initialize>.
+/// See <https://developer.apple.com/documentation/objectivec/nsobject/1418639-initialize>.
 ///
 /// `class_to_init` must be a (regular) class, not a metaclass. The class is
 /// marked as initialized *before* `+initialize` is dispatched, so that any
@@ -211,7 +205,6 @@ fn objc_msgSend_inner(
     let message_type_info = env.objc.message_type_info.take();
 
     if receiver == nil {
-        //
         // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjectiveC/Chapters/ocObjectsClasses.html#//apple_ref/doc/uid/TP30001163-CH11-SW7
         log_dbg!("[nil {}]", selector.as_str(&env.mem));
         env.cpu.regs_mut()[0..2].fill(0);
@@ -482,8 +475,8 @@ fn objc_msgSend_inner(
                 return;
             }
 
-            // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: заменили panic!
-            // на log! (мягкий фейл
+            // --- ИСПРАВЛЕНИЕ ЗДЕСЬ: заменили panic! на log! (мягкий фейл
+            // форка) ---
             //
             // Rate-limit per unique (class, selector) pair. Some apps poll an
             // unimplemented selector (e.g. `-[CMDeviceMotion attitude]`) every
@@ -533,8 +526,8 @@ fn objc_msgSend_inner(
                 }
             }
 
-            // Имитируем возврат nil/0, чтобы
-            // приложение продолжило работу
+            // Имитируем возврат nil/0, чтобы приложение продолжило работу
+            env.cpu.regs_mut()[0..2].fill(0);
             return;
             // ------------------------------------------------------------
         }
@@ -686,12 +679,9 @@ Type mismatch when sending message {} to {:?}!
                                     .register_host_selector("setTag:".to_string(), &mut env.mem);
                                 let level_tag = stage_index as i32;
 
-                                //  Force the tag onto both the original
-                                // release sender and the
-                                //  mapped GrowStarButton. On rebuilt
-                                // level-select scenes, one can
-                                //  have the stale tag while the other is the
-                                // object selectLVAction
+                                // Force the tag onto both the original release sender and the
+                                // mapped GrowStarButton. On rebuilt level-select scenes, one can
+                                // have the stale tag while the other is the object selectLVAction
                                 // actually reads.
                                 let release_sender =
                                     id::from_bits(ultrahle_minionjump_release_arg0);
@@ -782,13 +772,6 @@ Type mismatch when sending message {} to {:?}!
             ) {
                 return;
             }
-            // XaView A8 fix (2e1549e3): messages to the unimplemented
-            // GCController class behave as if sent to nil, instead of
-            // panicking the guest.
-            if class_name_for_log == "GCController" {
-                env.cpu.regs_mut()[0..2].fill(0);
-                return;
-            }
             log!(
                 "Class \"{}\" ({:?}) is unimplemented. Call to {} method \"{}\".",
                 class_name_for_log,
@@ -835,13 +818,11 @@ Type mismatch when sending message {} to {:?}!
 // ============================================================================
 // Broad Cocos2D / Cocos2d-x / Unity missing-selector compatibility
 // ============================================================================
-//  Old iOS Cocos and Unity-era iOS games often mix framework versions,
-// categories, optional
+// Old iOS Cocos and Unity-era iOS games often mix framework versions, categories, optional
 // protocols, and per-game subclasses. Returning a sane default for a missing
 // selector is usually closer to Objective-C's loose runtime behavior than
 // panicking or spamming the log. These shims are deliberately conservative:
-//  they only trigger for Cocos/Unity-looking classes/selectors or harmless
-// UIKit-style
+// they only trigger for Cocos/Unity-looking classes/selectors or harmless UIKit-style
 // lifecycle/property selectors.
 
 fn objc_ret_zero(env: &mut Environment) {
@@ -1104,8 +1085,7 @@ fn try_cocos_missing_selector_compat(
     }
 
     // Targeted touch began returns BOOL. Returning YES lets old CCTargetedTouch
-    //  delegates claim the touch when the selector is optional/missing on a
-    // shim.
+    // delegates claim the touch when the selector is optional/missing on a shim.
     if selector_name == "ccTouchBegan:withEvent:" || selector_name == "containsTouchLocation:" {
         cocos_selector_log_once(class_name, selector_name, "YES");
         objc_ret_u32(env, 1);
@@ -1370,8 +1350,7 @@ fn try_cocos_missing_selector_compat(
 
     // Very broad final Cocos safety net for setters/callbacks with arguments.
     // This catches lots of minor version drift like setDisplayFrame: or
-    //  registerScriptHandler: without hiding truly unknown zero-argument
-    // getters.
+    // registerScriptHandler: without hiding truly unknown zero-argument getters.
     if engineish && selector_name.ends_with(':') {
         cocos_selector_log_once(class_name, selector_name, "argument selector no-op");
         objc_ret_zero(env);

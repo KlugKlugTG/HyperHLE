@@ -14,6 +14,7 @@ use std::collections::HashMap;
 
 // --- ДОБАВЛЯЕМ СТРУКТУРЫ И КОНСТАНТЫ ДЛЯ
 // host_info ---
+const HOST_BASIC_INFO: i32 = 1;
 
 #[repr(C)]
 #[derive(Copy, Clone, Default)]
@@ -55,6 +56,7 @@ fn host_info(
 
             // 256MB RAM (безопасное значение для
             // старых игр)
+            let mem_bytes = 256 * 1024 * 1024;
             info.memory_size = mem_bytes as u32;
             info.max_mem = mem_bytes as u64;
 

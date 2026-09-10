@@ -60,23 +60,23 @@ struct NSNumberFormatterHostObject {
     // Per Apple's NSNumberFormatter documentation:
     // https://developer.apple.com/documentation/foundation/nsnumberformatter
     // -----------------------------------------------------------------------
-    /// `currencySymbol` — e.g. "$". Default nil means use the locale's
-    //symbol.
+    /// `currencySymbol` — e.g. "$". Default nil means use the locale's symbol.
+    currency_symbol: id,
     /// `currencyCode` — ISO 4217 code, e.g. "USD".
     currency_code: id,
     /// `internationalCurrencySymbol` — e.g. "USD".
     international_currency_symbol: id,
     /// `currencyDecimalSeparator` — decimal separator used in currency style.
     currency_decimal_separator: id,
-    /// `currencyGroupingSeparator` — grouping separator used in currency
-    //style.
+    /// `currencyGroupingSeparator` — grouping separator used in currency style.
+    currency_grouping_separator: id,
     // -----------------------------------------------------------------------
     // Decimal / sign symbols
     // -----------------------------------------------------------------------
     /// `decimalSeparator` — e.g. ".".
     decimal_separator: id,
-    /// `alwaysShowsDecimalSeparator` — if true, always show the decimal
-    //point.
+    /// `alwaysShowsDecimalSeparator` — if true, always show the decimal point.
+    always_shows_decimal_separator: bool,
     /// `notANumberSymbol` — symbol used for NaN.
     not_a_number_symbol: id,
     /// `plusSign` — the "+" sign character.

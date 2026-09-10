@@ -193,8 +193,7 @@ pub fn pthread_cond_wait(
         return e;
     }
     let res = pthread_mutex_unlock(env, mutex);
-    // ЧЕСТНЫЙ ФИКС: Аналогичная обработка для
-    // обычного wait без таймаута
+    if res != 0 {
         log_dbg!(
             "Warning: pthread_cond_wait called with unlocked/invalid mutex, returning error {}",
             res
@@ -343,13 +342,14 @@ pub fn pthread_condattr_setpshared(
 }
 
 /// pthread_condattr_getpshared — get process-shared attribute (always
-//private).
-    env: &mut Environment,
+/// private).
+pub fn pthread_condattr_getpshared(
+    _env: &mut Environment,
     _attr: ConstPtr<pthread_condattr_t>,
     pshared: MutPtr<i32>,
 ) -> i32 {
     if !pshared.is_null() {
-        env.mem.write(pshared, 0); // PTHREAD_PROCESS_PRIVATE
+        _env.mem.write(pshared, 0); // PTHREAD_PROCESS_PRIVATE
     }
     0
 }
@@ -365,13 +365,14 @@ pub fn pthread_condattr_setclock(
 }
 
 /// pthread_condattr_getclock — get clock attribute (always CLOCK_REALTIME =
-//0).
-    env: &mut Environment,
+/// 0).
+pub fn pthread_condattr_getclock(
+    _env: &mut Environment,
     _attr: ConstPtr<pthread_condattr_t>,
     clock_id: MutPtr<i32>,
 ) -> i32 {
     if !clock_id.is_null() {
-        env.mem.write(clock_id, 0); // CLOCK_REALTIME
+        _env.mem.write(clock_id, 0); // CLOCK_REALTIME
     }
     0
 }

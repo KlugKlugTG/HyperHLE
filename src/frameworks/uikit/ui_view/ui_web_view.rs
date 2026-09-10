@@ -286,6 +286,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // Вынесено в отдельную переменную для
     // предотвращения ошибки E0283
+    let url: id = msg_class![env; NSURL URLWithString:current];
     let ns_req: id = msg_class![env; NSURLRequest requestWithURL:url];
 
     let _: () = msg![env; this loadRequest:ns_req];
@@ -398,6 +399,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     log_dbg!("UIWebView stringByEvaluatingJavaScriptFromString: {:?} — returning empty string", script_str);
     // Return empty NSString rather than nil — some apps check the return
     // value.
+    let empty = ns_string::from_rust_string(env, String::new());
     crate::objc::autorelease(env, empty)
 }
 

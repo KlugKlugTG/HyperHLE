@@ -465,6 +465,7 @@ pub fn read(
             // чтения
             // (когда прочитано больше 0 байт, но
             // меньше запрошенного).
+            if bytes_read == 0 {
                 log_dbg!("read({:?}, {:?}, {:#x}) => 0 (EOF)", fd, buffer, size);
             } else if bytes_read < buffer_slice.len() {
                 // POSIX read(2) returning fewer bytes than requested is normal

@@ -22,8 +22,8 @@ struct NSConditionHostObject {
     name: id,
     /// Состояние внутреннего мьютекса
     locked: bool,
-    /// Потоки, ожидающие захвата блокировки
-    //(lock)
+    /// Потоки, ожидающие захвата блокировки (lock)
+    lock_waiting_threads: VecDeque<crate::environment::ThreadId>,
     /// Потоки, ожидающие сигнала (wait)
     waiting_threads: VecDeque<crate::environment::ThreadId>,
 }
@@ -40,8 +40,8 @@ struct NSConditionLockHostObject {
     condition: NSInteger,
     /// Whether the lock is currently held.
     locked: bool,
-    /// Потоки, ожидающие захвата. Option<NSInteger>
-    //указывает, ждет ли поток
+    /// Потоки, ожидающие захвата. Option<NSInteger> указывает, ждет ли поток
+    /// конкретного состояния (Some) или просто освобождения блокировки (None).
     waiting_threads: VecDeque<(crate::environment::ThreadId, Option<NSInteger>)>,
 }
 impl HostObject for NSConditionLockHostObject {}
@@ -92,6 +92,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: NSLocking protocol
 
 - (())lock {
+    let current_thread = env.current_thread;
     loop {
         {
             let host = env.objc.borrow_mut::<NSConditionHostObject>(this);
@@ -135,6 +136,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // 2. Засыпаем, пока нас не разбудит `signal`
     // или `broadcast`
+    env.suspend_thread(env.current_thread);
 
     // 3. По правилам POSIX, после пробуждения
     // необходимо снова захватить
@@ -146,6 +148,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     if ti <= 0.0 {
         return false;
     }
+    let mut timed_out = false;
 
     // 1. Освобождаем блокировку
     {
@@ -287,6 +290,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())unlock {
     let host = env.objc.borrow_mut::<NSConditionLockHostObject>(this);
+    let mut to_wake: Option<usize> = None;
     host.locked = false;
 
     // Ищем первый поток, который ждет
@@ -381,6 +385,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     let host = env.objc.borrow_mut::<NSConditionLockHostObject>(this);
     host.locked = false;
     host.condition = condition;
+    let mut to_wake: Option<usize> = None;
 
     // Ищем первый поток, который ждет нового
     // condition

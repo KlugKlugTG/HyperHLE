@@ -11,8 +11,8 @@ use super::ns_dictionary::dict_from_keys_and_objects;
 use super::ns_run_loop::NSDefaultRunLoopMode;
 use super::ns_string::{from_rust_string, get_static_str, to_rust_string};
 use super::{NSInteger, NSTimeInterval, NSUInteger};
-// ДОБАВЛЕНЫ ИМПОРТЫ ДЛЯ ЭКСПОРТА ФУНКЦИИ И
-// ОКРУЖЕНИЯ
+// ДОБАВЛЕНЫ ИМПОРТЫ ДЛЯ ЭКСПОРТА ФУНКЦИИ И ОКРУЖЕНИЯ
+use crate::dyld::{export_c_func, FunctionExports};
 use crate::frameworks::foundation::ns_thread::detach_new_thread_inner;
 use crate::libc::semaphore::{host_create_semaphore, host_destroy_semaphore, sem_post, sem_wait};
 use crate::mem::MutVoidPtr;
@@ -23,8 +23,8 @@ use crate::objc::{
 use crate::Environment;
 use std::sync::Mutex;
 
-// Хранилище для отмененных таймеров (target,
-// имя селектора в виде строки)
+// Хранилище для отмененных таймеров (target, имя селектора в виде строки)
+//
 // These side-channel stores are guarded by mutexes rather than being
 // `static mut`: re-entrant access (e.g. a `release` triggering `dealloc`
 // while iterating) was previously undefined behaviour. Locks must never be
@@ -32,31 +32,21 @@ use std::sync::Mutex;
 // same accessors.
 pub static CANCELLED_PERFORMS: Mutex<Vec<(u32, Option<String>)>> = Mutex::new(Vec::new());
 
-// Хранилище для динамических свойств KVC
-// (когда NIB устанавливает кастомные
+// Хранилище для динамических свойств KVC (когда NIB устанавливает кастомные IBOutlet на базовые классы)
 pub static DYNAMIC_KVC_STORAGE: Mutex<Vec<(u32, String, u32)>> = Mutex::new(Vec::new());
 
-//  Side-channel storage for
-// `performSelectorOnMainThread:withObject:waitUntilDone:YES` requests
-//  scheduled from background threads. Each entry maps a pending NSTimer's id
-// to the host semaphore
-//  the background thread is blocked on, so that `_touchHLE_timerFireMethod:`
-// can post the
-//  semaphore once the selector has finished running on the main thread.
-// Without this, the
-//  `waitUntilDone:YES` argument is effectively ignored and background threads
-// race ahead of the
-// scheduled selector — this manifests, for example, as Call of Duty: Zombies'
-// Marmalade-based
-//  `RunOnMainThread` helper clobbering `s3eAppDelegate.m_Func` repeatedly
-// before the main thread's
-//  `-[s3eAppDelegate Functor]` fires, eventually loading a NULL function
-// pointer and crashing.
+// Side-channel storage for `performSelectorOnMainThread:withObject:waitUntilDone:YES` requests
+// scheduled from background threads. Each entry maps a pending NSTimer's id to the host semaphore
+// the background thread is blocked on, so that `_touchHLE_timerFireMethod:` can post the
+// semaphore once the selector has finished running on the main thread. Without this, the
+// `waitUntilDone:YES` argument is effectively ignored and background threads race ahead of the
+// scheduled selector — this manifests, for example, as Call of Duty: Zombies' Marmalade-based
+// `RunOnMainThread` helper clobbering `s3eAppDelegate.m_Func` repeatedly before the main thread's
+// `-[s3eAppDelegate Functor]` fires, eventually loading a NULL function pointer and crashing.
 pub static SYNC_PERFORM_SEMAPHORES: Mutex<Vec<(u32, u32)>> = Mutex::new(Vec::new());
 
 // KVO (Key-Value Observing) storage.
-//  Each entry: (observed_object_bits, observer_bits, keyPath string, options,
-// context_bits)
+// Each entry: (observed_object_bits, observer_bits, keyPath string, options, context_bits)
 pub static KVO_OBSERVERS: Mutex<Vec<(u32, u32, String, u32, u32)>> = Mutex::new(Vec::new());
 
 // Old values snapshotted by willChangeValueForKey: so that
@@ -81,8 +71,8 @@ const NSKeyValueChangeSetting: i32 = 1;
 /// "Creates an exact copy of an object." It allocates a new instance of the
 /// same class as `object` (plus `extraBytes` of trailing storage) and copies
 /// the original instance's bytes into it, returning the new instance. The
-/// copy is shallow — object-pointer ivars are duplicated as raw pointers —
-//so
+/// copy is shallow — object-pointer ivars are duplicated as raw pointers — so
+/// classes that build their `-copyWithZone:` on top of NSCopyObject are
 /// responsible for retaining any owned ivars themselves. The `zone` argument
 /// is obsolete on modern runtimes and is ignored. NSCopyObject is deprecated
 /// but plenty of shipping iPhone OS apps still call it from their
@@ -99,7 +89,9 @@ fn NSCopyObject(
 /// Exports `NSCopyObject` for the dynamic linker. `NSAllocateObject` is
 /// already exported from `ns_file_manager::FUNCTIONS` — do not duplicate it
 /// here or the linker will see two definitions for the same symbol.
-pub const FUNCTIONS: FunctionExports = &[export_c_func!(NSCopyObject(_, _, _))];
+pub const FUNCTIONS: FunctionExports = &[
+    export_c_func!(NSCopyObject(_, _, _)),
+];
 
 /// Builds a KVO change dictionary and sends
 /// `observeValueForKeyPath:ofObject:change:context:` to one observer.
@@ -200,7 +192,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Per Apple's [`+initialize`
-//
 // docs](https://developer.apple.com/documentation/objectivec/nsobject/1418639-initialize),
 // the runtime sends this exactly once to every class before it receives any
 // other message. Subclasses commonly chain to `[super initialize]`; if no
@@ -218,7 +209,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // ИЗМЕНЕНО: Ищем _objc_msgSend через create_proc_address (без логов)
-- (u32)methodForSelector:(SEL)selector {
++ (u32)instanceMethodForSelector:(SEL)_selector {
     let dyld = &mut env.dyld;
     let mem = &mut env.mem;
     let cpu = &mut env.cpu;
@@ -282,8 +273,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)description {
     let class: Class = msg![env; this class];
     let name = env.objc.get_class_name(class);
-    let desc_str = format!("<{}: 0x{:x}>", name, this.to_bits());
     // Формируем классическую строку вида <ClassName: 0xAddress>
+    let desc_str = format!("<{}: 0x{:x}>", name, this.to_bits());
     let str = from_rust_string(env, desc_str);
     autorelease(env, str)
 }
@@ -315,8 +306,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())dealloc {
     log_dbg!("[{:?} dealloc]", this);
 
-    // Очищаем и высвобождаем динамические
-    // свойства KVC
+    // Очищаем и высвобождаем динамические свойства KVC
+    let mut to_release = Vec::new();
     {
         let target_bits = this.to_bits();
         DYNAMIC_KVC_STORAGE.lock().unwrap().retain(|entry| {
@@ -527,8 +518,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     true
 }
 
-// ИЗМЕНЕНО: Ищем _objc_msgSend через create_proc_address
-// (без логов)
+// ИЗМЕНЕНО: Ищем _objc_msgSend через create_proc_address (без логов)
 - (u32)methodForSelector:(SEL)selector {
     let dyld = &mut env.dyld;
     let mem = &mut env.mem;
@@ -645,24 +635,16 @@ pub const CLASSES: ClassExports = objc_classes! {
         }
 
     if wait {
-        //  `waitUntilDone:YES` from a background thread: schedule the selector
-        // to run on the main
+        // `waitUntilDone:YES` from a background thread: schedule the selector to run on the main
         // thread and block the calling thread on a host semaphore that
-        //  `_touchHLE_timerFireMethod:` will post once the selector has
-        // finished executing.
+        // `_touchHLE_timerFireMethod:` will post once the selector has finished executing.
         //
-        //  Games such as Call of Duty: Zombies (Marmalade SDK) rely on this
-        // synchronisation to
-        //  safely hand work off to the main thread via an
-        // `s3eAppDelegate.m_Func` slot: the
-        //  background thread sets `m_Func`, calls
-        // `performSelectorOnMainThread:Functor
-        //  withObject:nil waitUntilDone:YES`, and expects to block until
-        // `Functor` has called and
-        //  cleared `m_Func`. Returning early here lets the background thread
-        // overwrite `m_Func`
-        //  before the main thread's `Functor` has a chance to read it,
-        // eventually loading a
+        // Games such as Call of Duty: Zombies (Marmalade SDK) rely on this synchronisation to
+        // safely hand work off to the main thread via an `s3eAppDelegate.m_Func` slot: the
+        // background thread sets `m_Func`, calls `performSelectorOnMainThread:Functor
+        // withObject:nil waitUntilDone:YES`, and expects to block until `Functor` has called and
+        // cleared `m_Func`. Returning early here lets the background thread overwrite `m_Func`
+        // before the main thread's `Functor` has a chance to read it, eventually loading a
         // NULL function pointer and crashing into the guest's null page.
         let sel_name_owned = sel_name.to_string();
         log_dbg!(
@@ -879,8 +861,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         }
     }
 
-    // 3. Чтение нашего динамического
-    // хранилища
+    // 3. Чтение нашего динамического хранилища
     {
         let target_bits = this.to_bits();
         let storage = DYNAMIC_KVC_STORAGE.lock().unwrap();
@@ -955,7 +936,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Per Apple's NSKeyValueCoding informal protocol
-//
 // (https://developer.apple.com/documentation/objectivec/nsobject/1408301-dictionarywithvaluesforkeys):
 // "Returns a dictionary containing the property values identified by each
 //  of the keys in a given array. [...] The default implementation invokes
@@ -989,7 +969,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Per Apple's NSKeyValueCoding informal protocol
-//
 // (https://developer.apple.com/documentation/objectivec/nsobject/setvaluesforkeys(_:)):
 // "For each key in keyedValues, the corresponding value is set in the
 //  receiver by invoking -setValue:forKey:. The default implementation

@@ -186,6 +186,7 @@ fn freopen(
         return Ptr::null();
     }
 
+    let FILE { fd: old_fd } = env.mem.read(stream);
     // 1. Сбрасываем буфер и закрываем старый
     // дескриптор
     let _ = posix_io::fflush(env, old_fd);
@@ -193,6 +194,7 @@ fn freopen(
 
     // Очищаем состояние в хост-объекте
     // (ошибки и возвращенные символы ungetc)
+    let host_obj = env
         .libc_state
         .stdio
         .get_file_host_obj_mut(&mut env.mem, stream);
@@ -204,8 +206,8 @@ fn freopen(
         return Ptr::null();
     }
 
-    // 2. Парсим режим открытия (точно так же,
-    // как в fopen)
+    // 2. Парсим режим открытия (точно так же, как в fopen)
+    let mode_str = env.mem.cstr_at(mode);
     let [basic_mode @ (b'r' | b'w' | b'a'), flags @ ..] = mode_str else {
         log!(
             "freopen(): Unexpected or missing mode first character: {:?}",
@@ -649,12 +651,11 @@ fn fclose(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
         );
     }
 
-    // Честное поведение C-рантайма: защита от
-    // double-close или закрытия
-    // Если игра вызывает fclose два раза для
-    // одного адреса, не крашим эмулятор
-    // а легально возвращаем EOF (ошибку), как и
-    // делают реальные ОС.
+    // Честное поведение C-рантайма: защита от double-close.
+    if !State::get_mut(env)
+        .file_streams
+        .contains_key(&file_ptr)
+    {
         log!(
             "Warning: fclose called on unknown or already closed stream {:?}",
             file_ptr

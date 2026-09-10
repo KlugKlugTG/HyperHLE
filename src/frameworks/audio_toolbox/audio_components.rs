@@ -52,6 +52,7 @@ pub struct MixerDistanceParams {
 }
 
 // ИСПРАВЛЕНИЕ: Реализация SafeRead для
+unsafe impl crate::mem::SafeRead for MixerDistanceParams {}
 // возможности чтения из памяти
 
 #[derive(Clone)]

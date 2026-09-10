@@ -608,6 +608,7 @@ fn strnlen(env: &mut Environment, s: ConstPtr<u8>, maxlen: GuestUSize) -> GuestU
 fn strcasestr(env: &mut Environment, haystack: MutPtr<u8>, needle: ConstPtr<u8>) -> MutPtr<u8> {
     // Если указатели нулевые, безопасно
     // возвращаем null, чтобы избежать краша
+    if haystack.is_null() || needle.is_null() {
         return Ptr::null();
     }
 
@@ -624,7 +625,8 @@ fn strcasestr(env: &mut Environment, haystack: MutPtr<u8>, needle: ConstPtr<u8>)
     let needle_len = needle_str.len();
 
     // ИСПРАВЛЕНИЕ: Если строка, в которой
-    // ищем, короче искомого слова,
+    // ищем, короче искомого слова, сразу null.
+    let haystack_str = env.mem.cstr_at(haystack);
     if haystack_str.len() < needle_len {
         return Ptr::null();
     }
@@ -637,6 +639,7 @@ fn strcasestr(env: &mut Environment, haystack: MutPtr<u8>, needle: ConstPtr<u8>)
         if window.eq_ignore_ascii_case(needle_str) {
             // Возвращаем указатель на начало
             // найденной подстроки
+            return haystack + i as u32;
         }
     }
 

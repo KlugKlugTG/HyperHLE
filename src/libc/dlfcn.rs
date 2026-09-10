@@ -97,7 +97,7 @@ fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
 /// Реализация функции `dlsym` стандарта POSIX.
 /// Выполняет поиск адреса экспортированного символа (функции или
 /// переменной) в библиотеке, на которую указывает `handle`.
-fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> Ptr<()> {
+fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> MutVoidPtr {
     // БЕЗОПАСНОСТЬ: Валидация переданного дескриптора.
     // NULL, RTLD_DEFAULT, RTLD_NEXT, RTLD_SELF и
     // RTLD_MAIN_ONLY означают глобальный поиск символа.
@@ -218,7 +218,7 @@ fn dlerror(_env: &mut Environment) -> ConstPtr<u8> {
 
 // Экспорт C-функций в глобальное адресное
 // пространство гостевого процесса.
-pub static FUNCTIONS: FunctionExports = &[
+pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(dlopen(_, _)),
     export_c_func!(dlsym(_, _)),
     export_c_func!(dlclose(_)),

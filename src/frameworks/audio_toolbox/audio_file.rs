@@ -89,6 +89,7 @@ const kAudioFileSuccess: OSStatus = 0;
 const kAudioFileUnspecifiedError: OSStatus = fourcc(b"wht?") as _;
 const kAudioFileUnsupportedFileTypeError: OSStatus = fourcc(b"typ?") as _;
 const kAudioFileUnsupportedDataFormatError: OSStatus = fourcc(b"fmt?") as _;
+const kAudioFileUnsupportedPropertyError: OSStatus = fourcc(b"pty?") as _;
 // pub: используется в audio_queue.rs и других
 // модулях
 pub const kAudioFileBadPropertySizeError: OSStatus = fourcc(b"!siz") as _;

@@ -65,6 +65,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 + (bool)canMakePayments {
     // Claim payments are not available — safest stub for a non-App-Store
     // build.
+    false
 }
 
 // MARK: - Init

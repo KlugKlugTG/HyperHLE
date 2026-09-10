@@ -6,8 +6,7 @@
 //! `NSRunLoop`.
 //!
 //! Resources:
-//! - Apple's [Threading Programming
-//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/Introduction/Introduction.html)
+//! - Apple's [Threading Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/Introduction/Introduction.html)
 
 use super::{ns_port, ns_string, ns_timer, NSTimeInterval};
 use crate::dyld::{ConstantExports, HostConstant};
@@ -26,8 +25,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 /// `NSString*`
 pub type NSRunLoopMode = id;
-//  FIXME: Maybe this shouldn't be the same value? See:
-// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html
+// FIXME: Maybe this shouldn't be the same value? See: https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html
 pub const NSRunLoopCommonModes: &str = kCFRunLoopCommonModes;
 pub const NSDefaultRunLoopMode: &str = kCFRunLoopDefaultMode;
 
@@ -130,7 +128,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Adds a port as an input source to the run loop. See:
-//
 // https://developer.apple.com/documentation/foundation/nsrunloop/1417511-addport
 // touchHLE has no Mach message delivery, so the port never fires an input
 // source, but the run loop takes ownership of it (retains it) exactly as
@@ -158,7 +155,6 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Removes a port previously added with `addPort:forMode:`. See:
-//
 // https://developer.apple.com/documentation/foundation/nsrunloop/1408625-removeport
 - (())removePort:(id)port // NSPort*
          forMode:(NSRunLoopMode)mode {
@@ -219,22 +215,22 @@ pub const CLASSES: ClassExports = objc_classes! {
 
         log_dbg!("NSRunLoop: cancelPerformSelectorsWithTarget: {:?}", target);
 
-        // Клонируем список таймеров, так как
-        // вызов invalidate приведет к
+        // Клонируем список таймеров, так как вызов invalidate приведет к
+        // удалению таймера из списка (через remove_timer), что изменит массив.
         let timers = env.objc.borrow::<NSRunLoopHostObject>(this).timers.clone();
 
-        // Делаем локальный retain всех таймеров,
-        // чтобы избежать use-after-free,
+        // Делаем локальный retain всех таймеров, чтобы избежать use-after-free,
+        // аналогично тому, как это сделано ниже в функции `run_run_loop`.
         for &timer in &timers {
             retain(env, timer);
         }
 
         for &timer in &timers {
-            // Запрашиваем целевой объект у
-            // таймера напрямую через сообщение.
+            // Запрашиваем целевой объект у таймера напрямую через сообщение.
+            let timer_target: id = msg![env; timer target];
 
-            // Если цель совпадает, инвалидируем
-            // таймер (он сам удалится из run
+            // Если цель совпадает, инвалидируем таймер (он сам удалится из run
+            // loop)
             if timer_target == target {
                 log_dbg!("NSRunLoop: invalidating timer {:?} for target {:?}", timer, target);
                 let _: () = msg![env; timer invalidate];
@@ -287,13 +283,10 @@ pub fn remove_audio_unit(env: &mut Environment, run_loop: id, unit: AudioUnit) -
 /// mechanism?
 /// TODO: Handle run loop modes. Currently assumes the common modes.
 pub fn add_audio_queue(env: &mut Environment, run_loop: id, queue: AudioQueueRef) {
-    let queues = &mut env
-        .objc
+    env.objc
         .borrow_mut::<NSRunLoopHostObject>(run_loop)
-        .audio_queues;
-    if !queues.contains(&queue) {
-        queues.push(queue);
-    }
+        .audio_queues
+        .push(queue);
 }
 
 /// For use by Audio Toolbox.
@@ -302,17 +295,16 @@ pub fn remove_audio_queue(env: &mut Environment, run_loop: id, queue: AudioQueue
         .objc
         .borrow_mut::<NSRunLoopHostObject>(run_loop)
         .audio_queues;
-    if let Some(queue_idx) = queues.iter().position(|&item| item == queue) {
-        queues.remove(queue_idx);
-    }
+    let queue_idx = queues.iter().position(|&item| item == queue).unwrap();
+    queues.remove(queue_idx);
 }
 
 /// For use by NSTimer so it can remove itself once it's invalidated.
 pub(super) fn remove_timer(env: &mut Environment, run_loop: id, timer: id) {
     log_dbg!("Removing timer {:?} from run loop {:?}", timer, run_loop);
 
-    // Честная логика Objective-C: если run_loop равен
-    // nil, нам не откуда
+    // Честная логика Objective-C: если run_loop равен nil, нам не откуда
+    // удалять таймер.
     if run_loop == nil {
         return;
     }
@@ -331,8 +323,8 @@ pub(super) fn remove_timer(env: &mut Environment, run_loop: id, timer: id) {
     }
 
     // Убираем жесткий assert!(release_count == 1);
-    // В iOS таймер мог быть отменен до
-    // добавления в цикл или отменен дважды.
+    // В iOS таймер мог быть отменен до добавления в цикл или отменен дважды.
+    // Мы просто делаем release столько раз, сколько реально удалили из массива.
     for _ in 0..release_count {
         release(env, timer);
     }
@@ -350,6 +342,20 @@ pub fn run_run_loop(
     single_iteration: bool,
     unix_time_limit: Option<f64>,
 ) {
+    if single_iteration {
+        log_dbg!(
+            "Entering run loop {:?} (single iteration), limit {:?}",
+            run_loop,
+            unix_time_limit
+        );
+    } else {
+        log_dbg!(
+            "Entering run loop {:?} (indefinitely), limit {:?}",
+            run_loop,
+            unix_time_limit
+        );
+    }
+
     // Temporary vectors used to track things without needing a reference to the
     // environment or to lock the object. Re-used each iteration for efficiency.
     let mut timers_tmp = Vec::new();
@@ -363,6 +369,14 @@ pub fn run_run_loop(
     }
 
     let is_main_run_loop = env.current_thread == 0;
+
+    if is_main_run_loop {
+        // Important breadcrumb for diagnosing "app freezes after splash"
+        // reports: this only fires once, when the main run loop actually
+        // starts iterating, which means UIApplicationMain has finished
+        // applicationDidFinishLaunching: + applicationDidBecomeActive:.
+        log_once!("Main NSRunLoop reached its first iteration (app finished launching)");
+    }
 
     loop {
         let mut sleep_until = None;
@@ -464,13 +478,12 @@ pub fn run_run_loop(
             // (Apple's epoch is less convenient in Rust. And "pure"
             // Rust approach with Duration/Instant is just too troublesome
             // and not worthy to convert back and forth)
-            // The host clock could be set before the Unix epoch (or skew
-            // backwards); never panic on that, just treat it as "not yet".
-            let now_secs = SystemTime::now()
+            if SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs_f64();
-            if now_secs >= limit {
+                .unwrap()
+                .as_secs_f64()
+                >= limit
+            {
                 break;
             }
         }

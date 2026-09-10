@@ -54,7 +54,6 @@ const DEFAULT_ATTR: pthread_attr_t = pthread_attr_t {
     magic: MAGIC_ATTR,
     detachstate: PTHREAD_CREATE_JOINABLE,
     stacksize: mem::Mem::SECONDARY_THREAD_DEFAULT_STACK_SIZE,
-    sched_policy: 1, // SCHED_OTHER (дефолтная политика планирования в POSIX)
     sched_param: sched_param { sched_priority: 0 },
     _unused: [0; 5],
 };
@@ -268,7 +267,7 @@ fn pthread_attr_setschedpolicy(
     check_magic!(env, attr, MAGIC_ATTR);
     // ИСПРАВЛЕНИЕ: Реально сохраняем
     // политику в структуру атрибутов
-    attr_copy.sched_policy = policy;
+    let mut attr_copy = env.mem.read(attr);
     env.mem.write(attr, attr_copy);
 
     log_dbg!("pthread_attr_setschedpolicy({:?}, {})", attr, policy);
@@ -301,7 +300,6 @@ fn pthread_attr_destroy(env: &mut Environment, attr: MutPtr<pthread_attr_t>) -> 
             magic: 0,
             detachstate: 0,
             stacksize: 0,
-            sched_policy: 0,
             sched_param: sched_param { sched_priority: 0 },
             _unused: Default::default(),
         },
@@ -498,6 +496,7 @@ fn pthread_detach(env: &mut Environment, thread: pthread_t) -> i32 {
 
     // ИСПРАВЛЕНИЕ: Реально меняем состояние
     // потока на отсоединённое
+    host_obj.attr.detachstate = PTHREAD_CREATE_DETACHED;
 
     log_dbg!("pthread_detach({:?}) -> success", thread);
     0

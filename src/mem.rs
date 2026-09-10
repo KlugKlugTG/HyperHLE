@@ -592,6 +592,8 @@ impl Mem {
     pub fn bytes_at<const MUT: bool>(&self, ptr: Ptr<u8, MUT>, count: GuestUSize) -> &[u8] {
         // ХАК: Вместо паники логируем и
         // возвращаем данные из stub-страницы
+        if ptr.to_bits() < PAGE_SIZE {
+            let offset = (ptr.to_bits() % PAGE_SIZE) as usize;
             Self::null_check_fail(ptr.to_bits(), count, false, "bytes_at");
             // Возвращаем данные из stub-страницы
             // вместо реальной памяти
@@ -657,6 +659,7 @@ impl Mem {
     pub fn bytes_at_mut(&mut self, ptr: MutPtr<u8>, count: GuestUSize) -> &mut [u8] {
         // ХАК: Вместо паники логируем и
         // возвращаем данные из stub-страницы
+        if ptr.to_bits() < PAGE_SIZE {
             Self::null_check_fail(ptr.to_bits(), count, true, "bytes_at_mut");
             // For writes to null-page, return the write-sink page so that
             // writes are silently absorbed without corrupting the read stub

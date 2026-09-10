@@ -115,21 +115,25 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (CGFloat)contentScaleFactor {
     // Жестко задаем масштаб 1.0 (стандартный
     // не-Retina экран)
+    1.0
 }
 
 - (())setContentScaleFactor:(CGFloat)scale {
     // Заглушка, чтобы игра не упала, если
     // попытается сама установить масштаб
+    log_dbg!("CAEAGLLAYER setContentScaleFactor: {} (stubbed)", scale);
 }
 
 - (CGFloat)contentsScale {
     // Жестко задаем масштаб 1.0 (стандартный
     // не-Retina экран)
+    1.0
 }
 
 - (())setContentsScale:(CGFloat)scale {
     // Заглушка, чтобы игра не упала, если
     // попытается сама установить масштаб
+    log_dbg!("CAEAGLLAYER setContentsScale: {} (stubbed)", scale);
 }
 
 - (id)initWithLayer:(id)layer {

@@ -376,8 +376,7 @@ impl Allocator {
         alloc.base
     }
 
-    // ИСПРАВЛЕНИЕ: Используем checked_add для
-    // безопасного сложения.
+    fn align(size: GuestUSize, align: GuestUSize) -> Option<GuestUSize> {
         if !size.is_multiple_of(align) {
             let addend = align - (size % align);
             size.checked_add(addend)

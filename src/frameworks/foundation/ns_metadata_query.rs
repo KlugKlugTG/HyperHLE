@@ -13,8 +13,9 @@ pub struct NSMetadataQueryHostObject {
     is_started: bool,
 }
 
-// Заменяем неработающий макрос на прямую
-// реализацию трейта HostObject
+// Заменяем неработающий макрос на прямую реализацию трейта HostObject
+impl HostObject for NSMetadataQueryHostObject {}
+
 
 pub const CLASSES: ClassExports = objc_classes! {
     (env, this, _cmd);
@@ -26,8 +27,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         env.objc.alloc_object(this, host_object, &mut env.mem)
     }
 
-    // Метод - (id)init удален, так как базовый NSObject
-    // уже
+    // Метод - (id)init удален, так как базовый NSObject уже
+    // предоставляет стандартную инициализацию, и нам не нужно
     // конфликтовать с ключевым словом super.
 
     - (())setSearchScopes:(id)_scopes {}
@@ -39,11 +40,11 @@ pub const CLASSES: ClassExports = objc_classes! {
     - (bool)startQuery {
         env.objc.borrow_mut::<NSMetadataQueryHostObject>(this).is_started = true;
 
-        // Полноценная логика: после "поиска"
-        // файлов мы должны уведомить
+        // Полноценная логика: после "поиска" файлов мы должны уведомить
+        // систему,
         // что сбор данных завершен.
-        // Так игра поймет, что можно проверять
-        // результаты.
+        // Так игра поймет, что можно проверять результаты.
+        let notification_center: id = msg_class![env; NSNotificationCenter defaultCenter];
         let name = get_static_str(env, "NSMetadataQueryDidFinishGatheringNotification");
         () = msg![env; notification_center postNotificationName:name object:this];
 
@@ -59,8 +60,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     - (())enableUpdates {}
 
     - (id)results {
-        // Возвращаем пустой NSArray, так как
-        // облачных файлов нет.
+        // Возвращаем пустой NSArray, так как облачных файлов нет.
+        msg_class![env; NSArray array]
     }
 
     - (u32)resultCount {

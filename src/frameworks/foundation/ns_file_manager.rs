@@ -439,6 +439,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
     // Возвращаем указатель на C-строку (UTF-8),
     // которую хранит NSString
+    msg![env; path UTF8String]
 }
 
 - (id)stringWithFileSystemRepresentation:(ConstPtr<u8>)str length:(NSUInteger)len {
@@ -714,6 +715,7 @@ pub const CLASSES: ClassExports = objc_classes! {
             // перехватываем эту ошибку VFS, чтобы избежать краша.
             if let FsError::ReadonlyParentDir = err {
                 log!("Warning: createDirectoryAtPath {} intercepted ReadonlyParentDir, pretending success", path_str);
+                return true;
             }
 
             if let FsError::NonexistentParentDir = err {
@@ -941,7 +943,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         return nil;
     }
     let path_str = ns_string::to_rust_string(env, path);
-    let last_component = std::path::Path::new(&path_str)
+    let last_component = std::path::Path::new(path_str.as_ref())
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or(&path_str);
@@ -1165,7 +1167,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 + (id)allocWithZone:(NSZonePtr)_zone {
     // Дефолтная пустышка, реальные данные уже
-    // заполняются в твоем
+    // заполняются в твоем enumeratorAtPath:
     let host = Box::new(NSDirectoryEnumeratorHostObject {
         iterator: Vec::new().into_iter(),
         base_path: GuestPathBuf::from(GuestPath::new("")),
@@ -1190,9 +1192,6 @@ pub const CLASSES: ClassExports = objc_classes! {
         // относительно базовой директории.
         // Поэтому мы честно отрезаем base_path от начала строки.
         let rel_path = if path_str.starts_with(base_str) {
-        // возвращает пути
-        // Поэтому мы честно отрезаем base_path от
-        // начала строки.
             let mut stripped = &path_str[base_str.len()..];
             if stripped.starts_with('/') {
                 stripped = &stripped[1..];

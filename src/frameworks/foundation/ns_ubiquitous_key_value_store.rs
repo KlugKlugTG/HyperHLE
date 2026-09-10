@@ -29,6 +29,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)synchronize {
+    let defaults: id = msg_class![env; NSUserDefaults standardUserDefaults];
     // Используем локальное хранилище вместо
     // iCloud
     msg![env; defaults synchronize]

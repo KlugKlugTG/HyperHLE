@@ -14,8 +14,8 @@ use regex::Regex;
 
 use super::ns_text_checking_result;
 
-/// Хост-объект для хранения
-//скомпилированного регулярного выражения.
+/// Хост-объект для хранения скомпилированного регулярного выражения.
+#[derive(Default)]
 struct NSRegularExpressionHostObject {
     regex: Option<Regex>,
 }
@@ -74,8 +74,10 @@ pub const CLASSES: ClassExports = objc_classes! {
                 );
                 // В полноценной реализации здесь
                 // нужно создавать NSError, но
+                // пока возвращаем nil и освобождаем приёмник, как и положено
                 // по соглашению Cocoa для
                 // неудавшегося -init.
+                release(env, this);
                 nil
             }
         }

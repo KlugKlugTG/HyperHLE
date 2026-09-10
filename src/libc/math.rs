@@ -9,7 +9,7 @@
 use crate::abi::{impl_GuestRet_for_large_struct, GuestArg};
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};
 use crate::libc::errno::set_errno;
-use crate::mem::{ConstPtr, MutPtr, SafeRead};
+use crate::mem::{ConstPtr, MutPtr, MutVoidPtr, SafeRead};
 use crate::Environment;
 use std::num::FpCategory;
 
@@ -1663,22 +1663,18 @@ fn __fixunsdfdi(_env: &mut Environment, a: f64) -> u64 {
     a as u64
 }
 
-// Честная реализация C++
-// Singleton<TimerManager>::getInstance()
-    // Проверяем, создавали ли мы уже этот
-    // объект
-        // Выделяем память под объект TimerManager (1024
-        // байта с запасом).
-        // это предотвратит краш, если игра
-        // попытается прочитать внутренние поля
-        let ptr = env.mem.calloc(1024);
-        env.libc_state.math.timer_manager_instance = ptr.to_bits();
-
-        log_dbg!("Allocated TimerManager singleton at {:#x}", ptr.to_bits());
+// Honest C++ implementation of `Singleton<TimerManager>::getInstance()`.
+// The app reads fields of this object, so a real (zeroed) allocation with
+// plenty of slack is used instead of a fake pointer.
+fn _ZN9SingletonI12TimerManagerE11getInstanceEv(env: &mut Environment) -> MutVoidPtr {
+    let cached = env.libc_state.math.timer_manager_instance;
+    if cached != 0 {
+        return MutVoidPtr::from_bits(cached);
     }
-
-    // Возвращаем один и тот же валидный
-    // указатель при каждом вызове
+    let ptr = env.mem.calloc(1024);
+    env.libc_state.math.timer_manager_instance = ptr.to_bits();
+    log_dbg!("Allocated TimerManager singleton at {:#x}", ptr.to_bits());
+    ptr
 }
 
 pub const FUNCTIONS: FunctionExports = &[

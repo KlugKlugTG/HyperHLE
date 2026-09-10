@@ -148,6 +148,7 @@ fn AUGraphAddNode(
     );
 
     // Если это RemoteIO — запоминаем его как
+    let is_output = desc.component_type == kAudioUnitType_Output 
     // выходной узел графа.
         && desc.component_sub_type == kAudioUnitSubType_RemoteIO;
 

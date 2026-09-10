@@ -214,6 +214,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
 
+@implementation UITableViewCellContentView: UIView
 // Добавляем приватный класс, на который
 // ругается NIB-декодер
 
@@ -240,6 +241,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Честно создаем внутренний content_view.
     // Передаем имя класса напрямую в макрос
     // msg_class!
+    let content_view: id = msg_class![env; UITableViewCellContentView alloc];
     let content_view: id = msg![env; content_view initWithFrame:frame];
 
     // Добавляем его как subview (как в iOS)
@@ -274,6 +276,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // внутри (как под-вьюха).
     // но для безопасности создадим пустой,
     // если его нет.
+    let frame = <CGRect as Default>::default();
 
     // Исправлено здесь: убран get_known_class и
     // переменная, имя класса передано
@@ -699,6 +702,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // Устанавливаем таблицу как главную view
     // этого контроллера
+    () = msg![env; this setView:table_view];
     release(env, table_view);
 }
 

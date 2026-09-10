@@ -343,6 +343,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // отдельную
     // чтобы избежать ошибки парсинга макроса
     // msg!.
+    let nsdate_class = env.objc.get_known_class("NSDate", &mut env.mem);
     let is_kind_of_class: bool = msg![env; other isKindOfClass:nsdate_class];
 
     if !is_kind_of_class {

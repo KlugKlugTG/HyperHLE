@@ -349,6 +349,7 @@ pub fn calendar_date_to_timestamp(tm: tm) -> time_t {
     // следующего года.
     // Если передает отрицательный месяц -
     // откатываем год назад.
+    let mut y = tm.tm_year as i64 + 1900;
     let mut m = tm.tm_mon as i64;
 
     y += m.div_euclid(12);
@@ -628,6 +629,7 @@ fn nanosleep(env: &mut Environment, rqtp: ConstPtr<timespec>, _rmtp: MutPtr<time
     // отрицательных значениях от плохих игр.
     // Защищаем Rust-составляющую, ограничивая
     // минимальное время нулем.
+    let tv_sec = t.tv_sec.max(0) as u64;
     let tv_nsec = t.tv_nsec.max(0) as u64;
     log_dbg!("nanosleep {} {}", tv_sec, tv_nsec);
 
@@ -822,16 +824,19 @@ fn strftime(
                 let yday = time_val.tm_yday;
                 // Для %W неделя начинается с
                 // понедельника.
+                // tm_wday: 0 = Вск, 1 = Пнд... Нам нужно 0 = Пнд... 6 = Вск
                 let wday_monday_based = (wday + 6) % 7;
 
                 // Честная формула вычисления
                 // номера недели (00-53)
+                let week = (yday - wday_monday_based + 7) / 7;
                 let formatted_week = format!("{:02}", week);
                 res.extend_from_slice(formatted_week.as_bytes());
             }
             b'U' => {
                 // Аналогично, но неделя начинается
                 // с воскресенья (%U)
+                let wday = time_val.tm_wday;
                 let yday = time_val.tm_yday;
                 let week = (yday - wday + 7) / 7;
                 let formatted_week = format!("{:02}", week);
@@ -840,6 +845,7 @@ fn strftime(
             b'w' => {
                 // Номер дня недели от 0
                 // (Воскресенье) до 6 (Суббота)
+                let wday = time_val.tm_wday;
                 let formatted_wday = format!("{}", wday);
                 res.extend_from_slice(formatted_wday.as_bytes());
             }
@@ -889,9 +895,11 @@ fn strftime(
                     // UNIX_EPOCH без смещения
                     // поэтому мы легально находимся
                     // в зоне GMT.
+                    res.extend_from_slice(b"GMT");
                 } else if let Ok(tz_str) = env.mem.cstr_at_utf8(tz_ptr) {
                     // Если указатель есть — честно
                     // читаем зону из памяти гостя
+                    res.extend_from_slice(tz_str.as_bytes());
                 } else {
                     res.extend_from_slice(b"GMT");
                 }

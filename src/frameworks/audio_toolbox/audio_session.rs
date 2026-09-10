@@ -37,6 +37,7 @@ const kAudioSessionProperty_PreferredHardwareIOBufferDuration: AudioSessionPrope
 const kAudioSessionProperty_AudioCategory: AudioSessionPropertyID = fourcc(b"acat");
 const kAudioSessionProperty_AudioRoute: AudioSessionPropertyID = fourcc(b"rout");
 const kAudioSessionProperty_CurrentHardwareSampleRate: AudioSessionPropertyID = fourcc(b"chsr");
+const kAudioSessionProperty_PreferredHardwareSampleRate: AudioSessionPropertyID = fourcc(b"hwsr");
 const kAudioSessionProperty_CurrentHardwareInputNumberChannels: AudioSessionPropertyID =
     fourcc(b"chic");
 const kAudioSessionProperty_CurrentHardwareOutputNumberChannels: AudioSessionPropertyID =
@@ -92,12 +93,14 @@ impl Default for State {
             category: kAudioSessionCategory_SoloAmbientSound,
             // Значения, ожидаемые большинством
             // iOS-игр того периода
+            current_hardware_sample_rate: 44100.0,
             current_hardware_output_number_channels: 2,
             current_hardware_output_volume: 1.0,
             // Реальный буфер на iPhone 3GS / Simulator — ~23
             // мс
             preferred_hardware_sample_rate: 44100.0,
             preferred_hardware_io_buffer_duration: 0.023_220,
+            current_hardware_io_buffer_duration: 0.023_220,
             mix_with_others: 0,
             default_to_speaker: 0,
             bluetooth_input: 0,

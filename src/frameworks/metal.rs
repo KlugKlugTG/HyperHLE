@@ -189,7 +189,7 @@ const CLASSES: ClassExports = objc_classes! {
 - (NSUInteger)loadAction { env.objc.borrow::<MetalObjectHostObject>(this).load_action }
 - (())setStoreAction:(NSUInteger)action { env.objc.borrow_mut::<MetalObjectHostObject>(this).store_action = action }
 - (NSUInteger)storeAction { env.objc.borrow::<MetalObjectHostObject>(this).store_action }
-- (())setClearColor:(f64)color { env.objc.borrow_mut::<MetalObjectHostObject>(this).clear_color[0] = color }
+- (())setClearColor:(id)color { env.objc.borrow_mut::<MetalObjectHostObject>(this).clear_color = [0.0, 0.0, 0.0, 1.0] }
 @end
 
 @implementation MTLTexture: NSObject

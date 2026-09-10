@@ -315,6 +315,7 @@ pub struct State {
 
 // ДОБАВЛЕНО: Полноценный объект состояния
 // (без заглушек)
+#[derive(Default)]
 pub(super) struct AVAudioSessionHostObject {
     category: id,
     category_options: AVAudioSessionCategoryOptions,
@@ -336,8 +337,9 @@ pub const CLASSES: ClassExports = objc_classes! {
     // ИСПРАВЛЕНО: Теперь объект
     // действительно работает как синглтон и
     // сохраняет
-        return instance;
+    // свое состояние
     if let Some(instance) = env.framework_state.avfoundation.av_audio_session.shared_instance {
+        return instance;
     }
 
     let category = ns_string::get_static_str(env, AVAudioSessionCategorySoloAmbient);

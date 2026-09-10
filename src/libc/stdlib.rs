@@ -369,8 +369,7 @@ fn free(env: &mut Environment, ptr: MutVoidPtr) {
 
 fn atexit(env: &mut Environment, func: GuestFunction) -> i32 {
     set_errno(env, 0);
-    // Регистрируем функцию в стейте
-    // эмулятора
+    env.libc_state.stdlib.atexit_handlers.push(func);
     0 // 0 означает успешную регистрацию
 }
 
@@ -773,9 +772,16 @@ fn getenv(env: &mut Environment, name: ConstPtr<u8>) -> MutPtr<u8> {
 
 // === ИСПРАВЛЕННЫЙ setenv ДЛЯ ОБХОДА БЛОКИРОВКИ
 // ПАМЯТИ ===
+fn setenv(
+    env: &mut Environment,
+    name: ConstPtr<u8>,
+    value: ConstPtr<u8>,
+    overwrite: i32,
+) -> i32 {
     set_errno(env, 0);
     // Сохраняем имя в отдельный вектор, чтобы
     // отпустить блокировку памяти
+    let name_bytes = env.mem.cstr_at(name).to_vec();
     if let Some(&existing) = env.env_vars.get(&name_bytes) {
         if overwrite == 0 {
             return 0;
@@ -789,6 +795,7 @@ fn getenv(env: &mut Environment, name: ConstPtr<u8>) -> MutPtr<u8> {
 
 // === ИСПРАВЛЕННЫЙ unsetenv ДЛЯ ОБХОДА
 // БЛОКИРОВКИ ПАМЯТИ ===
+fn unsetenv(env: &mut Environment, name: ConstPtr<u8>) -> i32 {
     set_errno(env, 0);
     // Сохраняем имя в отдельный вектор
     let name_bytes = env.mem.cstr_at(name).to_vec();
@@ -812,7 +819,7 @@ fn exit(env: &mut Environment, exit_code: i32) {
 
     // По стандарту atexit вызывает функции в
     // обратном порядке (LIFO), поэтому
-    for func in handlers.into_iter().rev() {
+    for func in env.libc_state.stdlib.atexit_handlers.drain(..).collect::<Vec<_>>().into_iter().rev() {
         log_dbg!("Executing atexit handler: {:?}", func);
         // Вызываем гостевую функцию (она не
         // принимает аргументов и ничего не
@@ -1123,6 +1130,7 @@ fn system(env: &mut Environment, cmd: ConstPtr<u8>) -> i32 {
     let cmd_str = env.mem.cstr_at_utf8(cmd).unwrap_or("").to_string();
     log!("system({:?})", cmd_str);
     // split_whitespace() автоматически игнорирует
+    let parts: Vec<&str> = cmd_str.split_whitespace().collect();
     // пробелы в начале и конце
     if parts.is_empty() {
         return 0;
@@ -1358,6 +1366,7 @@ fn _gcvt(env: &mut Environment, value: f64, ndigit: i32, buf: MutPtr<u8>) -> Mut
     // с указанием точности (количества знаков
     // после запятой).
 
+    let s = format!("{:.*}", ndigit, value);
     let bytes = s.as_bytes();
     let len = bytes.len() as GuestUSize;
     if !buf.is_null() {

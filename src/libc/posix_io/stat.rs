@@ -64,8 +64,7 @@ unsafe impl SafeRead for stat {}
 fn mkdir(env: &mut Environment, path: ConstPtr<u8>, mode: mode_t) -> i32 {
     set_errno(env, 0);
 
-    // Безопасное чтение пути, чтобы избежать
-    // panic через unwrap()
+    let path_str = match env.mem.cstr_at_utf8(path) {
         Ok(s) => {
             // XaView BypassMkdirLoop: the game retries mkdir()/access() in a
             // tight loop when they fail on paths with doubled separators.
@@ -121,6 +120,7 @@ fn mkdir(env: &mut Environment, path: ConstPtr<u8>, mode: mode_t) -> i32 {
                     // Если произошла другая
                     // системная ошибка файловой
                     // системы,
+                        log_dbg!(
                         "mkdir({:?} {:?}, {:#x}) failed with {:?}, returning -1 (ENOENT)",
                         path,
                         path_str,

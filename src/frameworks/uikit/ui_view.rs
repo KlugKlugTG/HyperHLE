@@ -130,7 +130,8 @@ pub(crate) struct UIViewHostObject {
     /// UIAccessibilityIdentification).
     accessibility_identifier: id,
     /// `NSString *accessibilityLanguage` — BCP-47 language tag; default
-    //`nil`.
+    /// `nil`.
+    accessibility_language: id,
     /// `BOOL accessibilityElementsHidden` (iOS 5+); default `NO`.
     accessibility_elements_hidden: bool,
     /// `BOOL accessibilityViewIsModal` (iOS 5+); default `NO`.

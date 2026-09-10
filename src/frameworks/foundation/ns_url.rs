@@ -263,6 +263,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)initWithScheme:(id)scheme host:(id)host path:(id)path {
     // Преобразуем входящие NSString (id) в
     // Rust-строки
+    let scheme_str = to_rust_string(env, scheme);
     let host_str = to_rust_string(env, host);
     let path_str = to_rust_string(env, path);
 
@@ -277,6 +278,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // Создаем внутренний NSString для хранения
     // результата
+    let ns_string = from_rust_string(env, full_url);
 
     // Обновляем состояние Host-объекта
     *env.objc.borrow_mut::<NSURLHostObject>(this) = NSURLHostObject::OtherURL {

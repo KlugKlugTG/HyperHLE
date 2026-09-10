@@ -190,6 +190,7 @@ pub fn CGContextSetRGBStrokeColor(
     }
     // Пишем напрямую в поле структуры через
     // borrow_mut
+    env.objc
         .borrow_mut::<CGContextHostObject>(context)
         .rgb_stroke_color = (red, green, blue, alpha);
 }
@@ -1150,6 +1151,7 @@ fn CGContextSetInterpolationQuality(
 
     // Честно записываем качество в структуру
     // контекста
+    env.objc
         .borrow_mut::<CGContextHostObject>(context)
         .interpolation_quality = quality;
 }

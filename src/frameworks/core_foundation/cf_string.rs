@@ -1658,6 +1658,7 @@ fn CFStringCreateExternalRepresentation(
 
     // Вызываем метод -[NSString
     // dataUsingEncoding:allowLossyConversion:]
+    let data: id = msg![env; the_string dataUsingEncoding:ns_encoding allowLossyConversion:lossy];
 
     // Core Foundation функции со словом "Create" обязаны
     // возвращать объект с +1

@@ -526,8 +526,10 @@ fn CFRunLoopAddTimer(
 
     // Как сказано в заголовке файла: в touchHLE
     // CFRunLoop и NSRunLoop — это
+    // один и тот же тип.
     // Поэтому мы честно пробрасываем вызов
     // напрямую в NSRunLoop, который умеет
+    // работать с таймерами.
     let _: () = msg![env; rl addTimer:timer forMode:mode];
 }
 
@@ -557,6 +559,7 @@ fn CFRunLoopTimerCreate(
     } else {
         // Если игра передала NULL, заполняем
         // структуру нулями
+        unsafe { std::mem::zeroed() }
     };
 
     // 2. Упаковываем все данные в наш HostObject
@@ -572,12 +575,13 @@ fn CFRunLoopTimerCreate(
 
     // 3. Выделяем реальный объект, чтобы игра
     // не получила null.
+    // Используем базовый класс NSObject (или если в touchHLE есть NSTimer, то
     // его)
     let class = env.objc.get_known_class("NSObject", &mut env.mem);
 
-    env.objc
     // Возвращаем настоящий валидный
     // указатель на созданный объект
+    env.objc
         .alloc_object(class, Box::new(host_object), &mut env.mem)
 }
 

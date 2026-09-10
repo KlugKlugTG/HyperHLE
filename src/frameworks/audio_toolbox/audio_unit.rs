@@ -61,6 +61,7 @@ pub struct AudioBuffer {
 
 /// `AudioUnitConnection` — используется для
 //kAudioUnitProperty_MakeConnection.
+#[repr(C, packed)]
 #[derive(Copy, Clone)]
 struct AudioUnitConnection {
     source_audio_unit: AudioUnit,
@@ -492,6 +493,7 @@ fn AudioUnitGetProperty(
         kAudioUnitProperty_Latency => {
             // Возвращаем нулевую задержку как
             // заглушку.
+            write_if_nonnull(env, out_data.cast(), 0.0f64);
             write_if_nonnull(env, io_data_size, guest_size_of::<f64>());
         }
         kAudioUnitProperty_LastRenderError => {
@@ -503,6 +505,7 @@ fn AudioUnitGetProperty(
         | kAudioUnitProperty_BypassEffect => {
             // Булевые свойства — возвращаем 1
             // (да/включено) как заглушку.
+            write_if_nonnull(env, out_data.cast(), 1u32);
             write_if_nonnull(env, io_data_size, guest_size_of::<u32>());
         }
         kAudioOutputUnitProperty_HasIO => {
@@ -521,6 +524,7 @@ fn AudioUnitGetProperty(
             );
             // Записываем размер 0, чтобы гость не
             // читал мусор.
+            write_if_nonnull(env, io_data_size, 0u32);
             return -1;
         }
     }
@@ -1050,6 +1054,7 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
             }],
         });
 
+        let action_flags = env.mem.alloc_and_write(0u32);
         let input_proc = callback.input_proc;
         let input_proc_ref = callback.input_proc_ref_con;
 

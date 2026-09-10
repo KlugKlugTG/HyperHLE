@@ -143,7 +143,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // ВЫНЕСЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ИЗБЕЖАНИЯ
     // ОШИБОК КОМПИЛЯЦИИ E0283
-    let _: () = msg![env; text_label setBackgroundColor:clear_color];
+    let _: () = { let clear_color: id = msg_class![env; UIColor clearColor]; msg![env; text_label setBackgroundColor:clear_color] };
 
     let _: () = msg![env; text_label setTextAlignment:UITextAlignmentLeft];
     let text_color: id = msg_class![env; UIColor blackColor];
@@ -162,7 +162,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // ВЫНЕСЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ИЗБЕЖАНИЯ
     // ОШИБОК КОМПИЛЯЦИИ E0283
-    let _: () = msg![env; text_label setBackgroundColor:clear_color];
+    let _: () = { let clear_color: id = msg_class![env; UIColor clearColor]; msg![env; text_label setBackgroundColor:clear_color] };
 
     env.objc.borrow_mut::<UITextFieldHostObject>(this).text_label = text_label;
     let _: () = msg![env; this addSubview:text_label];

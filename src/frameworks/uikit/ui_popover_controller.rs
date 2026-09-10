@@ -290,6 +290,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // Выносим поля из упакованной структуры
     // CGSize в локальные переменные
+    let width = size.width;
     let height = size.height;
 
     let s = format!(

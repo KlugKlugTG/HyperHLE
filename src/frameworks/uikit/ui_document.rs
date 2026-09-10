@@ -20,6 +20,8 @@ pub struct UIDocumentHostObject {
 // Явная реализация трейта для устранения
 // ошибки E0277
 
+impl HostObject for UIDocumentHostObject {}
+
 impl Default for UIDocumentHostObject {
     fn default() -> Self {
         Self { file_url: nil }

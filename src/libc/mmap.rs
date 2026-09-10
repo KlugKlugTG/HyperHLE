@@ -57,7 +57,12 @@ fn mmap(
         // offset
         // просто игнорируются ОС. Движки вроде
         // Adobe AIR передают сюда мусор.
-            log_dbg!("Warning: mmap MAP_ANON called with fd={} and offset={}. Ignoring them as per OS behavior.", fd, offset);
+        if fd != -1 || offset != 0 {
+            log_dbg!(
+                "Warning: mmap MAP_ANON called with fd={} and offset={}. Ignoring them as per OS behavior.",
+                fd,
+                offset
+            );
         }
 
         if !addr.is_null() {

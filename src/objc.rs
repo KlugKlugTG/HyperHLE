@@ -228,7 +228,7 @@ impl ObjC {
             host_imp_tokens: HashMap::new(),
         }
     }
-
+    /// Returns the name of a selector, panicking if it is unknown.
     /// Returns the name of a selector, panicking if it is unknown.
     pub fn get_selector_name(&self, sel: SEL) -> &str {
         self.selectors
@@ -237,8 +237,8 @@ impl ObjC {
             .map(|(k, _v)| k.as_str())
             .expect("get_selector_name: unknown selector")
     }
-}
 
+}
 // ------------------------------
 // Associated objects  (<objc/runtime.h>)
 // ------------------------------

@@ -223,6 +223,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // же CGImage.
     let new_img: id = msg_class![env; UIImage alloc];
     let new_img: id = msg![env; new_img initWithCGImage:cg_image];
+    let host = env.objc.borrow_mut::<UIImageHostObject>(new_img);
 
     // Но прописываем ему параметры
     // растяжения
@@ -267,6 +268,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // делить картинку на 9
     // и отрисовывать через CGContextDrawImage кусками.
     // Пока рисуем целиком.
+    let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
     // Drawing a nil image is a no-op, not a crash.
     if image == nil { return; }
     CGContextDrawImage(env, context, rect, image);
@@ -550,6 +552,7 @@ fn UIImageJPEGRepresentation(
 ) -> id {
     // В эмуляторе пока фоллбек на PNG, если нет
     // JPEG энкодера
+    UIImagePNGRepresentation(env, image)
 }
 
 pub const FUNCTIONS: FunctionExports = &[

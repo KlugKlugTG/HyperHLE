@@ -28,6 +28,7 @@ fn sigaction(env: &mut Environment, _signum: i32, _act: ConstVoidPtr, _old_act: 
     // как sigaction сложнее в
     // и редко ломает логику игр, если просто
     // рапортует об успехе.
+    0
 }
 
 fn signal(env: &mut Environment, signum: i32, handler: MutVoidPtr) -> MutVoidPtr {
