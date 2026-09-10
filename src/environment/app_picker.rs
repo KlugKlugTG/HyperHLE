@@ -363,7 +363,8 @@ fn show_app_picker_gui(
         };
         let mut image = Image::from_bytes(bytes).unwrap();
         // should match Bundle::load_icon()
-        // Use a slightly smaller corner radius for larger icons for a cleaner look.
+        //  Use a slightly smaller corner radius for larger icons for a cleaner
+        // look.
         let corner_radius_px = 12.0;
         image.round_corners(
             corner_radius_px,

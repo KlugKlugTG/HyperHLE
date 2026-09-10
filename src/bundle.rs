@@ -7,9 +7,12 @@
 //! application bundle.
 //!
 //! Relevant Apple documentation:
-//! * [Bundle Programming Guide](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/Introduction/Introduction.html)
-//!   * [Anatomy of an iOS Application Bundle](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html)
-//! * [Bundle Resources](https://developer.apple.com/documentation/bundleresources?language=objc)
+//! * [Bundle Programming
+//Guide](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/Introduction/Introduction.html)
+//! * [Anatomy of an iOS Application
+//Bundle](https://developer.apple.com/library/archive/documentation/CoreFoundation/Conceptual/CFBundles/BundleTypes/BundleTypes.html)
+//! * [Bundle
+//Resources](https://developer.apple.com/documentation/bundleresources?language=objc)
 
 use crate::fs::{BundleData, Fs, GuestPath, GuestPathBuf};
 use crate::image::Image;
@@ -262,7 +265,8 @@ impl Bundle {
             }
         };
 
-        // 1. CFBundleIcons → CFBundlePrimaryIcon → CFBundleIconFiles (iOS 5+).
+        // 1. CFBundleIcons → CFBundlePrimaryIcon → CFBundleIconFiles (iOS
+        // 5+).
         if let Some(icons) = self.plist.get("CFBundleIcons") {
             if let Some(dict) = icons.as_dictionary() {
                 if let Some(primary) = dict.get("CFBundlePrimaryIcon") {
@@ -383,7 +387,8 @@ impl Bundle {
         // 10px radius rounded corner (see e.g. documentation of
         // UIPrerenderedIcon). If the icon is larger for some reason,
         // let's scale to match.
-        // Use a slightly smaller fixed corner radius for higher-resolution icons.
+        //  Use a slightly smaller fixed corner radius for higher-resolution
+        // icons.
         let corner_radius = 12.0;
         image.round_corners(corner_radius, /* four_corners: */ true, add_sheen);
         Ok(image)
@@ -426,6 +431,7 @@ impl Bundle {
 
     pub fn supported_interface_orientations(&self) -> Vec<&str> {
         // Apple's Bundle Resources documentation
+        //
         // (https://developer.apple.com/documentation/bundleresources/information-property-list/uisupportedinterfaceorientations)
         // says UISupportedInterfaceOrientations (iOS 3.2+) is an Array of
         // Strings, and UIInterfaceOrientation (iPhone OS 2.0+) is a single
@@ -479,6 +485,7 @@ impl Bundle {
 
     pub fn device_family_array(&self) -> Vec<DeviceFamily> {
         // Apple docs: UIDeviceFamily is an Array of Numbers (1=iPhone, 2=iPad).
+        //
         // https://developer.apple.com/documentation/bundleresources/information-property-list/uidevicefamily
         // We additionally accept strings ("1", "2", "iphone", "ipad") because
         // a few real-world plists serialise the values that way; ignore

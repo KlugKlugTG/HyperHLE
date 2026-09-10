@@ -38,7 +38,8 @@ use crate::objc::{
     NSZonePtr,
 };
 
-// `NSPointerFunctionsOptions` (subset). Apple `<Foundation/NSPointerFunctions.h>`.
+//  `NSPointerFunctionsOptions` (subset). Apple
+// `<Foundation/NSPointerFunctions.h>`.
 // touchHLE does not switch behaviour on these — `NSHashTable` is always
 // strong-personality-by-object — so we expose them for the public type
 // signatures only.

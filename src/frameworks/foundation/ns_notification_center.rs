@@ -34,7 +34,8 @@ struct Observer {
     observer: id,
     selector: SEL,
     object: id,
-    /// Non-nil for block-based observers. The block is `^void(NSNotification *)`.
+    ///  Non-nil for block-based observers. The block is `^void(NSNotification
+    /// *)`.
     block: id,
 }
 
@@ -123,6 +124,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // not need to unregister an observer that you created with this function.
     // If you forget or are unable to remove an observer, the system cleans up
     // the next time it would have posted to it."
+    //
     // https://developer.apple.com/documentation/foundation/notificationcenter/addobserver(_:selector:name:object:)?language=objc
     // Implying that prior to these versions, it's unsafe to not remove an
     // observer. It's been observed that some apps expect and rely on this
@@ -145,7 +147,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 //                               queue:(NSOperationQueue *)queue
 //                          usingBlock:(void (^)(NSNotification *note))block;`
 //
-// Per Apple's [NSNotificationCenter Reference](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname):
+//  Per Apple's [NSNotificationCenter
+// Reference](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname):
 // returns an opaque observer token, distinct from the receiver, that the
 // caller must keep a strong reference to. When a notification matching
 // `name`/`obj` is posted, the system enqueues `block` on `queue` (or
@@ -174,8 +177,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let block_copy: id = msg![env; block copy];
 
     // Retain the optional `object` filter so it can't dangle while we're
-    // observing — mirrors the behaviour of -addObserver:selector:name:object:.
-    retain(env, object);
+    // observing — mirrors the behaviour of
+    // -addObserver:selector:name:object:.
 
     let name_key: Cow<'static, str> = if name == nil {
         Cow::Borrowed("")

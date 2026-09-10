@@ -15,8 +15,10 @@
 //! References:
 //! - <https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer>
 //! - <https://developer.apple.com/documentation/avfaudio/avspeechutterance>
-//! - <https://developer.apple.com/documentation/avfaudio/avspeechsynthesisvoice>
-//! - <https://developer.apple.com/documentation/avfaudio/avspeechsynthesizerdelegate>
+//! -
+//<https://developer.apple.com/documentation/avfaudio/avspeechsynthesisvoice>
+//! -
+//<https://developer.apple.com/documentation/avfaudio/avspeechsynthesizerdelegate>
 
 use crate::frameworks::foundation::{ns_string, NSInteger, NSRange, NSTimeInterval, NSUInteger};
 use crate::objc::{
@@ -175,6 +177,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechsynthesisvoice/voicewithlanguage:>
 + (id)voiceWithLanguage:(id)language { // NSString*
     let voice: id = msg![env; this alloc];
@@ -188,6 +191,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, voice)
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechsynthesisvoice/currentlanguagecode>
 + (id)currentLanguageCode { // NSString*
     // touchHLE reports a single stable locale; en-US is a safe default that
@@ -233,6 +237,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechutterance/speechutterancewithstring:>
 + (id)speechUtteranceWithString:(id)string { // NSString*
     let utterance: id = msg![env; this alloc];
@@ -240,6 +245,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, utterance)
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechutterance/init(string:)>
 - (id)initWithString:(id)string { // NSString*
     retain(env, string);
@@ -343,6 +349,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow::<AVSpeechSynthesizerHostObject>(this).paused
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer/speak(_:)>
 // (Objective-C selector: `speakUtterance:`.)
 - (())speakUtterance:(id)utterance { // AVSpeechUtterance*
@@ -367,6 +374,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer/pausespeaking(at:)>
 - (bool)pauseSpeakingAtBoundary:(AVSpeechBoundary)_boundary {
     let (was_speaking, delegate, current) = {
@@ -389,6 +397,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     true
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer/continuespeaking()>
 - (bool)continueSpeaking {
     let (was_paused, delegate, current) = {
@@ -413,6 +422,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     true
 }
 
+//
 // <https://developer.apple.com/documentation/avfaudio/avspeechsynthesizer/stopspeaking(at:)>
 - (bool)stopSpeakingAtBoundary:(AVSpeechBoundary)_boundary {
     let (was_active, delegate, current, remaining) = {

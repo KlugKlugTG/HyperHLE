@@ -8,7 +8,8 @@
 //!
 //! Implementation based on Apple's UICollectionView documentation:
 //! - <https://developer.apple.com/documentation/uikit/uicollectionview>
-//! - <https://developer.apple.com/documentation/uikit/uicollectionviewflowlayout>
+//! -
+//<https://developer.apple.com/documentation/uikit/uicollectionviewflowlayout>
 //!
 //! UICollectionView manages an ordered collection of data items and presents
 //! them using customizable layouts. It uses a data source pattern

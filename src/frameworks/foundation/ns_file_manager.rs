@@ -203,6 +203,7 @@ pub const CONSTANTS: ConstantExports = &[
         HostConstant::NSString("NSFileHFSCreatorCode"),
     ),
     // Data Protection keys (NSFileManager attribute keys for `setAttributes:`,
+    //
     // <https://developer.apple.com/documentation/foundation/nsfileprotectionkey>).
     (
         "_NSFileProtectionKey",
@@ -233,10 +234,14 @@ fn NSSearchPathForDirectoriesInDomains(
     expand_tilde: bool,
 ) -> id {
     // Only user domain supported for now
-    // On iOS the "local domain" resolves to the same location as the user domain.
-    // Accept NSLocalDomainMask without a warning. Any other mask is legitimately
-    // unsupported — log a warning but continue with user-domain paths (best effort).
-    // Reference: <https://developer.apple.com/documentation/foundation/1417717-nssearchpathfordirectoriesindoma>
+    //  On iOS the "local domain" resolves to the same location as the user
+    // domain.
+    //  Accept NSLocalDomainMask without a warning. Any other mask is
+    // legitimately
+    //  unsupported — log a warning but continue with user-domain paths (best
+    // effort).
+    //  Reference:
+    // <https://developer.apple.com/documentation/foundation/1417717-nssearchpathfordirectoriesindoma>
     if domain_mask != NSUserDomainMask
         && domain_mask != NSLocalDomainMask
         && domain_mask != NSAllDomainsMask
@@ -387,6 +392,7 @@ struct NSDirectoryEnumeratorHostObject {
     /// hierarchy being enumerated". A file located directly inside the
     /// enumeration root therefore has level 1; the value is 0 before the
     /// first `nextObject` call.
+    ///
     /// <https://developer.apple.com/documentation/foundation/nsdirectoryenumerator/1413939-level>
     current_level: NSUInteger,
 }
@@ -431,8 +437,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     if path.is_null() {
         return Ptr::null();
     }
-    // Возвращаем указатель на C-строку (UTF-8), которую хранит NSString
-    msg![env; path UTF8String]
+    // Возвращаем указатель на C-строку (UTF-8),
+    // которую хранит NSString
 }
 
 - (id)stringWithFileSystemRepresentation:(ConstPtr<u8>)str length:(NSUInteger)len {
@@ -589,9 +595,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // `- (BOOL)createDirectoryAtURL:(NSURL *)url
 //        withIntermediateDirectories:(BOOL)createIntermediates
-//                         attributes:(NSDictionary<NSFileAttributeKey,id> *)attributes
+// attributes:(NSDictionary<NSFileAttributeKey,id> *)attributes
 //                              error:(NSError **)error;`
-// Per Apple's [NSFileManager Reference](https://developer.apple.com/documentation/foundation/nsfilemanager/1415371-createdirectoryaturl):
+//  Per Apple's [NSFileManager
+// Reference](https://developer.apple.com/documentation/foundation/nsfilemanager/1415371-createdirectoryaturl):
 // the URL-flavoured variant of `-createDirectoryAtPath:...`. Apple
 // requires that the URL be a file URL. We extract the path via
 // `-[NSURL path]` and forward to the path-based implementation, which
@@ -619,7 +626,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // `- (NSArray<NSURL *> *)URLsForDirectory:(NSSearchPathDirectory)directory
 //                              inDomains:(NSSearchPathDomainMask)domainMask;`
-// Per Apple's [NSFileManager Reference](https://developer.apple.com/documentation/foundation/nsfilemanager/1407726-urlsfordirectory):
+//  Per Apple's [NSFileManager
+// Reference](https://developer.apple.com/documentation/foundation/nsfilemanager/1407726-urlsfordirectory):
 // returns NSURL representations of the directories matched by
 // `NSSearchPathForDirectoriesInDomains`. We call the latter (which
 // already returns the correct paths for every documented
@@ -658,10 +666,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     let guest_path = GuestPath::new(&path_str);
 
     // --- ЧЕСТНАЯ РЕАЛИЗАЦИЯ (Без заглушек) ---
-    // По документации Apple: если withIntermediateDirectories == YES и папка
-    // уже существует,
-    // метод обязан вернуть YES. Эмулятор больше не будет биться о Read-Only
-    // защиту бандла.
+    // По документации Apple: если withIntermediateDirectories
+    // == YES и папка
+    // метод обязан вернуть YES. Эмулятор больше
+    // не будет биться о Read-Only
     if env.fs.exists(guest_path) {
         if env.fs.is_dir(guest_path) {
             if with_intermediates {
@@ -702,13 +710,10 @@ pub const CLASSES: ClassExports = objc_classes! {
             true
         }
         Err(err) => {
-            // Мягкий фоллбэк: если папки нет, но игра все равно в наглую лезет
-            // писать в свой Read-Only бандл (частая ошибка в старых играх
-            // Gameloft),
+            // Мягкий фоллбэк: если папки нет, но игра все равно в наглую лезет (Gameloft),
             // перехватываем эту ошибку VFS, чтобы избежать краша.
             if let FsError::ReadonlyParentDir = err {
                 log!("Warning: createDirectoryAtPath {} intercepted ReadonlyParentDir, pretending success", path_str);
-                return true;
             }
 
             if let FsError::NonexistentParentDir = err {
@@ -936,7 +941,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         return nil;
     }
     let path_str = ns_string::to_rust_string(env, path);
-    let last_component = std::path::Path::new(path_str.as_ref())
+    let last_component = std::path::Path::new(&path_str)
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or(&path_str);
@@ -1065,10 +1070,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)fileAttributesAtPath:(id)path
               traverseLink:(bool)_traverse {
-    // В старых версиях iOS этот метод просто возвращал словарь с атрибутами.
-    // Так как у нас уже есть полноценная реализация атрибутов,
-    // мы честно делегируем вызов в неё, передав null вместо указателя на
-    // ошибку.
+    // В старых версиях iOS этот метод просто
+    // возвращал словарь с атрибутами.
+    // мы честно делегируем вызов в неё,
+    // передав null вместо указателя на
     let error: MutPtr<id> = Ptr::null();
     msg![env; this attributesOfItemAtPath:path error:error]
 }
@@ -1159,8 +1164,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 @implementation NSDirectoryEnumerator: NSObject
 
 + (id)allocWithZone:(NSZonePtr)_zone {
-    // Дефолтная пустышка, реальные данные уже заполняются в твоем
-    // enumeratorAtPath:
+    // Дефолтная пустышка, реальные данные уже
+    // заполняются в твоем
     let host = Box::new(NSDirectoryEnumeratorHostObject {
         iterator: Vec::new().into_iter(),
         base_path: GuestPathBuf::from(GuestPath::new("")),
@@ -1185,6 +1190,9 @@ pub const CLASSES: ClassExports = objc_classes! {
         // относительно базовой директории.
         // Поэтому мы честно отрезаем base_path от начала строки.
         let rel_path = if path_str.starts_with(base_str) {
+        // возвращает пути
+        // Поэтому мы честно отрезаем base_path от
+        // начала строки.
             let mut stripped = &path_str[base_str.len()..];
             if stripped.starts_with('/') {
                 stripped = &stripped[1..];
@@ -1215,6 +1223,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `-[NSDirectoryEnumerator level]`
+//
 // <https://developer.apple.com/documentation/foundation/nsdirectoryenumerator/1413939-level>
 // "Returns the number of levels deep the current object is in the
 // directory hierarchy being enumerated."
@@ -1223,8 +1232,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)fileAttributes {
-    // Иногда игры параллельно запрашивают атрибуты каждого файла (размер/тип).
-    // Возвращаем пустой словарь, чтобы не было крэша "unrecognized selector".
+    // Иногда игры параллельно запрашивают
+    // атрибуты каждого файла (размер/тип).
     msg_class![env; NSDictionary dictionary]
 }
 

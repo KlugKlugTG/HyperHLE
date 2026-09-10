@@ -105,6 +105,7 @@ fn pthread_mutexattr_gettype(
 /// boosts are not user-observable. We therefore validate the protocol
 /// argument like Apple does and treat the setting as a no-op, returning
 /// `0` on success and `EINVAL` for unknown protocols. See
+///
 /// <https://opensource.apple.com/source/libpthread/libpthread-301.30.1/src/pthread_mutex.c.auto.html>.
 const PTHREAD_PRIO_NONE: i32 = 0;
 const PTHREAD_PRIO_INHERIT: i32 = 1;

@@ -198,6 +198,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - Score / achievement convenience (class-level)
 
 // Apple reference (iOS 7+):
+//
 // <https://developer.apple.com/documentation/gamekit/gklocalplayer/1521031-setdefaultleaderboardidentifier>
 // "The completion handler is called with a nil error if the
 //  identifier was set, or an NSError if the request failed."
@@ -212,6 +213,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple reference (iOS 7+):
+//
 // <https://developer.apple.com/documentation/gamekit/gklocalplayer/1521090-loaddefaultleaderboardidentifier>
 // "If the default leaderboard identifier was loaded successfully,
 //  this block receives a string. […] Otherwise the error parameter
@@ -281,6 +283,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple reference (iOS 4.1, deprecated iOS 6):
+//
 // <https://developer.apple.com/documentation/gamekit/gklocalplayer/1521099-authenticatewithcompletionhandl>
 // "If the local player can't be authenticated, GameKit calls your
 //  completion handler with an error."
@@ -350,6 +353,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple reference (iOS 6+):
+//
 // <https://developer.apple.com/documentation/gamekit/gklocalplayer/1521050-authenticatehandler>
 // "Setting the value of this property triggers authentication. […]
 //  If the player needs to sign in, the handler is called with a view
@@ -414,6 +418,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple reference (iOS 4.1+, deprecated iOS 10):
+//
 // <https://developer.apple.com/documentation/gamekit/gklocalplayer/1521101-loadfriendswithcompletionhandle>
 // "If the friend list was loaded, this block receives an array of
 //  player IDs (NSString). Otherwise, the error parameter contains an

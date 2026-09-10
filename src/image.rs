@@ -16,7 +16,8 @@
 //! SDK.
 //!
 //! References:
-//! - "Supported Image Formats" in [Loading Images](https://developer.apple.com/library/archive/documentation/2DDrawing/Conceptual/DrawingPrintingiOS/LoadingImages/LoadingImages.html)
+//! - "Supported Image Formats" in [Loading
+//Images](https://developer.apple.com/library/archive/documentation/2DDrawing/Conceptual/DrawingPrintingiOS/LoadingImages/LoadingImages.html)
 
 use std::ffi::{c_int, c_uchar, CStr};
 
@@ -329,7 +330,8 @@ pub fn gamma_decode(intensity: f32) -> f32 {
 /// the requested internal format), so for the opaque formats we overwrite the
 /// decoded alpha with 0xFF. Without this, opaque textures uploaded as GL_RGBA
 /// keep the decoder's stray sub-255 alpha and, when the app has GL_BLEND
-/// enabled with GL_SRC_ALPHA, blend away to nothing — producing a black screen
+/// enabled with GL_SRC_ALPHA, blend away to nothing — producing
+/// a black screen
 /// while audio and input keep working.
 pub fn decode_pvrtc(pvrtc_data: &[u8], is_2bit: bool, width: u32, height: u32) -> Vec<u32> {
     decode_pvrtc_with_alpha(pvrtc_data, is_2bit, width, height, false)

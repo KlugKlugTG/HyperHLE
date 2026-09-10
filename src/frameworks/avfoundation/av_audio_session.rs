@@ -313,8 +313,8 @@ pub struct State {
     shared_instance: Option<id>,
 }
 
-// ДОБАВЛЕНО: Полноценный объект состояния (без заглушек)
-#[derive(Default)]
+// ДОБАВЛЕНО: Полноценный объект состояния
+// (без заглушек)
 pub(super) struct AVAudioSessionHostObject {
     category: id,
     category_options: AVAudioSessionCategoryOptions,
@@ -333,10 +333,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 @implementation AVAudioSession: NSObject
 
 + (id)sharedInstance {
-    // ИСПРАВЛЕНО: Теперь объект действительно работает как синглтон и сохраняет
-    // свое состояние
-    if let Some(instance) = env.framework_state.avfoundation.av_audio_session.shared_instance {
+    // ИСПРАВЛЕНО: Теперь объект
+    // действительно работает как синглтон и
+    // сохраняет
         return instance;
+    if let Some(instance) = env.framework_state.avfoundation.av_audio_session.shared_instance {
     }
 
     let category = ns_string::get_static_str(env, AVAudioSessionCategorySoloAmbient);
@@ -575,8 +576,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())setDelegate:(id)delegate {
-    // В Objective-C делегаты обычно хранятся как weak ссылки (без
-    // retain/release)
+    // В Objective-C делегаты обычно хранятся как weak
+    // ссылки (без
     env.objc.borrow_mut::<AVAudioSessionHostObject>(this).delegate = delegate;
 }
 

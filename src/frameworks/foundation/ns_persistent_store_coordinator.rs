@@ -1207,7 +1207,8 @@ insertIntoManagedObjectContext:(id)context {           // NSManagedObjectContext
 
 // =========================================================================
 // NSAttributeDescription
-// Per Apple: <https://developer.apple.com/documentation/coredata/nsattributedescription>
+//  Per Apple:
+// <https://developer.apple.com/documentation/coredata/nsattributedescription>
 // Describes a Core Data entity attribute (its type, default value, etc.).
 // =========================================================================
 

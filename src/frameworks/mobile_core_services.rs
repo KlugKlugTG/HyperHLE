@@ -66,7 +66,8 @@ pub const CONSTANTS: ConstantExports = &[
     ("_kUTTypePNG", HostConstant::NSString("public.png")),
     // Additional UTType identifiers covering the common image, audio,
     // video and document formats Apple ships with the OS. Values are
-    // taken from <https://developer.apple.com/documentation/uniformtypeidentifiers/uttype/system-declared-uniform-type-identifiers>.
+    //  taken from
+    // <https://developer.apple.com/documentation/uniformtypeidentifiers/uttype/system-declared-uniform-type-identifiers>.
     ("_kUTTypeGIF", HostConstant::NSString("com.compuserve.gif")),
     ("_kUTTypeTIFF", HostConstant::NSString("public.tiff")),
     ("_kUTTypeBMP", HostConstant::NSString("com.microsoft.bmp")),
@@ -183,6 +184,7 @@ pub const CONSTANTS: ConstantExports = &[
     // `UTTypeCreateAllIdentifiersForTag()` / `UTTypeCopyDeclaration()`
     // to look up the type's tag specification (filename extensions,
     // MIME types, etc.). The literal value matches Apple's headers.
+    //
     // <https://developer.apple.com/documentation/coreservices/kuttypetagspecificationkey>
     (
         "_kUTTypeTagSpecificationKey",

@@ -88,6 +88,7 @@ fn ui_window_level_alert(env: &mut Environment) -> ConstVoidPtr {
 }
 
 /// UIScrollViewDecelerationRateNormal = 0.998 (CGFloat)
+///
 /// https://developer.apple.com/documentation/uikit/uiscrollview/1619438-decelerationratenormal
 fn ui_scroll_view_deceleration_rate_normal(env: &mut Environment) -> ConstVoidPtr {
     let ptr: MutPtr<u32> = env.mem.alloc(4).cast();
@@ -96,6 +97,7 @@ fn ui_scroll_view_deceleration_rate_normal(env: &mut Environment) -> ConstVoidPt
 }
 
 /// UIScrollViewDecelerationRateFast = 0.99 (CGFloat)
+///
 /// https://developer.apple.com/documentation/uikit/uiscrollview/1619438-decelerationratefast
 fn ui_scroll_view_deceleration_rate_fast(env: &mut Environment) -> ConstVoidPtr {
     let ptr: MutPtr<u32> = env.mem.alloc(4).cast();
@@ -124,6 +126,7 @@ fn ui_font_weight_ultralight(env: &mut Environment) -> ConstVoidPtr {
 ///
 /// Value is -1.0 (a `CGFloat`), matching the constant defined in
 /// Apple `UITableView.h`:
+///
 /// <https://developer.apple.com/documentation/uikit/uitableview/1614961-automaticDimension>
 fn ui_table_view_automatic_dimension(env: &mut Environment) -> ConstVoidPtr {
     write_cgfloat(env, -1.0)
@@ -384,6 +387,7 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
         HostConstant::NSString("UITextAttributeTextShadowOffset"),
     ),
     // UIScrollView deceleration rate constants (CGFloat).
+    //
     // https://developer.apple.com/documentation/uikit/uiscrollview/decelerationrate
     (
         "_UIScrollViewDecelerationRateNormal",
@@ -396,6 +400,7 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
     // -----------------------------------------------------------------
     // UIScreen disconnect notification (paired with the existing
     // UIScreenDidConnectNotification above), per
+    //
     // <https://developer.apple.com/documentation/uikit/uiscreen/1617835-disconnect>.
     // -----------------------------------------------------------------
     (
@@ -592,11 +597,13 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
         HostConstant::NSString("com.apple.UIKit.activity.AddToReadingList"),
     ),
     // iOS 7+
+    //
     // <https://developer.apple.com/documentation/uikit/uiactivitytype/1620521-airdrop>
     (
         "_UIActivityTypeAirDrop",
         HostConstant::NSString("com.apple.UIKit.activity.AirDropActivityType"),
     ),
+    //
     // <https://developer.apple.com/documentation/uikit/uiactivitytype/1620522-openinbooks>
     (
         "_UIActivityTypeOpenInIBooks",
@@ -662,14 +669,17 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
     // -----------------------------------------------------------------
     // UITableView selection notification, Apple `UITableView.h`. The
     // notification name is the constant's symbol name verbatim. See
+    //
     // <https://developer.apple.com/documentation/uikit/uitableviewselectiondidchangenotification>.
     // -----------------------------------------------------------------
     (
         "_UITableViewSelectionDidChangeNotification",
         HostConstant::NSString("UITableViewSelectionDidChangeNotification"),
     ),
-    // UITableViewAutomaticDimension (CGFloat = -1.0) — self-sizing rows/headers.
+    //  UITableViewAutomaticDimension (CGFloat = -1.0) — self-sizing
+    // rows/headers.
     // Apple `UITableView.h`, iOS 5.0+.
+    //
     // <https://developer.apple.com/documentation/uikit/uitableview/1614961-automaticDimension>
     (
         "_UITableViewAutomaticDimension",
@@ -870,6 +880,7 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
     ),
     // -----------------------------------------------------------------
     // UIApplication launch-options dictionary keys (continued, iOS 8+).
+    //
     // <https://developer.apple.com/documentation/uikit/uiapplication/launchoptionskey>
     // -----------------------------------------------------------------
     (
@@ -887,6 +898,7 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
     // string for items opened via Spotlight search. Apps match this in
     // `application(_:continue:restorationHandler:)` to detect Spotlight
     // handoffs.
+    //
     // <https://developer.apple.com/documentation/corespotlight/cssearchableitemactiontype>
     (
         "_CSSearchableItemActionType",
@@ -895,6 +907,7 @@ pub const CONSTANTS: &[(&str, HostConstant)] = &[
     // CSSearchableItemActivityIdentifier is the key in the
     // NSUserActivity userInfo dictionary whose value is the
     // CSSearchableItem uniqueIdentifier string.
+    //
     // <https://developer.apple.com/documentation/corespotlight/cssearchableitemactivityidentifier>
     (
         "_CSSearchableItemActivityIdentifier",
@@ -1019,7 +1032,8 @@ pub fn handle_events(env: &mut Environment) -> Option<Instant> {
     // In headless mode there is no window to pull events from. This used to be
     // assumed unreachable without a window, but an app that fully finishes
     // launching enters the main run loop, which calls this unconditionally —
-    // so guard explicitly instead of unwrapping the absent window and panicking.
+    //  so guard explicitly instead of unwrapping the absent window and
+    // panicking.
     if env.window.is_none() {
         return None;
     }
@@ -1048,21 +1062,25 @@ pub fn handle_events(env: &mut Environment) -> Option<Instant> {
                 // emulator will pause naturally and resume when the user
                 // returns; only `AppWillTerminate` (Android `onDestroy`) is
                 // treated as a real shutdown.
+                //
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillresignactive(_:)
                 log_dbg!("Handling app-will-resign-active event.");
                 ui_application::handle_will_resign_active(env);
             }
             Event::AppDidEnterBackground => {
+                //
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidenterbackground(_:)
                 log_dbg!("Handling app-did-enter-background event.");
                 ui_application::handle_did_enter_background(env);
             }
             Event::AppWillEnterForeground => {
+                //
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillenterforeground(_:)
                 log_dbg!("Handling app-will-enter-foreground event.");
                 ui_application::handle_will_enter_foreground(env);
             }
             Event::AppDidBecomeActive => {
+                //
                 // https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidbecomeactive(_:)
                 log_dbg!("Handling app-did-become-active event.");
                 ui_application::handle_did_become_active(env);

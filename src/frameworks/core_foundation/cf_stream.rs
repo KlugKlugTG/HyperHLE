@@ -65,6 +65,7 @@ pub const kCFStreamSSLCertificates: &str = "kCFStreamSSLCertificates";
 pub const kCFStreamSSLIsServer: &str = "kCFStreamSSLIsServer";
 pub const kCFStreamPropertySocketSecurityLevel: &str = "kCFStreamPropertySocketSecurityLevel";
 // iOS 5+ post-handshake property keys, per Apple's
+//
 // <https://developer.apple.com/documentation/cfnetwork/cfstream/cfstream-constants>.
 // `kCFStreamPropertySSLPeerCertificates` returns the peer's certificate chain
 // once the TLS handshake has completed; `kCFStreamPropertySSLPeerTrust` is

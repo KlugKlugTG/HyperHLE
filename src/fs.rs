@@ -150,9 +150,10 @@ impl FsNode {
         }
     }
 
-    // ИСПРАВЛЕНИЕ: Рекурсивно обновляем пути хоста во всем дереве VFS
-    // при перемещении или переименовании директорий. Без этого дочерние
-    // файлы будут ссылаться на старые несуществующие пути.
+    // ИСПРАВЛЕНИЕ: Рекурсивно обновляем пути
+    // хоста во всем дереве VFS
+    // файлы будут ссылаться на старые
+    // несуществующие пути.
     fn update_host_paths_recursively(&mut self, new_host_path: PathBuf) {
         match self {
             FsNode::File {
@@ -437,8 +438,8 @@ fn handle_open_err<T, E: std::fmt::Display, P: std::fmt::Debug>(
 /// non-blocking kernel CSPRNG that draws from a single entropy pool and never
 /// returns an error or a short read (see the `random(4)` manual page). We
 /// mirror that behaviour by pulling bytes from the host operating system's own
-/// `/dev/urandom` when it exists (Android, Linux and macOS — touchHLE's primary
-/// targets), falling back to a seeded xorshift64* generator on hosts that lack
+/// `/dev/urandom` when it exists (Android, Linux and macOS — touchHLE's
+//primary
 /// the device (e.g. Windows) so a read can never fail.
 #[derive(Debug)]
 pub struct RandomFile {
@@ -465,8 +466,8 @@ impl RandomFile {
         }
     }
 
-    /// xorshift64* — a fast, well-distributed non-cryptographic generator used
-    /// only as a fallback when the host has no random device.
+    /// xorshift64* — a fast, well-distributed non-cryptographic generator
+    //used
     fn next_u64(&mut self) -> u64 {
         let mut x = self.prng_state;
         x ^= x >> 12;
@@ -609,6 +610,7 @@ impl GuestFile {
 
     pub fn is_seekable(&self) -> bool {
         // Due to legacy directory iteration support, directories are seekable
+        //
         // https://stackoverflow.com/questions/65911066/what-does-lseek-mean-for-a-directory-file-descriptor
         // Random character devices are not meaningfully seekable.
         !matches!(
@@ -789,6 +791,7 @@ impl Seek for GuestFile {
             GuestFile::ResourceFile(file) => file.get().seek(pos),
             GuestFile::Directory => {
                 // Note: directories as supposed to be seekable on iOS!
+                //
                 // https://stackoverflow.com/questions/65911066/what-does-lseek-mean-for-a-directory-file-descriptor
                 // As far as I can (f)tell, apps are really not using that
                 // properly and returning -1 on fseek/ftell is fine.
@@ -976,23 +979,23 @@ impl Fs {
             None => FsNode::dir(),
         };
 
-        // Создаем физическую папку для корня ФС (чтобы shm_open мог создавать
-        // файлы вроде /mono.1)
+        // Создаем физическую папку для корня ФС
+        // (чтобы shm_open мог создавать
         let root_host_path = paths::user_data_base_path()
             .join(paths::SANDBOX_DIR)
             .join(bundle_id)
             .join("root");
 
         if !read_only_mode {
-            // Очищаем временные файлы корня при каждом запуске (аналогично tmp)
-            let _ = std::fs::remove_dir_all(&root_host_path);
+            // Очищаем временные файлы корня при
+            // каждом запуске (аналогично tmp)
             if let Err(e) = std::fs::create_dir_all(&root_host_path) {
                 panic!("Could not create root directory for app at {root_host_path:?}: {e:?}");
             }
         }
 
-        // Если режим не read_only, монтируем физическую папку как корень с
-        // правами на запись
+        // Если режим не read_only, монтируем
+        // физическую папку как корень с
         let root_node = if read_only_mode {
             FsNode::dir()
         } else {
@@ -1371,8 +1374,8 @@ impl Fs {
         }
     }
 
-    // ИСПРАВЛ��НИЕ: ЧЕСТНАЯ РЕАЛИЗАЦИЯ ПЕРЕИМЕНОВАНИЯ
-    // Поддерживает и файлы, и директории, обновляет дерево VFS без паники
+    // ИСПРАВЛ��НИЕ: ЧЕСТНАЯ РЕАЛИЗАЦИЯ
+    // ПЕРЕИМЕНОВАНИЯ
     pub fn rename<P: AsRef<GuestPath> + Copy>(&mut self, from: P, to: P) -> Result<(), ()> {
         let from_path = from.as_ref();
         let to_path = to.as_ref();
@@ -1401,9 +1404,9 @@ impl Fs {
         };
         let to_host_path = to_parent_host_path.join(&to_name);
 
-        // 1. Выполняем настоящее физическое перемещение на диске хоста
+        // 1. Выполняем настоящее физическое
+        // перемещение на диске хоста
         if fs::rename(&from_host_path, &to_host_path).is_err() {
-            return Err(());
         }
 
         // 2. Извлекаем старую ноду из VFS
@@ -1417,10 +1420,12 @@ impl Fs {
         };
         let mut moving_node = from_children.remove(&from_name).unwrap();
 
-        // 3. Рекурсивно обновляем внутри нее все Host-пути на новые
+        // 3. Рекурсивно обновляем внутри нее все
+        // Host-пути на новые
         moving_node.update_host_paths_recursively(to_host_path);
 
-        // 4. Вставляем обновленную ноду по новому пути в VFS
+        // 4. Вставляем обновленную ноду по
+        // новому пути в VFS
         let (to_parent_final, to_name_final) = self.lookup_parent_node(to_path).unwrap();
         let FsNode::Directory {
             children: to_children,
@@ -1449,8 +1454,8 @@ impl Fs {
             truncate,
         } = options;
 
-        // ИСПРАВЛЕНИЕ: Мягкий перехват вместо вызова panic!.
-        // Если запрашивается создание или очистка файла без права записи,
+        // ИСПРАВЛЕНИЕ: Мягкий перехват вместо
+        // вызова panic!.
         // принудительно даем право на запись.
         if (truncate || create || create_new) && !write && !append {
             log!("Warning: App tried to create/truncate file without write permissions. Forcing write = true.");
@@ -1521,7 +1526,8 @@ impl Fs {
                                     let rel = guest_str.trim_start_matches('/');
                                     let host_path =
                                         rel.split('/').fold(cow_base, |acc, c| acc.join(c));
-                                    // Read the IPA content now while the borrow is valid.
+                                    //  Read the IPA content now while the
+                                    // borrow is valid.
                                     let content = if !host_path.exists() {
                                         let mut ipa_file = ipa_ref.open();
                                         let mut buf = Vec::new();
@@ -1565,7 +1571,8 @@ impl Fs {
                     }
                 }
             } else {
-                // File does not exist yet — handled by the create-new path below.
+                //  File does not exist yet — handled by the create-new path
+                // below.
                 OpenAction::Reject // placeholder; will be overridden
             };
             (new_filename, action)
@@ -1589,7 +1596,8 @@ impl Fs {
                 return Ok(GuestFile::File(file));
             }
             OpenAction::OpenIpa => {
-                // Re-look up to get the IpaFileRef (read-only, no borrow conflict).
+                //  Re-look up to get the IpaFileRef (read-only, no borrow
+                // conflict).
                 let (pn, fname) = self.lookup_parent_node(path).ok_or(())?;
                 if let FsNode::Directory { children, .. } = pn {
                     if let Some(FsNode::File {
@@ -1610,8 +1618,8 @@ impl Fs {
                 return Ok(GuestFile::from_directory());
             }
             OpenAction::Reject => {
-                // File doesn't exist yet — fall through to the create-new path
-                // below.  Write-to-read-only is already handled by returning
+                // File doesn't exist yet — fall through to the create-new
+                // path
                 // Err(()) inside the action computation block above.
             }
             OpenAction::CowIpa(host_path, content) => {
@@ -1800,8 +1808,8 @@ impl Fs {
         let path = path.as_ref();
 
         // 1. Получаем компоненты пути.
-        // .into_iter().map(|s| s.to_string()).collect() — КРИТИЧЕСКИ ВАЖНО.
-        // Это превращает Vec<&str> в Vec<String>, освобождая self от
+        // .into_iter().map(|s| s.to_string()).collect() —
+        // КРИТИЧЕСКИ ВАЖНО.
         // заимствования.
         let components: Vec<String> = resolve_path(path, Some(&self.working_directory))
             .into_iter()
@@ -1810,19 +1818,19 @@ impl Fs {
 
         let mut current_path = String::new();
 
-        // 2. Теперь мы можем спокойно итерироваться и вызывать мутабельные
-        // методы self
+        // 2. Теперь мы можем спокойно
+        // итерироваться и вызывать мутабельные
         for component in components {
-            // Собираем путь по кусочкам: /var -> /var/mobile ->
-            // /var/mobile/Applications...
+            // Собираем путь по кусочкам: /var ->
+            // /var/mobile ->
             current_path.push('/');
             current_path.push_str(&component);
 
             let res = self.create_dir(GuestPathBuf::from(current_path.clone()));
             match res {
                 Ok(_) | Err(FsError::AlreadyExist) => {
-                    // Если папка уже есть — это нормально, идем дальше к
-                    // вложенным
+                    // Если папка уже есть — это
+                    // нормально, идем дальше к
                 }
                 _ => return res, // Если другая ошибка (нет прав и т.д.) — выходим
             }

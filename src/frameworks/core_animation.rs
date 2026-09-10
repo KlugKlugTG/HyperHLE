@@ -8,7 +8,8 @@
 //! The Core Animation framework.
 //!
 //! Useful resources:
-//! - Apple's [Core Animation Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/Introduction/Introduction.html)
+//! - Apple's [Core Animation Programming
+//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/Introduction/Introduction.html)
 
 pub mod ca_animation;
 pub mod ca_display_link;

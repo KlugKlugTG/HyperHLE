@@ -68,6 +68,7 @@ fn main() {
     }
     // Prevent CMake from using macOS-only linker commands when cross-compiling
     // for Android.
+    //
     // https://stackoverflow.com/questions/69697715/cross-compiling-c-program-for-android-on-mac-failed-using-ndks-clang
     if os.eq_ignore_ascii_case("android") {
         build.define("CMAKE_SYSTEM_NAME", "Android");
@@ -84,7 +85,8 @@ fn main() {
     if os.eq_ignore_ascii_case("android") {
         // Work around weird issue with the NDK where there are missing
         // references to compiler-rt/libgcc symbols.
-        // Translated from: https://github.com/termux/termux-packages/issues/8029#issuecomment-1369150244
+        //  Translated from:
+        // https://github.com/termux/termux-packages/issues/8029#issuecomment-1369150244
         let mut cc_command = cc::Build::new().get_compiler().to_command();
         let libclang_rt_path = cc_command
             .arg("-print-libgcc-file-name")

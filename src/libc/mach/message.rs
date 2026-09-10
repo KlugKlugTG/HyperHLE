@@ -17,7 +17,8 @@
 //! for the time being, so no "real" IPC here (thanks, for god's sake!).
 //! Second, the only known use case so far is the Unity's one -
 //! mono's mach exception thread which just catches thread
-//! exceptions in the loop. (see [mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L131))
+//! exceptions in the loop. (see
+//[mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L131))
 //!
 //! ~~Thus, by a divine benevolence, we stub those functions and
 //! hope that no exception will ever happen! amen~~
@@ -26,7 +27,9 @@
 //! it should be fine to just have stubs.
 //!
 //! Useful resources:
-//! - If you want to go deeper, check out "Chapter 4: Inter Process Communication" of [The GNU Mach Reference Manual](https://www.gnu.org/software/hurd/gnumach-doc/mach.pdf).
+//! - If you want to go deeper, check out "Chapter 4: Inter Process
+//Communication" of [The GNU Mach Reference
+//Manual](https://www.gnu.org/software/hurd/gnumach-doc/mach.pdf).
 
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::libc::mach::core_types::{boolean_t, integer_t, natural_t};
@@ -112,7 +115,9 @@ fn mach_msg(
 }
 
 /// This function is to `Handle kernel-reported thread exception.`
-/// See [exc_server](https://web.mit.edu/darwin/src/modules/xnu/osfmk/man/exc_server.html) for more details.
+///  See
+/// [exc_server](https://web.mit.edu/darwin/src/modules/xnu/osfmk/man/exc_server.html)
+/// for more details.
 fn exc_server(
     _env: &mut Environment,
     request_msg: MutVoidPtr, // TODO: use MutPtr<mach_msg_header_t>,
@@ -121,7 +126,8 @@ fn exc_server(
     log_dbg!("TODO: exc_server({:?}, {:?})", request_msg, reply_msg);
     // Note: Because Unity _doesn't_ check the return value of this function
     // with an assert, we can just return a false here.
-    // (See [mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L142))
+    //  (See
+    // [mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L142))
     1 // FALSE
 }
 

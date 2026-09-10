@@ -20,8 +20,8 @@
 use std::os::raw::{c_char, c_double, c_int, c_uchar, c_uint, c_ulong, c_void};
 
 // ============================================================================
-// Opaque types — everything libxml2 hands back is treated as an opaque pointer
-// inside Rust.  Real struct field accesses go through the `hxml_*` shim.
+// Opaque types — everything libxml2 hands back is treated as an opaque
+// pointer
 // ============================================================================
 
 pub type xmlChar = c_uchar;

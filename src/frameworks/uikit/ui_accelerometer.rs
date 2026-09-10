@@ -6,7 +6,9 @@
 //! `UIAccelerometer`.
 //!
 //! Useful resources:
-//! - [Apple's documentation for UIAcceleration](https://developer.apple.com/documentation/uikit/uiacceleration) has a really nice diagram of how the accelerometer axes relate to an iPhone.
+//! - [Apple's documentation for
+//UIAcceleration](https://developer.apple.com/documentation/uikit/uiacceleration)
+//has a really nice diagram of how the accelerometer axes relate to an iPhone.
 
 use crate::frameworks::foundation::NSTimeInterval;
 use crate::objc::{

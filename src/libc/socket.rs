@@ -19,7 +19,8 @@
 //! to [TcpListener::bind])
 //!
 //! Useful resources:
-//! - [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/html/index-wide.html)
+//! - [Beej's Guide to Network
+//Programming](https://beej.us/guide/bgnet/html/index-wide.html)
 
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::libc::errno::{
@@ -520,15 +521,15 @@ fn setsockopt(
                 }
             }
             // SO_NOSIGPIPE просто сохраняется в options.
-            // В Rust попытка записи в закрытый сокет и так возвращает
-            // ErrorKind::BrokenPipe вместо убийства процесса.
+            // В Rust попытка записи в закрытый
+            // сокет и так возвращает
             0
         }
         (SOL_SOCKET, SO_LINGER) => {
-            // Некоторые приложения (например, Minecraft PE) передают 4 байта
-            // (размер обычного int)
-            // вместо положенных 8 байт (struct linger). Обрабатываем оба
-            // варианта легально:
+            // Некоторые приложения (например,
+            // Minecraft PE) передают 4 байта
+            // вместо положенных 8 байт (struct linger).
+            // Обрабатываем оба
             let (l_onoff, l_linger) = if option_len == guest_size_of::<linger>() {
                 let linger_val: linger = env.mem.read(option_value.cast());
                 (linger_val.l_onoff, linger_val.l_linger)
@@ -558,10 +559,10 @@ fn setsockopt(
                     .tcp_stream
                     .as_ref()
                 {
-                    // Имитируем успешную установку SO_LINGER. Реальный вызов
-                    // stream.set_linger
-                    // заменен на логирование, так как фича `tcp_linger`
-                    // нестабильна в std::net
+                    // Имитируем успешную установку
+                    // SO_LINGER. Реальный вызов
+                    // заменен на логирование, так как
+                    // фича `tcp_linger`
                     log!("setsockopt: SO_LINGER (duration: {:?}) requested, ignoring due to unstable tcp_linger feature", duration);
                 }
             }
@@ -574,12 +575,12 @@ fn setsockopt(
             }
             let buf_size: i32 = env.mem.read(option_value.cast());
 
-            // Rust std::net не экспортирует управление размером буфера
-            // (set_recv_buffer_size).
-            // Но современные ОС сами отлично балансируют TCP-окно
-            // (auto-tuning), что работает
-            // намного лучше фиксированных лимитов из старых iOS-приложений.
-            // Честно валидируем чтение памяти гостя и подтверждаем успех.
+            // Rust std::net не экспортирует управление
+            // размером буфера
+            // Но современные ОС сами отлично
+            // балансируют TCP-окно
+            // намного лучше фиксированных
+            // лимитов из старых iOS-приложений.
             log_dbg!(
                 "setsockopt: evaluated buffer size {:#x} to {} bytes",
                 option_name,
@@ -1396,8 +1397,8 @@ fn accept(
     match listener.accept() {
         Ok((stream, addr)) => {
             log!("accept: New client: {}", addr);
-            // FIX: was unimplemented!() — a direct (non-select-driven) accept()
-            // that got a connection immediately used to panic the whole
+            // FIX: was unimplemented!() — a direct (non-select-driven)
+            // accept()
             // emulator. Mirror the select() path above: register the new
             // stream as its own guest socket and report the peer address,
             // exactly like a real accept(2) does.
@@ -2070,8 +2071,8 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(recv(_, _, _, _)),
     export_c_func!(recvfrom(_, _, _, _, _, _)),
     export_c_func!(send(_, _, _, _)),
-    // ИСПРАВЛЕНИЕ: здесь 6 подчеркиваний вместо 7
-    export_c_func!(sendto(_, _, _, _, _, _)),
+    // ИСПРАВЛЕНИЕ: здесь 6 подчеркиваний
+    // вместо 7
     export_c_func!(shutdown(_, _)),
     export_c_func!(getsockname(_, _, _)),
     export_c_func!(getpeername(_, _, _)),

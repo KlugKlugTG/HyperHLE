@@ -50,6 +50,7 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     // pointing at the `NSError` describing the failure. Apple
     // `AVPlayerItem.h` declares it as `AVF_EXPORT NSString *const`; the
     // literal value matches the symbol name.
+    //
     // <https://developer.apple.com/documentation/avfoundation/avplayeritemfailedtoplaytoendtimeerrorkey>
     (
         "_AVPlayerItemFailedToPlayToEndTimeErrorKey",
@@ -254,6 +255,7 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // AVCaptureSession preset names (additional, iOS 5+).
+    //
     // <https://developer.apple.com/documentation/avfoundation/avcapturesessionpresetiframe960x540>
     // -----------------------------------------------------------------
     (
@@ -274,6 +276,7 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // AVURLAsset init option keys.
+    //
     // <https://developer.apple.com/documentation/avfoundation/avurlassetpreferprecisedurationandtimingkey>
     // -----------------------------------------------------------------
     (
@@ -286,6 +289,7 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // AVVideoProfileLevel / AVVideoCodec constants.
+    //
     // <https://developer.apple.com/documentation/avfoundation/avvideoprofilelevelh264main31>
     // -----------------------------------------------------------------
     (

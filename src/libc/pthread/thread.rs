@@ -34,11 +34,11 @@ pub struct pthread_attr_t {
     magic: u32,
     detachstate: i32,
     stacksize: GuestUSize,
-    // ИСПРАВЛЕНИЕ: Добавляем реальные поля для политики и параметров
-    sched_policy: i32,
+    // ИСПРАВЛЕНИЕ: Добавляем реальные поля
+    // для политики и параметров
     sched_param: sched_param,
-    // Уменьшаем _unused с 7 до 5, так как добавили два 4-байтовых поля (чтобы
-    // сохранить общий размер в 40 байт)
+    // Уменьшаем _unused с 7 до 5, так как добавили
+    // два 4-байтовых поля (чтобы
     _unused: [u32; 5],
 }
 unsafe impl SafeRead for pthread_attr_t {}
@@ -223,7 +223,8 @@ pub fn pthread_attr_setstack(
 }
 
 /// `int pthread_attr_setstackaddr(pthread_attr_t *attr, void *stackaddr)` —
-/// legacy POSIX function (deprecated by Apple in favour of `pthread_attr_setstack`).
+///  legacy POSIX function (deprecated by Apple in favour of
+/// `pthread_attr_setstack`).
 /// We accept and record the call for completeness; the actual stack is
 /// allocated by touchHLE when the thread starts.
 pub fn pthread_attr_setstackaddr(
@@ -265,8 +266,8 @@ fn pthread_attr_setschedpolicy(
     policy: i32,
 ) -> i32 {
     check_magic!(env, attr, MAGIC_ATTR);
-    // ИСПРАВЛЕНИЕ: Реально сохраняем политику в структуру атрибутов
-    let mut attr_copy = env.mem.read(attr);
+    // ИСПРАВЛЕНИЕ: Реально сохраняем
+    // политику в структуру атрибутов
     attr_copy.sched_policy = policy;
     env.mem.write(attr, attr_copy);
 
@@ -280,8 +281,8 @@ fn pthread_attr_setschedparam(
     param: ConstPtr<sched_param>,
 ) -> i32 {
     check_magic!(env, attr, MAGIC_ATTR);
-    // ИСПРАВЛЕНИЕ: Реально читаем параметры из гостевой памяти и сохраняем в
-    // структуру
+    // ИСПРАВЛЕНИЕ: Реально читаем параметры
+    // из гостевой памяти и сохраняем в
     let new_param = env.mem.read(param);
 
     let mut attr_copy = env.mem.read(attr);
@@ -349,8 +350,9 @@ pub fn pthread_create(
     0
 }
 
-/// `int pthread_create_suspended_np(pthread_t *thread, const pthread_attr_t *attr,
-///                                  void *(*start_routine)(void *), void *arg)` —
+///  `int pthread_create_suspended_np(pthread_t *thread, const pthread_attr_t
+/// *attr,
+// void *(*start_routine)(void *), void *arg)` —
 /// Darwin extension (declared in Apple's `pthread.h`): identical to
 /// [pthread_create] except the new thread is created in a suspended state
 /// and does not run until the caller resumes it with `thread_resume()` on
@@ -494,8 +496,8 @@ fn pthread_detach(env: &mut Environment, thread: pthread_t) -> i32 {
         return EINVAL;
     }
 
-    // ИСПРАВЛЕНИЕ: Реально меняем состояние потока на отсоединённое
-    host_obj.attr.detachstate = PTHREAD_CREATE_DETACHED;
+    // ИСПРАВЛЕНИЕ: Реально меняем состояние
+    // потока на отсоединённое
 
     log_dbg!("pthread_detach({:?}) -> success", thread);
     0
@@ -685,7 +687,8 @@ fn pthread_setschedparam(
 // MARK: - Signals & scope (stubs for compatibility)
 // =========================================================================
 
-/// `pthread_sigmask` — change or examine the signal mask for the calling thread.
+///  `pthread_sigmask` — change or examine the signal mask for the calling
+/// thread.
 /// In touchHLE signals are not emulated, so this is a no-op returning success.
 fn pthread_sigmask(
     _env: &mut Environment,
@@ -732,7 +735,8 @@ fn pthread_attr_setscope(_env: &mut Environment, attr: MutVoidPtr, scope: i32) -
 /// Gets the name of the specified thread. On Darwin, thread names are limited
 /// to 63 characters + NUL. If no name has been set, the buffer is filled with
 /// an empty string.
-/// See: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_getname_np.3.html
+///  See:
+/// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_getname_np.3.html
 fn pthread_getname_np(
     env: &mut Environment,
     thread: pthread_t,
@@ -762,14 +766,16 @@ fn pthread_getname_np(
 /// `int pthread_setname_np(const char *name)`
 /// Sets the name of the calling thread. On Darwin this only applies to the
 /// current thread (unlike Linux where you pass a pthread_t).
-/// See: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_setname_np.3.html
+///  See:
+/// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_setname_np.3.html
 fn pthread_setname_np(env: &mut Environment, name: ConstPtr<u8>) -> i32 {
     let name_str = if name.is_null() {
         String::new()
     } else {
         env.mem.cstr_at_utf8(name).unwrap_or("").to_string()
     };
-    // Truncate to 63 chars (Darwin limit is MAXTHREADNAMESIZE = 64 including NUL)
+    //  Truncate to 63 chars (Darwin limit is MAXTHREADNAMESIZE = 64 including
+    // NUL)
     let truncated: String = name_str.chars().take(63).collect();
     let self_t = pthread_self(env);
     if let Some(host_obj) = State::get(env).threads.get_mut(&self_t) {

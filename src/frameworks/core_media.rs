@@ -127,6 +127,7 @@ pub const CONSTANTS: ConstantExports = &[
     // `extern const CFStringRef`; their literal values are the
     // canonical CMSampleBuffer.h tags. Apps reach them through string
     // identity / `CFEqual()` comparisons.
+    //
     // <https://developer.apple.com/documentation/coremedia/kcmsampleattachmentkey_notsync>
     // -----------------------------------------------------------------
     (

@@ -6,9 +6,11 @@
 //! The `NSOrderedSet` class cluster, including `NSMutableOrderedSet`.
 //!
 //! Apple's documentation:
-//! - [NSOrderedSet](https://developer.apple.com/documentation/foundation/nsorderedset):
+//! -
+//[NSOrderedSet](https://developer.apple.com/documentation/foundation/nsorderedset):
 //!   "A static, ordered collection of unique objects."
-//! - [NSMutableOrderedSet](https://developer.apple.com/documentation/foundation/nsmutableorderedset):
+//! -
+//[NSMutableOrderedSet](https://developer.apple.com/documentation/foundation/nsmutableorderedset):
 //!   "A dynamic, ordered collection of unique objects."
 //!
 //! Like NSArray, an ordered set keeps its elements in insertion order and

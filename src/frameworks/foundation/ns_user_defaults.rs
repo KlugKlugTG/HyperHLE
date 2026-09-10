@@ -6,7 +6,8 @@
 //! `NSUserDefaults`.
 //!
 //! References:
-//! - Apple's [Preferences and Settings Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/UserDefaults/AboutPreferenceDomains/AboutPreferenceDomains.html).
+//! - Apple's [Preferences and Settings Programming
+//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/UserDefaults/AboutPreferenceDomains/AboutPreferenceDomains.html).
 
 use super::{ns_string, NSInteger};
 use crate::frameworks::foundation::ns_string::to_rust_string;
@@ -83,6 +84,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Apple docs: `- (instancetype)initWithSuiteName:(NSString *)suitename` is
     // an INSTANCE method (called via `[[NSUserDefaults alloc]
     // initWithSuiteName:]`), see
+    //
     // <https://developer.apple.com/documentation/foundation/userdefaults/init(suitename:)>.
     // It returns a defaults object whose search list also includes the named
     // suite (a shared container, typically used by app extensions). touchHLE

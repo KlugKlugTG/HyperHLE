@@ -9,7 +9,8 @@
 //! helpers when an Objective-C block captures a `__strong` ObjC object,
 //! a `__weak` reference, another block, or a `__block` storage variable.
 //! They are documented in the
-//! [Blocks ABI](https://clang.llvm.org/docs/Block-ABI-Apple.html#imported-variables-1).
+//! [Blocks
+//ABI](https://clang.llvm.org/docs/Block-ABI-Apple.html#imported-variables-1).
 //!
 //! For touchHLE we provide working implementations of `_Block_copy`,
 //! `_Block_release`, and `_Block_object_assign` / `_Block_object_dispose`

@@ -65,11 +65,13 @@ struct NSDateFormatterHostObject {
     am_symbol: id,
     /// `NSString*` — PM symbol (defaults to "PM").
     pm_symbol: id,
-    /// `NSArray<NSString*>*` — short month names (e.g. "Jan", "Feb"). nil = default.
+    ///  `NSArray<NSString*>*` — short month names (e.g. "Jan", "Feb"). nil =
+    /// default.
     short_month_symbols: id,
     /// `NSArray<NSString*>*` — full month names. nil = default.
     month_symbols: id,
-    /// `NSArray<NSString*>*` — short weekday names ("Sun" .. "Sat"). nil = default.
+    ///  `NSArray<NSString*>*` — short weekday names ("Sun" .. "Sat"). nil =
+    /// default.
     short_weekday_symbols: id,
     /// `NSArray<NSString*>*` — full weekday names. nil = default.
     weekday_symbols: id,
@@ -551,8 +553,8 @@ fn style_to_format(date_style: u64, time_style: u64) -> String {
     }
 }
 
-/// Short day-of-week names (Sun=1 … Sat=7, but greg_date.day is day-of-month).
-/// We compute weekday from year/month/day using Tomohiko Sakamoto's algorithm.
+/// Short day-of-week names (Sun=1 … Sat=7, but greg_date.day is
+//day-of-month).
 fn weekday(year: i32, month: i32, day: i32) -> u8 {
     // Returns 0=Sun, 1=Mon … 6=Sat
     static T: [i32; 12] = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];

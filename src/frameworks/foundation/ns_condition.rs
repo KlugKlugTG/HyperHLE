@@ -22,8 +22,8 @@ struct NSConditionHostObject {
     name: id,
     /// Состояние внутреннего мьютекса
     locked: bool,
-    /// Потоки, ожидающие захвата блокировки (lock)
-    lock_waiting_threads: VecDeque<crate::environment::ThreadId>,
+    /// Потоки, ожидающие захвата блокировки
+    //(lock)
     /// Потоки, ожидающие сигнала (wait)
     waiting_threads: VecDeque<crate::environment::ThreadId>,
 }
@@ -40,8 +40,8 @@ struct NSConditionLockHostObject {
     condition: NSInteger,
     /// Whether the lock is currently held.
     locked: bool,
-    /// Потоки, ожидающие захвата. Option<NSInteger> указывает, ждет ли поток
-    /// конкретного состояния (Some) или просто освобождения блокировки (None).
+    /// Потоки, ожидающие захвата. Option<NSInteger>
+    //указывает, ждет ли поток
     waiting_threads: VecDeque<(crate::environment::ThreadId, Option<NSInteger>)>,
 }
 impl HostObject for NSConditionLockHostObject {}
@@ -99,8 +99,8 @@ pub const CLASSES: ClassExports = objc_classes! {
                 host.locked = true;
                 break;
             }
-            // Мьютекс занят, добавляем себя в очередь и засыпаем
-            let current_thread = env.current_thread;
+            // Мьютекс занят, добавляем себя в
+            // очередь и засыпаем
             host.lock_waiting_threads.push_back(current_thread);
         }
         env.suspend_thread(env.current_thread);
@@ -120,8 +120,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: Wait / signal / broadcast
 
 - (())wait {
-    // 1. Атомарно освобождаем блокировку и добавляем себя в очередь ожидания
-    // сигнала
+    // 1. Атомарно освобождаем блокировку и
+    // добавляем себя в очередь ожидания
     {
         let host = env.objc.borrow_mut::<NSConditionHostObject>(this);
         host.locked = false;
@@ -133,11 +133,11 @@ pub const CLASSES: ClassExports = objc_classes! {
         host.waiting_threads.push_back(current_thread);
     }
 
-    // 2. Засыпаем, пока нас не разбудит `signal` или `broadcast`
-    env.suspend_thread(env.current_thread);
+    // 2. Засыпаем, пока нас не разбудит `signal`
+    // или `broadcast`
 
-    // 3. По правилам POSIX, после пробуждения необходимо снова захватить
-    // мьютекс
+    // 3. По правилам POSIX, после пробуждения
+    // необходимо снова захватить
     () = msg![env; this lock];
 }
 
@@ -164,8 +164,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         + super::ns_time_interval_to_duration_or_zero(ti);
     env.yield_thread(crate::environment::ThreadBlock::Sleeping(until));
 
-    // 3. Проверяем, проснулись ли мы сами (таймаут) или нас разбудили
-    let mut timed_out = false;
+    // 3. Проверяем, проснулись ли мы сами
+    // (таймаут) или нас разбудили
     {
         let host = env.objc.borrow_mut::<NSConditionHostObject>(this);
         let current_thread = env.current_thread;
@@ -289,8 +289,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let host = env.objc.borrow_mut::<NSConditionLockHostObject>(this);
     host.locked = false;
 
-    // Ищем первый поток, который ждет освобождения или ждет текущего condition
-    let mut to_wake = None;
+    // Ищем первый поток, который ждет
+    // освобождения или ждет текущего condition
     for (i, &(_, cond)) in host.waiting_threads.iter().enumerate() {
         if cond.is_none() || cond == Some(host.condition) {
             to_wake = Some(i);
@@ -347,8 +347,8 @@ pub const CLASSES: ClassExports = objc_classes! {
             + super::ns_time_interval_to_duration_or_zero(ti);
         env.yield_thread(crate::environment::ThreadBlock::Sleeping(until));
 
-        // Удаляем себя из очереди, если мы проснулись по таймауту
-        // (если разбудили — следующая итерация захватит блокировку)
+        // Удаляем себя из очереди, если мы
+        // проснулись по таймауту
         {
             let host = env.objc.borrow_mut::<NSConditionLockHostObject>(this);
             let current_thread = env.current_thread;
@@ -382,8 +382,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     host.locked = false;
     host.condition = condition;
 
-    // Ищем первый поток, который ждет нового condition
-    let mut to_wake = None;
+    // Ищем первый поток, который ждет нового
+    // condition
     for (i, &(_, cond)) in host.waiting_threads.iter().enumerate() {
         if cond.is_none() || cond == Some(condition) {
             to_wake = Some(i);

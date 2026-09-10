@@ -27,6 +27,7 @@ pub struct State {
     arc4random: u32,
     /// 48-bit linear-congruential PRNG state shared by the `drand48`/`lrand48`/
     /// `mrand48`/`seed48` family. Per the POSIX / Apple `drand48(3)` manpage
+    ///
     /// (<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/drand48.3.html>)
     /// the generator is `X_{n+1} = (a * X_n + c) mod 2^48`, with default
     /// `a = 0x5DEECE66D`, `c = 0xB`, and the documented initial seed of
@@ -66,7 +67,8 @@ impl Drand48State {
     }
 }
 
-/// Pack a `[u16; 3]` (little-endian, i.e. `xsubi[0]` is the lowest 16 bits) into
+///  Pack a `[u16; 3]` (little-endian, i.e. `xsubi[0]` is the lowest 16 bits)
+/// into
 /// a 48-bit integer. Matches the Apple-documented layout for the `xsubi` arrays
 /// taken by `seed48`, `erand48`, `nrand48`, `jrand48`.
 fn pack_xsubi(env: &Environment, xsubi: ConstPtr<u16>) -> u64 {
@@ -86,11 +88,11 @@ fn malloc(env: &mut Environment, mut size: GuestUSize) -> MutVoidPtr {
     set_errno(env, 0);
 
     // =========================================================================
-    // FIX: Перехват бага разработчиков игр (Integer Underflow)
-    // Если размер подозрительно огромный (близок к 32-битному лимиту, >
+    // FIX: Перехват бага разработчиков игр (Integer
+    // Underflow)
     // 0xF0000000),
-    // это почти наверняка отрицательное число (как -1920 байт для шага экрана).
-    // Берем модуль (абсолютное значение), чтобы спасти игру от краша.
+    // это почти наверняка отрицательное
+    // число (как -1920 байт для шага экрана).
     // =========================================================================
     if size > 0xF000_0000 {
         let actual_size = (-(size as i32)) as GuestUSize;
@@ -202,7 +204,8 @@ fn NSZoneFree(env: &mut Environment, _zone: MutVoidPtr, ptr: MutVoidPtr) {
 
 /// `int posix_memalign(void **memptr, size_t alignment, size_t size);`
 ///
-/// Per the [POSIX manpage](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/posix_memalign.3.html):
+///  Per the [POSIX
+/// manpage](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/posix_memalign.3.html):
 ///
 /// > The function `posix_memalign()` allocates `size` bytes of memory such
 /// > that the allocation's base address is a multiple of `alignment`, and
@@ -307,8 +310,8 @@ fn reallocf(env: &mut Environment, ptr: MutVoidPtr, mut size: GuestUSize) -> Mut
 
     // Пытаемся выделить новую память
     let new_ptr = env.mem.realloc(ptr, size);
-    // Главная фишка reallocf: если realloc вернул NULL (не удалось выделить),
-    // старый указатель должен быть освобожден.
+    // Главная фишка reallocf: если realloc вернул NULL
+    // (не удалось выделить),
     if new_ptr.is_null() {
         env.mem.free(ptr);
     }
@@ -366,8 +369,8 @@ fn free(env: &mut Environment, ptr: MutVoidPtr) {
 
 fn atexit(env: &mut Environment, func: GuestFunction) -> i32 {
     set_errno(env, 0);
-    // Регистрируем функцию в стейте эмулятора
-    env.libc_state.stdlib.atexit_handlers.push(func);
+    // Регистрируем функцию в стейте
+    // эмулятора
     0 // 0 означает успешную регистрацию
 }
 
@@ -509,6 +512,7 @@ fn arc4random_uniform(env: &mut Environment, upper_bound: u32) -> u32 {
 // MARK: - drand48 family
 //
 // POSIX / Apple iPhone OS specification for these functions:
+//
 // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/drand48.3.html
 //
 // All of these share a 48-bit LCG state. `drand48`/`lrand48`/`mrand48` use the
@@ -612,6 +616,7 @@ fn seed48(env: &mut Environment, xsubi: MutPtr<u16>) -> MutPtr<u16> {
 }
 
 // MARK: - mkstemp / mkdtemp (POSIX, Apple manpages)
+//
 //
 // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/mkstemp.3.html
 //
@@ -766,11 +771,11 @@ fn getenv(env: &mut Environment, name: ConstPtr<u8>) -> MutPtr<u8> {
     value
 }
 
-// === ИСПРАВЛЕННЫЙ setenv ДЛЯ ОБХОДА БЛОКИРОВКИ ПАМЯТИ ===
-fn setenv(env: &mut Environment, name: ConstPtr<u8>, value: ConstPtr<u8>, overwrite: i32) -> i32 {
+// === ИСПРАВЛЕННЫЙ setenv ДЛЯ ОБХОДА БЛОКИРОВКИ
+// ПАМЯТИ ===
     set_errno(env, 0);
-    // Сохраняем имя в отдельный вектор, чтобы отпустить блокировку памяти
-    let name_bytes = env.mem.cstr_at(name).to_vec();
+    // Сохраняем имя в отдельный вектор, чтобы
+    // отпустить блокировку памяти
     if let Some(&existing) = env.env_vars.get(&name_bytes) {
         if overwrite == 0 {
             return 0;
@@ -782,8 +787,8 @@ fn setenv(env: &mut Environment, name: ConstPtr<u8>, value: ConstPtr<u8>, overwr
     0
 }
 
-// === ИСПРАВЛЕННЫЙ unsetenv ДЛЯ ОБХОДА БЛОКИРОВКИ ПАМЯТИ ===
-fn unsetenv(env: &mut Environment, name: ConstPtr<u8>) -> i32 {
+// === ИСПРАВЛЕННЫЙ unsetenv ДЛЯ ОБХОДА
+// БЛОКИРОВКИ ПАМЯТИ ===
     set_errno(env, 0);
     // Сохраняем имя в отдельный вектор
     let name_bytes = env.mem.cstr_at(name).to_vec();
@@ -800,17 +805,17 @@ fn unsetenv(env: &mut Environment, name: ConstPtr<u8>) -> i32 {
 fn exit(env: &mut Environment, exit_code: i32) {
     set_errno(env, 0);
 
-    // Забираем список функций через mem::take, чтобы избежать проблем с borrow
-    // checker,
-    // так как вызов call_from_host требует мутабельного доступа к env.
-    let handlers = std::mem::take(&mut env.libc_state.stdlib.atexit_handlers);
+    // Забираем список функций через mem::take,
+    // чтобы избежать проблем с borrow
+    // так как вызов call_from_host требует
+    // мутабельного доступа к env.
 
-    // По стандарту atexit вызывает функции в обратном порядке (LIFO), поэтому
-    // делаем .rev()
+    // По стандарту atexit вызывает функции в
+    // обратном порядке (LIFO), поэтому
     for func in handlers.into_iter().rev() {
         log_dbg!("Executing atexit handler: {:?}", func);
-        // Вызываем гостевую функцию (она не принимает аргументов и ничего не
-        // возвращает)
+        // Вызываем гостевую функцию (она не
+        // принимает аргументов и ничего не
         let _: () = func.call_from_host(env, ());
     }
 
@@ -1117,8 +1122,8 @@ fn system(env: &mut Environment, cmd: ConstPtr<u8>) -> i32 {
     }
     let cmd_str = env.mem.cstr_at_utf8(cmd).unwrap_or("").to_string();
     log!("system({:?})", cmd_str);
-    // split_whitespace() автоматически игнорирует пробелы в начале и конце
-    let parts: Vec<&str> = cmd_str.split_whitespace().collect();
+    // split_whitespace() автоматически игнорирует
+    // пробелы в начале и конце
     if parts.is_empty() {
         return 0;
     }
@@ -1165,6 +1170,7 @@ fn kqueue(_env: &mut Environment) -> i32 {
 }
 
 /// `int _NSGetExecutablePath(char *buf, uint32_t *bufsize);` — see
+///
 /// <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html>.
 ///
 /// Writes the path of the currently running executable into `buf`. On entry
@@ -1347,10 +1353,10 @@ fn _fcvt(
 fn _gcvt(env: &mut Environment, value: f64, ndigit: i32, buf: MutPtr<u8>) -> MutPtr<u8> {
     set_errno(env, 0);
     let ndigit = ndigit.max(0) as usize;
-    // В Rust нет точного аналога "g", поэтому мы используем стандартный трейт
-    // Display
-    // с указанием точности (количества знаков после запятой).
-    let s = format!("{:.*}", ndigit, value);
+    // В Rust нет точного аналога "g", поэтому мы
+    // используем стандартный трейт
+    // с указанием точности (количества знаков
+    // после запятой).
 
     let bytes = s.as_bytes();
     let len = bytes.len() as GuestUSize;
@@ -1667,8 +1673,8 @@ fn flistxattr(
 /// The bundled libz.1.2.3.dylib does not export this symbol, so apps that link
 /// against a newer SDK (e.g. Flappy Bird built for iOS 7) fail at lazy-bind
 /// time. We provide a minimal host implementation that calls through to the
-/// guest's `inflateReset` (same as calling inflateReset on the stream — window
-/// bits are stored in the stream structure anyway from the initial inflateInit2
+/// guest's `inflateReset` (same as calling inflateReset on the stream —
+//window
 /// call).
 ///
 /// Return value: Z_OK (0) on success.

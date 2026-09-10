@@ -242,7 +242,8 @@ pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
     // ULTRAHLE_MINIONJUMP_SCREEN_END
 
     // ULTRAHLE_POTATO_LANDSCAPE_BEGIN
-    // Potato Panic / Potato Story: use normal PC-style present rotation/composition; remap touch coordinates as landscape-right.
+    // Potato Panic / Potato Story: use normal PC-style present rotation/
+    // composition; remap touch coordinates as landscape-right.
     unsafe {
         std::env::remove_var("TOUCHHLE_FORCE_LANDSCAPE_VIEWPORT");
         std::env::remove_var("TOUCHHLE_FORCE_LANDSCAPE_RENDERBUFFER");
@@ -265,8 +266,10 @@ pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
             std::env::set_var("TOUCHHLE_TOUCH_MODE", "right-flip-x");
 
             if cfg!(target_os = "android") {
-                // Potato Story/Panic must use the same logical GL shape as desktop:
-                // 480x320 landscape, not Android's current 320x480 Cocos viewport.
+                // Potato Story/Panic must use the same logical GL shape
+                // as desktop:
+                // 480x320 landscape, not Android's current 320x480 Cocos
+                // viewport.
                 std::env::set_var("TOUCHHLE_POTATO_ANDROID_THUMB2_COMPAT", "1");
                 std::env::set_var("TOUCHHLE_FORCE_LANDSCAPE_VIEWPORT", "1");
                 std::env::set_var("TOUCHHLE_FORCE_LANDSCAPE_RENDERBUFFER", "1");
@@ -321,6 +324,7 @@ pub fn main<T: Iterator<Item = String>>(mut args: T) -> Result<(), String> {
         // dotted version format (`MAJOR[.MINOR[.PATCH]]`). Some apps ship
         // with just `"7"`, others with `"7.0"`, others with `"7.0.0"` or
         // even `"6.1.3"` — see Apple's
+        //
         // <https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/iPhoneOSKeys.html#//apple_ref/doc/uid/TP40009252-SW33>.
         // Previously we required at least one `.` separator and would
         // `unwrap()` the resulting Option, which panicked when the value

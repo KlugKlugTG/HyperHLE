@@ -9,8 +9,10 @@
 //! implementation. Here they are the same type.
 //!
 //! References:
-//! - Apple [CFSet Reference](https://developer.apple.com/documentation/corefoundation/cfset-rul)
-//! - Apple [CFMutableSet Reference](https://developer.apple.com/documentation/corefoundation/cfmutableset)
+//! - Apple [CFSet
+//Reference](https://developer.apple.com/documentation/corefoundation/cfset-rul)
+//! - Apple [CFMutableSet
+//Reference](https://developer.apple.com/documentation/corefoundation/cfmutableset)
 
 use super::cf_allocator::{kCFAllocatorDefault, CFAllocatorRef};
 use super::{CFIndex, CFTypeRef};

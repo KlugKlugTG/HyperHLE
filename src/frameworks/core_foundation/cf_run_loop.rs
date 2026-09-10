@@ -38,7 +38,8 @@ pub struct CFRunLoopTimerContext {
 
 unsafe impl SafeRead for CFRunLoopTimerContext {}
 
-// Наш внутренний объект для хранения таймера в памяти эмулятора
+// Наш внутренний объект для хранения
+// таймера в памяти эмулятора
 pub struct CFRunLoopTimerHostObject {
     pub fire_date: f64,
     pub interval: f64,
@@ -523,10 +524,10 @@ fn CFRunLoopAddTimer(
         return;
     }
 
-    // Как сказано в заголовке файла: в touchHLE CFRunLoop и NSRunLoop — это
-    // один и тот же тип.
-    // Поэтому мы честно пробрасываем вызов напрямую в NSRunLoop, который умеет
-    // работать с таймерами.
+    // Как сказано в заголовке файла: в touchHLE
+    // CFRunLoop и NSRunLoop — это
+    // Поэтому мы честно пробрасываем вызов
+    // напрямую в NSRunLoop, который умеет
     let _: () = msg![env; rl addTimer:timer forMode:mode];
 }
 
@@ -549,12 +550,13 @@ fn CFRunLoopTimerCreate(
     context_ptr: ConstPtr<CFRunLoopTimerContext>,
     callout: GuestFunction,
 ) -> CFRunLoopTimerRef {
-    // 1. Честно считываем контекст из памяти гостя, если он передан
+    // 1. Честно считываем контекст из памяти
+    // гостя, если он передан
     let context = if !context_ptr.is_null() {
         env.mem.read(context_ptr)
     } else {
-        // Если игра передала NULL, заполняем структуру нулями
-        unsafe { std::mem::zeroed() }
+        // Если игра передала NULL, заполняем
+        // структуру нулями
     };
 
     // 2. Упаковываем все данные в наш HostObject
@@ -568,13 +570,14 @@ fn CFRunLoopTimerCreate(
         is_valid: true, // Таймер активен при создании
     };
 
-    // 3. Выделяем реальный объект, чтобы игра не получила null.
-    // Используем базовый класс NSObject (или если в touchHLE есть NSTimer, то
+    // 3. Выделяем реальный объект, чтобы игра
+    // не получила null.
     // его)
     let class = env.objc.get_known_class("NSObject", &mut env.mem);
 
-    // Возвращаем настоящий валидный указатель на созданный объект
     env.objc
+    // Возвращаем настоящий валидный
+    // указатель на созданный объект
         .alloc_object(class, Box::new(host_object), &mut env.mem)
 }
 

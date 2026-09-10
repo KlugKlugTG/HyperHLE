@@ -6,7 +6,8 @@
 //! The Core Graphics framework.
 //!
 //! Useful resources:
-//! - Apple's [Quartz 2D Programming Guide](https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/Introduction/Introduction.html)
+//! - Apple's [Quartz 2D Programming
+//Guide](https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/Introduction/Introduction.html)
 
 pub mod cg_affine_transform;
 pub mod cg_bitmap_context;

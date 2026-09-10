@@ -101,6 +101,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // Modern replacement (available since iOS 4.0 / macOS 10.6) for the
 // deprecated `propertyListFromData:mutabilityOption:format:errorDescription:`.
 // Per Apple's Foundation documentation
+//
 // (<https://developer.apple.com/documentation/foundation/nspropertylistserialization/1409678-propertylist>):
 // `opt` selects container/leaf mutability (same numeric values as the legacy
 // mutability options), `format` (which may be NULL) receives the detected

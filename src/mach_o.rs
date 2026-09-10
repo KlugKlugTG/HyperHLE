@@ -10,13 +10,33 @@
 //! storing any information we'll need later.
 //!
 //! Useful resources:
-//! - Apple's [Overview of the Mach-O Executable Format](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/CodeFootprint/Articles/MachOOverview.html) explains what "segments" and "sections" are, and provides short descriptions of the purposes of some common sections.
-//! - Apple's old "OS X ABI Mach-O File Format Reference", which is mirrored in [various](https://github.com/aidansteele/osx-abi-macho-file-format-reference) [places](https://www.symbolcrash.com/wp-content/uploads/2019/02/ABI_MachOFormat.pdf) online.
-//! - Alex Drummond's [Inside a Hello World executable on OS X](https://adrummond.net/posts/macho) is about macOS circa 2017 rather than iPhone OS circa 2008, so not all of what it says applies, but the sections up to and including "9. The indirect symbol table" are helpful.
-//! - The LLVM functions [`RuntimeDyldMachO::populateIndirectSymbolPointersSection`](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldMachO.cpp#L179-L220) and [`MachOObjectFile::getIndirectSymbolTableEntry`](https://github.com/llvm/llvm-project/blob/3c09ed006ab35dd8faac03311b14f0857b01949c/llvm/lib/Object/MachOObjectFile.cpp#L4803-L4808) are references for how to read the indirect symbol table.
+//! - Apple's [Overview of the Mach-O Executable
+//
+// Format](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/CodeFootprint/Articles/MachOOverview.html)
+//explains what "segments" and "sections" are, and provides short descriptions
+//of the purposes of some common sections.
+//! - Apple's old "OS X ABI Mach-O File Format Reference", which is mirrored in
+//[various](https://github.com/aidansteele/osx-abi-macho-file-format-reference)
+//
+// [places](https://www.symbolcrash.com/wp-content/uploads/2019/02/ABI_MachOFormat.pdf)
+//online.
+//! - Alex Drummond's [Inside a Hello World executable on OS
+//X](https://adrummond.net/posts/macho) is about macOS circa 2017 rather than
+//iPhone OS circa 2008, so not all of what it says applies, but the sections up
+//to and including "9. The indirect symbol table" are helpful.
+//! - The LLVM functions
+//
+// [`RuntimeDyldMachO::populateIndirectSymbolPointersSection`](https://github.com/llvm/llvm-project/blob/2e999b7dd1934a44d38c3a753460f1e5a217e9a5/llvm/lib/ExecutionEngine/RuntimeDyld/RuntimeDyldMachO.cpp#L179-L220)
+//and
+//
+// [`MachOObjectFile::getIndirectSymbolTableEntry`](https://github.com/llvm/llvm-project/blob/3c09ed006ab35dd8faac03311b14f0857b01949c/llvm/lib/Object/MachOObjectFile.cpp#L4803-L4808)
+//are references for how to read the indirect symbol table.
 //! - `/usr/include/mach-o/reloc.h` in the macOS SDK was the reference for the
 //!   format of relocation entries.
-//! - The [source code of the mach_object crate](https://docs.rs/mach_object/latest/src/mach_object/commands.rs.html) has useful comments that don't show up in the generated documentation, e.g. around `DySymTab`.
+//! - The [source code of the mach_object
+//crate](https://docs.rs/mach_object/latest/src/mach_object/commands.rs.html)
+//has useful comments that don't show up in the generated documentation, e.g.
+//around `DySymTab`.
 
 use crate::abi::GuestFunction;
 use crate::fs::{Fs, GuestPath};
@@ -423,8 +443,10 @@ impl MachO {
                         // policy in HLE, so treat the segment as a regular
                         // read-only data segment without spamming a warning.
                         "__RESTRICT" => true,
-                        // `__S3E_DATA` is a data segment used by the Marmalade SDK
-                        // (formerly Airplay SDK), which some older iOS games link with.
+                        //  `__S3E_DATA` is a data segment used by the
+                        // Marmalade SDK
+                        //  (formerly Airplay SDK), which some older iOS games
+                        // link with.
                         "__S3E_DATA" => true,
                         _ => {
                             log!("Warning: Unexpected segment name: {}", segname);
@@ -564,15 +586,21 @@ impl MachO {
                             &mut cursor,
                         );
                         indirect_undef_symbols.push(match sym {
-                            // Если имя есть (Some), оно превратится в
-                            // Some(String).
-                            // Если имени нет (None), вернется None, и мы
-                            // избежим паники.
-                            Some(Symbol::Undefined { name, .. }) => name.map(String::from),
-                            Some(Symbol::Prebound { name, .. }) => name.map(String::from),
-                            Some(Symbol::Defined { name, .. }) => name.map(String::from),
-                            // Debug-символы по-прежнему игнорируем
-                            Some(Symbol::Debug { .. }) => None,
+                            // Если имя есть (Some), оно
+                            // превратится в
+                            // Если имени нет (None),
+                            // вернется None, и мы
+                            Some(Symbol::Undefined { name, .. }) => {
+                                name.map(String::from)
+                            }
+                            Some(Symbol::Prebound { name, .. }) => {
+                                name.map(String::from)
+                            }
+                            Some(Symbol::Defined { name, .. }) => {
+                                name.map(String::from)
+                            }
+                            // Debug-символы по-прежнему
+                            // игнорируем
                             None => None,
                             other => {
                                 log!(
@@ -735,10 +763,13 @@ impl MachO {
                         kind: &str,
                         name: &str,
                     ) -> &'a [u8] {
-                        // Convert to host usize with bounds checking — a truncated
-                        // Mach-O (e.g. a corrupt IPA) can declare a dyld_info range
+                        //  Convert to host usize with bounds checking — a
+                        // truncated
+                        //  Mach-O (e.g. a corrupt IPA) can declare a dyld_info
+                        // range
                         // that runs past EOF, and the raw slice panics with
-                        // "range end index N out of range for slice of length M".
+                        //  "range end index N out of range for slice of length
+                        // M".
                         // Apple's dyld bails out on the binary; we degrade
                         // gracefully and load the rest.
                         let Ok(off_usize) = usize::try_from(off) else {

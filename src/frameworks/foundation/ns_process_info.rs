@@ -7,7 +7,8 @@
 //!
 //! Apple references used:
 //! - <https://developer.apple.com/documentation/foundation/nsprocessinfo>
-//! - <https://developer.apple.com/documentation/foundation/nsoperatingsystemversion>
+//! -
+//<https://developer.apple.com/documentation/foundation/nsoperatingsystemversion>
 //! - `Foundation/NSProcessInfo.h` declares `NSOperatingSystemVersion` as a
 //!   struct of three `NSInteger` fields (`majorVersion`, `minorVersion`,
 //!   `patchVersion`).
@@ -210,6 +211,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // `- (NSOperatingSystemVersion)operatingSystemVersion` (iOS 8+).
 //
 // Documented at
+//
 // <https://developer.apple.com/documentation/foundation/nsprocessinfo/1410031-operatingsystemversion>.
 //
 // The selector returns `NSOperatingSystemVersion` *by value*. Because the
@@ -239,6 +241,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // (iOS 8+).
 //
 // Documented at
+//
 // <https://developer.apple.com/documentation/foundation/nsprocessinfo/1417380-isoperatingsystematleastversion>.
 //
 // Takes a single `NSOperatingSystemVersion` struct by value. On 32-bit

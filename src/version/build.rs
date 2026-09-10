@@ -43,7 +43,8 @@ pub fn main() {
         Some(ref s) if !s.is_empty()
     );
 
-    // Sanity check: warn if the Cargo.toml version doesn't match the latest tag.
+    //  Sanity check: warn if the Cargo.toml version doesn't match the latest
+    // tag.
     if let Some(tag) = git_output(&["describe", "--tags", "--abbrev=0"]) {
         if tag
             .strip_prefix('v')

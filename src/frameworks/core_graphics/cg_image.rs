@@ -97,8 +97,8 @@ pub fn from_image(env: &mut Environment, image: Image) -> CGImageRef {
 }
 
 pub fn borrow_image(objc: &ObjC, image: CGImageRef) -> &Image {
-    // ВНИМАНИЕ: Если здесь передан null, эмулятор упадет.
-    // Но CoreGraphics функции ниже теперь защищены.
+    // ВНИМАНИЕ: Если здесь передан null,
+    // эмулятор упадет.
     &objc.borrow::<CGImageHostObject>(image).image
 }
 

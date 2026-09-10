@@ -93,7 +93,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
 
-// ── Convenience constructors ────────────────────────────────────────────────
+// ── Convenience constructors
+// ------------------------------
 
 + (id)timeZoneWithName:(id)tz_name {
     let new: id = msg![env; this alloc];
@@ -167,7 +168,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // Returns an NSDictionary<NSString*, NSString*> mapping abbreviation → IANA
 // name.
 + (id)abbreviationDictionary {
-    // ИЗМЕНЕНО: Используем один вектор пар (ключ, значение)
+    // ИЗМЕНЕНО: Используем один вектор пар
+    // (ключ, значение)
     let mut keys_and_vals: Vec<(id, id)> = Vec::new();
 
     // Collect unique abbreviations (first occurrence wins).
@@ -185,7 +187,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     autorelease(env, dict)
 }
 
-// ── Initializers ─────────────────────────────────────────────────────────────
+// ── Initializers
+// ------------------------------
 
 - (id)initWithName:(id)tz_name { // NSString *
     assert_ne!(tz_name, nil);
@@ -199,7 +202,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // ── Instance methods
-// ──────────────────────────────────────────────────────────
+// ------------------------------
 
 - (())dealloc {
     let tz_name = env.objc.borrow_mut::<NSTimeZoneHostObject>(this).time_zone;
@@ -226,7 +229,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg![env; this abbreviation]
 }
 
-// `- (NSString *)localizedName:(NSTimeZoneNameStyle)style locale:(NSLocale *)locale`
+//  `- (NSString *)localizedName:(NSTimeZoneNameStyle)style locale:(NSLocale
+// *)locale`
 //
 // Returns a localized presentation name for this time zone in the given
 // `style`. touchHLE does not ship CLDR data, so the `locale` argument is

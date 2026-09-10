@@ -107,7 +107,8 @@ pub fn CGBitmapContextCreate(
         font_size: 17.0,
         state_stack: Vec::new(),
         path_points: Vec::new(),
-        // Apple defaults: rendering intent unspecified = `kCGRenderingIntentDefault` (0).
+        //  Apple defaults: rendering intent unspecified =
+        // `kCGRenderingIntentDefault` (0).
         rendering_intent: 0,
         shadow: crate::frameworks::core_graphics::cg_context::CGShadowState::default(),
     };
@@ -296,8 +297,8 @@ fn blend_premultiplied(bg: (f32, f32, f32, f32), fg: (f32, f32, f32, f32)) -> (f
     )
 }
 
-// ИСПРАВЛЕНИЕ: Убраны все `unreachable!()` и `unimplemented!()`
-// Теперь, если игра передает нестандартный формат, мы безопасно откатываемся на
+// ИСПРАВЛЕНИЕ: Убраны все `unreachable!()` и
+// `unimplemented!()`
 // RGBA
 fn pixel_offsets(data: &CGBitmapContextData) -> (usize, usize, usize, Option<usize>) {
     if data.color_space == kCGColorSpaceGenericGray {
@@ -311,10 +312,11 @@ fn pixel_offsets(data: &CGBitmapContextData) -> (usize, usize, usize, Option<usi
             _ => (0, 0, 0, None), // Безопасный фоллбэк для Gray
         }
     } else {
-        // Для kCGColorSpaceGenericRGB и вообще любых неизвестных Color Space
+        // Для kCGColorSpaceGenericRGB и вообще любых
+        // неизвестных Color Space
         match data.alpha_info {
-            kCGImageAlphaNone => (0, 1, 2, None),
             kCGImageAlphaPremultipliedLast | kCGImageAlphaLast => (0, 1, 2, Some(3)),
+            kCGImageAlphaNone => (0, 1, 2, None),
             kCGImageAlphaPremultipliedFirst | kCGImageAlphaFirst => (1, 2, 3, Some(0)),
             kCGImageAlphaNoneSkipLast => (0, 1, 2, None),
             kCGImageAlphaNoneSkipFirst => (1, 2, 3, None),

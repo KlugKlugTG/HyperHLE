@@ -1300,7 +1300,8 @@ fn glGetBufferPointervOES(
 /// pointer is only safe if it addresses guest memory. A guest can leave an
 /// array enabled with a bogus pointer — e.g. a stale offset into a vertex
 /// buffer that was unbound or deleted before the draw (observed in My Talking
-/// Tom: tapping Tom issues a glDrawElements whose attribute #3 still carries the
+///  Tom: tapping Tom issues a glDrawElements whose attribute #3 still carries
+/// the
 /// raw offset 0x9c0). The driver (both Mesa/llvmpipe and real GPU drivers) then
 /// dereferences that wild address and segfaults the process.
 ///
@@ -2994,6 +2995,7 @@ fn glCompileShader(env: &mut Environment, shader: GLuint) {
 /// apps that probe shader compiler precision (e.g. Minecraft PE 0.10.x) get
 /// real numbers from the driver instead of a return-0 stub installed by dyld
 /// for an unimplemented symbol.
+///
 /// <https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glGetShaderPrecisionFormat.xml>
 fn glGetShaderPrecisionFormat(
     env: &mut Environment,
@@ -3140,6 +3142,7 @@ fn glGetShaderiv(env: &mut Environment, shader: GLuint, pname: GLenum, params: M
 /// uploaded via `glShaderSource` (which may have been translated to desktop
 /// GLSL on the host side, but apps that round-trip via this entry point are
 /// rare — the gles2_native backend returns the exact text the driver stored).
+///
 /// <https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glGetShaderSource.xml>
 fn glGetShaderSource(
     env: &mut Environment,
@@ -4585,7 +4588,8 @@ fn glGetQueryObjectuiv(env: &mut Environment, id: GLuint, pname: GLenum, params:
 // as Rush Rally 2 link against these symbols directly, so they must be exported
 // or the dynamic linker leaves the guest's function pointer null and the app
 // jumps to a null address on launch.
-// Reference: https://registry.khronos.org/OpenGL/extensions/EXT/EXT_occlusion_query_boolean.txt
+//  Reference:
+// https://registry.khronos.org/OpenGL/extensions/EXT/EXT_occlusion_query_boolean.txt
 fn glGenQueriesEXT(env: &mut Environment, n: GLsizei, ids: MutPtr<GLuint>) {
     glGenQueries(env, n, ids)
 }
@@ -5438,7 +5442,8 @@ unsafe fn restore_fog_state_values(gles: &mut dyn GLES, from_backup: Option<(f32
     }
 }
 
-/// `void glLabelObjectEXT(GLenum type, GLuint object, GLsizei length, const GLchar *label)`
+///  `void glLabelObjectEXT(GLenum type, GLuint object, GLsizei length, const
+/// GLchar *label)`
 ///
 /// Part of GL_EXT_debug_label.  Labels an OpenGL ES object for debugging
 /// purposes.  The label is used only by GPU debugging tools (Instruments,
@@ -5446,7 +5451,8 @@ unsafe fn restore_fog_state_values(gles: &mut dyn GLES, from_backup: Option<(f32
 /// implementation so that apps which unconditionally call this extension
 /// function no longer trigger the "unimplemented function" warning.
 ///
-/// Reference: <https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_label.txt>
+///  Reference:
+/// <https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_label.txt>
 fn glLabelObjectEXT(
     _env: &mut Environment,
     _type_: GLenum,
@@ -5463,7 +5469,8 @@ fn glLabelObjectEXT(
 /// Retrieves the debug label previously set by glLabelObjectEXT.  Since we
 /// do not store labels, we return an empty string.
 ///
-/// Reference: <https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_label.txt>
+///  Reference:
+/// <https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_label.txt>
 fn glGetObjectLabelEXT(
     env: &mut Environment,
     _type_: GLenum,
@@ -5874,7 +5881,8 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(glGetTransformFeedbackVarying(_, _, _, _, _, _, _)),
     export_c_func!(glGetSynciv(_, _, _, _, _)),
     // GL_EXT_debug_label — debug-label extension, no-op implementations.
-    // Reference: <https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_label.txt>
+    //  Reference:
+    // <https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_label.txt>
     export_c_func!(glLabelObjectEXT(_, _, _, _)),
     export_c_func!(glGetObjectLabelEXT(_, _, _, _, _)),
 ];

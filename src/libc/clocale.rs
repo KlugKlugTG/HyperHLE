@@ -81,8 +81,8 @@ fn duplocale(_env: &mut Environment, _locale: locale_t) -> locale_t {
     MutVoidPtr::from_bits(1)
 }
 
-/// freelocale — free a locale object. No-op since we don't allocate real state.
-fn freelocale(_env: &mut Environment, _locale: locale_t) {
+/// freelocale — free a locale object. No-op since we don't allocate real
+//state.
     // No-op.
 }
 

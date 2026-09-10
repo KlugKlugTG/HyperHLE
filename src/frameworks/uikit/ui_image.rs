@@ -37,8 +37,8 @@ impl State {
     }
 }
 
-// В iOS 2-4 stretchableImage хранило параметры leftCapWidth и topCapHeight
-// прямо в объекте.
+// В iOS 2-4 stretchableImage хранило параметры leftCapWidth и
+// topCapHeight
 #[derive(Default)]
 struct UIImageHostObject {
     cg_image: CGImageRef,
@@ -219,13 +219,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)stretchableImageWithLeftCapWidth:(NSInteger)leftCapWidth topCapHeight:(NSInteger)topCapHeight {
     let cg_image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
 
-    // Создаем новый объект UIImage на основе того же CGImage.
-    // ИСПОЛЬЗУЕМ msg_class! для отправки сообщения alloc классу
+    // Создаем новый объект UIImage на основе того
+    // же CGImage.
     let new_img: id = msg_class![env; UIImage alloc];
     let new_img: id = msg![env; new_img initWithCGImage:cg_image];
 
-    // Но прописываем ему параметры растяжения
-    let host = env.objc.borrow_mut::<UIImageHostObject>(new_img);
+    // Но прописываем ему параметры
+    // растяжения
     host.left_cap_width = leftCapWidth;
     host.top_cap_height = topCapHeight;
 
@@ -261,12 +261,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())drawInRect:(CGRect)rect {
     let context = UIGraphicsGetCurrentContext(env);
     if context == nil { return; }
-    // TODO: Здесь должна быть логика отрисовки с учетом leftCapWidth и
-    // topCapHeight
-    // Если left_cap_width > 0 || top_cap_height > 0, нужно делить картинку на 9
-    // частей (nine-patch)
-    // и отрисовывать через CGContextDrawImage кусками. Пока рисуем целиком.
-    let image = env.objc.borrow::<UIImageHostObject>(this).cg_image;
+    // TODO: Здесь должна быть логика отрисовки с
+    // учетом leftCapWidth и
+    // Если left_cap_width > 0 || top_cap_height > 0, нужно
+    // делить картинку на 9
+    // и отрисовывать через CGContextDrawImage кусками.
+    // Пока рисуем целиком.
     // Drawing a nil image is a no-op, not a crash.
     if image == nil { return; }
     CGContextDrawImage(env, context, rect, image);
@@ -276,7 +276,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // them to the bitmap blit path is not yet implemented. The standard, opaque
 // draw still happens so the image is not invisible (which is what blocked
 // FarmFrenzy from progressing past its loading screen).
-// See https://developer.apple.com/documentation/uikit/uiimage/1624155-drawinrect
+//  See
+// https://developer.apple.com/documentation/uikit/uiimage/1624155-drawinrect
 - (())drawInRect:(CGRect)rect blendMode:(i32)_blend_mode alpha:(CGFloat)_alpha {
     let context = UIGraphicsGetCurrentContext(env);
     if context == nil { return; }
@@ -305,6 +306,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // Apple: "Draws the image, tiled, in a rectangle." The receiver's CGImage is
 // repeated horizontally and vertically to fill `rect` in the current graphics
 // context, anchored at the rect's top-left.
+//
 // https://developer.apple.com/documentation/uikit/uiimage/1624157-drawaspatterninrect
 - (())drawAsPatternInRect:(CGRect)rect {
     let context = UIGraphicsGetCurrentContext(env);
@@ -346,27 +348,27 @@ pub const CLASSES: ClassExports = objc_classes! {
 @implementation UIImageNibPlaceholder: NSObject
 
 - (id)initWithCoder:(id)coder {
-    // В NIB-файлах плейсхолдеры картинок хранят имя ресурса под ключом
-    // UIResourceName
+    // В NIB-файлах плейсхолдеры картинок
+    // хранят имя ресурса под ключом
     let key = get_static_str(env, "UIResourceName");
     let name: id = msg![env; coder decodeObjectForKey:key];
 
-    // Плейсхолдер был выделен через alloc, но мы не будем его использовать.
-    // Сразу деаллоцируем этот временный объект, чтобы не было утечек памяти.
+    // Плейсхолдер был выделен через alloc, но мы
+    // не будем его использовать.
     () = msg![env; this dealloc];
 
     if name != nil {
-        // Запрашиваем настоящую картинку (твой метод imageNamed: сам проверит
-        // кэш или загрузит)
+        // Запрашиваем настоящую картинку (твой
+        // метод imageNamed: сам проверит
         let image: id = msg_class![env; UIImage imageNamed:name];
 
         // Важный момент (без заглушек и утечек):
-        // Вызов [UIImageNibPlaceholder alloc] initWithCoder:] подразумевает,
-        // что возвращенный объект будет иметь retain count +1 (владение).
-        // Но [UIImage imageNamed:] возвращает закэшированный/autorelease
-        // объект!
-        // Поэтому мы ОБЯЗАНЫ сделать retain возвращаемой картинке, иначе она
-        // удалится раньше времени.
+        // Вызов [UIImageNibPlaceholder alloc] initWithCoder:]
+        // подразумевает,
+        // Но [UIImage imageNamed:] возвращает
+        // закэшированный/autorelease
+        // Поэтому мы ОБЯЗАНЫ сделать retain
+        // возвращаемой картинке, иначе она
         if image != nil {
             retain(env, image);
         }
@@ -386,6 +388,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 ///     SEL completionSelector, void *contextInfo);`
 ///
 /// Apple documentation:
+///
 /// <https://developer.apple.com/documentation/uikit/1619125-uiimagewritetosavedphotosalbum>
 ///
 /// Adds the specified image to the user's Camera Roll album. In the emulator
@@ -545,8 +548,8 @@ fn UIImageJPEGRepresentation(
     image: id,
     _compression_quality: CGFloat,
 ) -> id {
-    // В эмуляторе пока фоллбек на PNG, если нет JPEG энкодера
-    UIImagePNGRepresentation(env, image)
+    // В эмуляторе пока фоллбек на PNG, если нет
+    // JPEG энкодера
 }
 
 pub const FUNCTIONS: FunctionExports = &[

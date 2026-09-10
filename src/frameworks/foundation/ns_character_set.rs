@@ -269,8 +269,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     ] {
         set.insert(cp as unichar);
     }
-    // Latin-1 letters with diacritics (excluding Æ, Ð, ×, Ø, Þ, ß, æ, ð,
-    // ÷, ø, þ, ÿ has a decomposition so it *is* included).
+    // Latin-1 letters with diacritics (excluding Æ, Ð, ×, Ø, Þ, ß, æ,
+    // ð,
     for cp in 0x00C0u32..=0x00FF {
         if matches!(cp, 0x00C6 | 0x00D0 | 0x00D7 | 0x00D8 | 0x00DE | 0x00DF
                       | 0x00E6 | 0x00F0 | 0x00F7 | 0x00F8 | 0x00FE) {
@@ -637,6 +637,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (void)formUnionWithCharacterSet:(NSCharacterSet *)otherSet`
+//
 // <https://developer.apple.com/documentation/foundation/nsmutablecharacterset/1416903-formunionwithcharacterset>
 //
 // Modifies the receiver so it contains all characters that exist in either
@@ -653,6 +654,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (void)formIntersectionWithCharacterSet:(NSCharacterSet *)otherSet`
+//
 // <https://developer.apple.com/documentation/foundation/nsmutablecharacterset/1409073-formintersectionwithcharacterset>
 //
 // Modifies the receiver so it contains only characters that exist in both

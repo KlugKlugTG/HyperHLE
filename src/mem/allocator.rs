@@ -345,8 +345,8 @@ impl Allocator {
     }
 
     pub fn alloc(&mut self, size: GuestUSize) -> VAddr {
-        // ИСПРАВЛЕНИЕ: Выравнивание может привести к переполнению (overflow),
-        // если игра запрашивает гигантский объем памяти (например, 0xffffffff).
+        // ИСПРАВЛЕНИЕ: Выравнивание может
+        // привести к переполнению (overflow),
         let aligned_size_opt = if size < PAGE_SIZE {
             let s = size.max(MIN_CHUNK_SIZE);
             Self::align(s, MIN_CHUNK_SIZE)
@@ -354,8 +354,8 @@ impl Allocator {
             Self::align(size, PAGE_SIZE)
         };
 
-        // Если переполнение произошло (вернулся None), значит запрошен
-        // неадекватно большой размер. Честно возвращаем NULL (0).
+        // Если переполнение произошло
+        // (вернулся None), значит запрошен
         let Some(aligned_size) = aligned_size_opt else {
             log!(
                 "Warning: Allocator::alloc: requested size {:#x} overflows after alignment; returning NULL.",
@@ -376,8 +376,8 @@ impl Allocator {
         alloc.base
     }
 
-    // ИСПРАВЛЕНИЕ: Используем checked_add для безопасного сложения.
-    fn align(size: GuestUSize, align: GuestUSize) -> Option<GuestUSize> {
+    // ИСПРАВЛЕНИЕ: Используем checked_add для
+    // безопасного сложения.
         if !size.is_multiple_of(align) {
             let addend = align - (size % align);
             size.checked_add(addend)
@@ -404,6 +404,7 @@ impl Allocator {
     /// `malloc_size(3)` where Apple's documented contract is to *quietly*
     /// return 0 for any pointer that isn't the base of a malloc-managed
     /// allocation (see
+    ///
     /// <https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/MallocDebug.html>
     /// and the `malloc_size(3)` manpage in the macOS / iOS SDK). Apps that
     /// hand `malloc_size` a stack pointer, a `__DATA` symbol, or an interior

@@ -318,7 +318,8 @@ fn reorder_visual(shaped: &[char]) -> Vec<char> {
         return Vec::new();
     }
 
-    // 2. Base direction = direction of the first strong character (default LTR).
+    //  2. Base direction = direction of the first strong character (default
+    // LTR).
     let base = clusters
         .iter()
         .map(|c| c.dir)
@@ -425,8 +426,8 @@ mod tests {
 
     #[test]
     fn medial_form_is_used_in_the_middle() {
-        // "ببب" three behs: initial, medial, final. Reversed for display, the
-        // first drawn glyph is the final form, last is the initial form.
+        // "ببب" three behs: initial, medial, final. Reversed for display,
+        // the
         let out = shape_line_for_display("\u{0628}\u{0628}\u{0628}");
         assert_eq!(cps(&out), vec![0xFE90, 0xFE92, 0xFE91]);
     }

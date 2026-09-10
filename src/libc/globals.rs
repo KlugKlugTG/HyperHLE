@@ -14,9 +14,11 @@
 //!
 //! Apple references:
 //! * `environ(7)`:
-//!   <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man7/environ.7.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man7/environ.7.html>
 //! * `tzset(3)`:
-//!   <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/tzset.3.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/tzset.3.html>
 //! * `<mach/vm_param.h>` for `vm_page_size` / `vm_page_mask`.
 
 use crate::dyld::{ConstantExports, HostConstant};

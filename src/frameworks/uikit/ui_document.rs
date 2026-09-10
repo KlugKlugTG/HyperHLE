@@ -17,8 +17,8 @@ pub struct UIDocumentHostObject {
     file_url: id,
 }
 
-// Явная реализация трейта для устранения ошибки E0277
-impl HostObject for UIDocumentHostObject {}
+// Явная реализация трейта для устранения
+// ошибки E0277
 
 impl Default for UIDocumentHostObject {
     fn default() -> Self {
@@ -26,12 +26,13 @@ impl Default for UIDocumentHostObject {
     }
 }
 
-// Вспомогательная функция для вызова Objective-C блоков
+// Вспомогательная функция для вызова Objective-C
+// блоков
 fn call_bool_block(env: &mut Environment, block: id, arg: bool) {
     if block != nil {
         let block_ptr = block.to_bits();
-        // Явно указываем ConstPtr::<u32>, чтобы компилятор не гадал о
-        // параметрах MUT и T
+        // Явно указываем ConstPtr::<u32>, чтобы
+        // компилятор не гадал о
         let invoke_addr: u32 = env.mem.read(ConstPtr::<u32>::from_bits(block_ptr + 12));
         let invoke_func = GuestFunction::from_addr_with_thumb_bit(invoke_addr);
 
@@ -90,7 +91,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
 
     - (())updateChangeCount:(NSUInteger)_change {
-        // Ничего не делаем, просто принимаем вызов
+        // Ничего не делаем, просто принимаем
+        // вызов
     }
 
     - (id)localizedName {

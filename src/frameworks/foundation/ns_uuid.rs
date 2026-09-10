@@ -116,8 +116,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - Constructors
 // =========================================================================
 
-// ИСПРАВЛЕНИЕ: заменили `///` на `//` внутри макроса, чтобы не генерировался
-// атрибут #[doc...]
+// ИСПРАВЛЕНИЕ: заменили `///` на `//` внутри
+// макроса, чтобы не генерировался
 // `+UUID` — convenience constructor returning a new random UUID.
 + (id)UUID {
     let new: id = msg![env; this alloc];

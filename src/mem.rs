@@ -12,7 +12,8 @@
 //! memory, because all supported emulated and host platforms are little-endian.
 //!
 //! Relevant Apple documentation:
-//! * [Memory Usage Performance Guidelines](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/ManagingMemory.html)
+//! * [Memory Usage Performance
+//Guidelines](https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/ManagingMemory.html)
 
 use std::num::NonZeroU32;
 
@@ -382,7 +383,8 @@ impl Drop for Mem {
 }
 
 impl Mem {
-    /// [According to Apple](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/CreatingThreads/CreatingThreads.html)
+    ///  [According to
+    /// Apple](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/CreatingThreads/CreatingThreads.html)
     /// among others, the iPhone OS main thread stack size is 1MiB.
     pub const MAIN_THREAD_STACK_SIZE: GuestUSize = 1024 * 1024;
 
@@ -588,13 +590,13 @@ impl Mem {
     /// when deriving a pointer from the slice consistent (though you should use
     /// [Self::ptr_at] for that).
     pub fn bytes_at<const MUT: bool>(&self, ptr: Ptr<u8, MUT>, count: GuestUSize) -> &[u8] {
-        // ХАК: Вместо паники логируем и возвращаем данные из stub-страницы
-        if ptr.to_bits() < self.null_segment_size {
+        // ХАК: Вместо паники логируем и
+        // возвращаем данные из stub-страницы
             Self::null_check_fail(ptr.to_bits(), count, false, "bytes_at");
-            // Возвращаем данные из stub-страницы вместо реальной памяти
-            // Это предотвращает UndefinedInstruction когда игра использует
-            // прочитанные значения как указатели на функции
-            let offset = (ptr.to_bits() % PAGE_SIZE) as usize;
+            // Возвращаем данные из stub-страницы
+            // вместо реальной памяти
+            // прочитанные значения как указатели
+            // на функции
             let count_usize = count as usize;
             let available = PAGE_SIZE as usize - offset;
             let actual_count = count_usize.min(available);
@@ -653,8 +655,8 @@ impl Mem {
     /// when deriving a pointer from the slice consistent (though you should use
     /// [Self::ptr_at_mut] for that).
     pub fn bytes_at_mut(&mut self, ptr: MutPtr<u8>, count: GuestUSize) -> &mut [u8] {
-        // ХАК: Вместо паники логируем и возвращаем данные из stub-страницы
-        if ptr.to_bits() < self.null_segment_size {
+        // ХАК: Вместо паники логируем и
+        // возвращаем данные из stub-страницы
             Self::null_check_fail(ptr.to_bits(), count, true, "bytes_at_mut");
             // For writes to null-page, return the write-sink page so that
             // writes are silently absorbed without corrupting the read stub
@@ -895,6 +897,7 @@ impl Mem {
     /// pointers (interior pointers, `__DATA` symbols, stack addresses,
     /// etc.) and treat a `0` result as "this isn't a heap allocation",
     /// so we must not flood the log when it happens. See
+    ///
     /// <https://developer.apple.com/library/archive/documentation/Performance/Conceptual/ManagingMemory/Articles/MallocDebug.html>.
     pub fn malloc_size(&self, ptr: ConstVoidPtr) -> GuestUSize {
         if ptr.is_null() {

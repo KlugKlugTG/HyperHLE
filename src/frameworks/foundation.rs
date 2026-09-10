@@ -10,7 +10,8 @@
 //! A concept that Foundation really likes is "class clusters": abstract classes
 //! with private concrete implementations.
 //! Apple has their own explanation of it
-//! in [Cocoa Core Competencies](https://developer.apple.com/library/archive/documentation/General/Conceptual/DevPedia-CocoaCore/ClassCluster.html).
+//! in [Cocoa Core
+//Competencies](https://developer.apple.com/library/archive/documentation/General/Conceptual/DevPedia-CocoaCore/ClassCluster.html).
 //!
 //! Being aware of this concept will make common types like `NSArray` and
 //! `NSString` easier to understand.
@@ -114,8 +115,8 @@ pub fn NSGetSizeAndAlignment(
 }
 
 fn parse_objc_type(env: &mut Environment, mut ptr: ConstPtr<u8>) -> (ConstPtr<u8>, u32, u32) {
-    // Пропускаем модификаторы типа (const, in, out, inout, bycopy, byref,
-    // oneway)
+    // Пропускаем модификаторы типа (const, in, out,
+    // inout, bycopy, byref,
     loop {
         let c = env.mem.read(ptr) as char;
 
@@ -139,12 +140,12 @@ fn parse_objc_type(env: &mut Environment, mut ptr: ConstPtr<u8>) -> (ConstPtr<u8
         'q' | 'Q' | 'd' => (ptr, 8, 8),
         'v' => (ptr, 0, 1), // void
 
-        // Указатели, объекты (id), классы (Class), селекторы (SEL), неизвестные
-        // указатели (?)
+        // Указатели, объекты (id), классы (Class),
+        // селекторы (SEL), неизвестные
         '*' | '@' | '#' | ':' | '?' => (ptr, 4, 4),
 
-        // Указатель на другой тип: размер всегда 4, но нужно "проглотить" тип,
-        // на который он указывает
+        // Указатель на другой тип: размер
+        // всегда 4, но нужно "проглотить" тип,
         '^' => {
             let (next_ptr, _, _) = parse_objc_type(env, ptr);
 
@@ -202,7 +203,7 @@ fn parse_objc_type(env: &mut Environment, mut ptr: ConstPtr<u8>) -> (ConstPtr<u8
                     break;
                 }
 
-                // Пропускаем имена полей (например: "x"f)
+                // Пропускаем имена полей (например:
                 if c == '"' {
                     ptr += 1;
 
@@ -330,7 +331,8 @@ fn ns_foundation_version_number(env: &mut Environment) -> ConstVoidPtr {
 
 /// CoreFoundation's twin of `NSFoundationVersionNumber`. iOS 4.0 reports
 /// 550.32 (`kCFCoreFoundationVersionNumber_iPhoneOS_4_0`), which keeps
-/// `if (kCFCoreFoundationVersionNumber >= kCFCoreFoundationVersionNumber_iPhoneOS_4_0)`
+///  `if (kCFCoreFoundationVersionNumber >=
+/// kCFCoreFoundationVersionNumber_iPhoneOS_4_0)`
 /// gates on the iOS-4 branch — matches the rest of touchHLE's identity.
 fn cf_core_foundation_version_number(env: &mut Environment) -> ConstVoidPtr {
     let ptr: MutPtr<u64> = env.mem.alloc(8).cast();
@@ -353,6 +355,7 @@ fn ui_view_no_intrinsic_metric(env: &mut Environment) -> ConstVoidPtr {
 /// the literal value `-1LL`. Apps test
 /// `task.countOfBytesExpectedToReceive == NSURLSessionTransferSizeUnknown`
 /// to detect when the server didn't send a `Content-Length`. See
+///
 /// <https://developer.apple.com/documentation/foundation/nsurlsessiontransfersizeunknown>.
 /// The symbol is an 8-byte little-endian `-1`.
 fn ns_url_session_transfer_size_unknown(env: &mut Environment) -> ConstVoidPtr {
@@ -372,15 +375,16 @@ fn kcm_timetime_range_zero(env: &mut Environment) -> ConstVoidPtr {
     ptr.cast().cast_const()
 }
 
-/// `matrix_identity_float4x4` — 4×4 identity matrix in column-major f32 order.
-///
+/// `matrix_identity_float4x4` — 4×4 identity matrix in column-major f32
+//order.
 /// From `<simd/matrix.h>`: 16× f32 in column-major order per Apple's simd.h
 /// convention, with 1.0f at the four diagonal positions (offsets 0, 5, 10,
 /// 15 in the 16-element matrix, i.e. byte offsets 0, 20, 40, 60).
 fn matrix_identity_float4x4(env: &mut Environment) -> ConstVoidPtr {
     let base: MutPtr<u8> = env.mem.alloc(64).cast();
     env.mem.bytes_at_mut(base, 64).fill(0);
-    // Write 1.0f32 at column-major diagonal positions: byte offsets 0, 20, 40, 60.
+    //  Write 1.0f32 at column-major diagonal positions: byte offsets 0, 20,
+    // 40, 60.
     for &offset in &[0u32, 20, 40, 60] {
         let p: MutPtr<f32> = MutPtr::from_bits(base.to_bits() + offset);
         env.mem.write(p, 1.0f32);
@@ -448,8 +452,8 @@ fn ns_dictionary0(env: &mut Environment) -> ConstVoidPtr {
     dict.cast().cast_const()
 }
 
-/// `AVCaptureExposureDurationCurrent` — a sentinel `CMTime` (24 bytes) meaning
-/// "leave the exposure duration unchanged". Apple defines it as
+/// `AVCaptureExposureDurationCurrent` — a sentinel `CMTime` (24 bytes)
+//meaning
 /// `kCMTimeInvalid`, whose `flags` field has the `kCMTimeFlags_Valid` bit
 /// clear, so an all-zero struct is the correct representation.
 fn av_capture_exposure_duration_current(env: &mut Environment) -> ConstVoidPtr {
@@ -869,7 +873,8 @@ pub const STUB_CONSTANTS: ConstantExports = &[
         "_NSMetadataUbiquitousItemIsDownloadedKey",
         HostConstant::NSString("NSMetadataUbiquitousItemIsDownloadedKey"),
     ),
-    // iCloud item state keys — https://developer.apple.com/documentation/foundation/nsmetadataitem
+    //  iCloud item state keys —
+    // https://developer.apple.com/documentation/foundation/nsmetadataitem
     (
         "_NSMetadataUbiquitousItemIsDownloadingKey",
         HostConstant::NSString("NSMetadataUbiquitousItemIsDownloadingKey"),
@@ -924,6 +929,7 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // NSUbiquitousKeyValueStore notification keys.
+    //
     // <https://developer.apple.com/documentation/foundation/nsubiquitouskeyvaluestore>
     // -----------------------------------------------------------------
     (
@@ -958,10 +964,14 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     // name — that is the value posted to `NSNotificationCenter`.
     //
     // References:
-    // * Apple [NSUserDefaultsDidChangeNotification](https://developer.apple.com/documentation/foundation/userdefaults/didchangenotification)
-    // * Apple [NSUndoManager notifications](https://developer.apple.com/documentation/foundation/undomanager)
-    // * Apple [NSHTTPCookieVersion](https://developer.apple.com/documentation/foundation/nshttpcookie)
-    // * Apple [NSUbiquityIdentityDidChangeNotification](https://developer.apple.com/documentation/foundation/nsubiquityidentitydidchangenotification)
+    //  * Apple
+    // [NSUserDefaultsDidChangeNotification](https://developer.apple.com/documentation/foundation/userdefaults/didchangenotification)
+    //  * Apple [NSUndoManager
+    // notifications](https://developer.apple.com/documentation/foundation/undomanager)
+    //  * Apple
+    // [NSHTTPCookieVersion](https://developer.apple.com/documentation/foundation/nshttpcookie)
+    //  * Apple
+    // [NSUbiquityIdentityDidChangeNotification](https://developer.apple.com/documentation/foundation/nsubiquityidentitydidchangenotification)
     // -----------------------------------------------------------------
     (
         "_NSUserDefaultsDidChangeNotification",
@@ -1013,7 +1023,8 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     // these on iOS 4-targeted bundles when they ship "legacy + modern"
     // dual-stack networking code. Per
     // <https://developer.apple.com/documentation/foundation/nsurlsession>
-    // and <https://developer.apple.com/documentation/foundation/url_loading_system>,
+    //  and
+    // <https://developer.apple.com/documentation/foundation/url_loading_system>,
     // the *Identifier* / *Notification* strings are exported as
     // `NSString *const` whose literal value matches the symbol name; the
     // sentinel `NSURLSessionTransferSizeUnknown` is an `int64_t` = -1.
@@ -1093,6 +1104,7 @@ pub const STUB_CONSTANTS: ConstantExports = &[
     // userInfo from `<Foundation/NSXMLParser.h>`. Apple ships this as
     // `FOUNDATION_EXPORT NSString * const`; the literal value is the
     // constant name itself.
+    //
     // <https://developer.apple.com/documentation/foundation/nsxmlparsererrordomain>
     // -----------------------------------------------------------------
     (

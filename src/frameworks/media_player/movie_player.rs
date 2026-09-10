@@ -22,7 +22,8 @@
 //!    listen for them know the metadata is now valid.
 //! 3. For backwards compatibility with apps written against the
 //!    `MPMoviePlayerController` introduced in iPhone OS 2 the player also
-//!    posts the (now deprecated) `MPMoviePlayerContentPreloadDidFinishNotification`.
+//! posts the (now deprecated)
+//`MPMoviePlayerContentPreloadDidFinishNotification`.
 //! 4. If `shouldAutoplay` is `YES`, playback transitions to
 //!    `MPMoviePlaybackStatePlaying`, posting
 //!    `MPMoviePlayerNowPlayingMovieDidChangeNotification` and
@@ -34,9 +35,11 @@
 //!    `MPMovieFinishReasonPlaybackError` (file was missing on disk).
 //!
 //! See:
-//! * <https://developer.apple.com/documentation/mediaplayer/mpmoviefinishreason>
+//! *
+//<https://developer.apple.com/documentation/mediaplayer/mpmoviefinishreason>
 //! * <https://developer.apple.com/documentation/mediaplayer/mpmovieloadstate>
-//! * <https://developer.apple.com/documentation/mediaplayer/mpmovieplayercontroller>
+//! *
+//<https://developer.apple.com/documentation/mediaplayer/mpmovieplayercontroller>
 
 use crate::dyld::{ConstantExports, HostConstant};
 use crate::frameworks::core_graphics::CGSize;
@@ -184,12 +187,14 @@ const MPMoviePlayerPlaybackDidFinishReasonUserInfoKey: &str =
 // posts this notification when `-isPreparedToPlay` flips. Declared in
 // `MPMediaPlayback.h`, iOS 3.2+. Canonical NSString value matches the
 // symbol name, see
+//
 // <https://developer.apple.com/documentation/mediaplayer/mpmediaplaybackispreparedtoplaydidchangenotification>.
 const MPMediaPlaybackIsPreparedToPlayDidChangeNotification: &str =
     "MPMediaPlaybackIsPreparedToPlayDidChangeNotification";
 // `requestThumbnailImagesAtTimes:timeOption:` result-delivery
 // notification + `userInfo` keys. Declared in `MPMoviePlayerController.h`
 // (iOS 3.2+, deprecated in 9.0). See
+//
 // <https://developer.apple.com/documentation/mediaplayer/mpmovieplayerthumbnailimagerequestdidfinishnotification>.
 const MPMoviePlayerThumbnailImageRequestDidFinishNotification: &str =
     "MPMoviePlayerThumbnailImageRequestDidFinishNotification";
@@ -324,7 +329,8 @@ const PLACEHOLDER_NATURAL_SIZE: CGSize = CGSize {
 };
 /// Fallback duration when we don't know the real one. Real Apple movies report
 /// the encoded duration here; we use a small non-zero value to avoid divide-by-
-/// zero crashes in app code that builds a progress bar from `currentPlaybackTime
+///  zero crashes in app code that builds a progress bar from
+/// `currentPlaybackTime
 /// / duration`.
 const PLACEHOLDER_DURATION: f64 = 1.0;
 
@@ -915,6 +921,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Per Apple docs, MPMoviePlayerViewController creates and manages its
     // own MPMoviePlayerController. Create one and store it so the
     // `moviePlayer` property can return it.
+    //
     // https://developer.apple.com/documentation/mediaplayer/mpmovieplayerviewcontroller
     let player: id = msg_class![env; MPMoviePlayerController alloc];
     let player: id = msg![env; player initWithContentURL:url];
@@ -929,6 +936,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // Apple docs: "The movie player controller object used to present the movie."
 // @property(nonatomic, readonly) MPMoviePlayerController *moviePlayer
+//
 // https://developer.apple.com/documentation/mediaplayer/mpmovieplayerviewcontroller/1619165-movieplayer
 - (id)moviePlayer {
     let key = ns_string::get_static_str(env, "_touchHLE_moviePlayer");
@@ -973,7 +981,8 @@ pub(super) fn handle_players(env: &mut Environment) {
         let center: id = msg_class![env; NSNotificationCenter defaultCenter];
 
         if let PendingNotification::PlaybackDidFinish { reason, .. } = notif {
-            // userInfo[MPMoviePlayerPlaybackDidFinishReasonUserInfoKey] = reason
+            //  userInfo[MPMoviePlayerPlaybackDidFinishReasonUserInfoKey] =
+            // reason
             let reason_num: id = msg_class![env; NSNumber numberWithInt:(reason)];
             let reason_key =
                 ns_string::get_static_str(env, MPMoviePlayerPlaybackDidFinishReasonUserInfoKey);

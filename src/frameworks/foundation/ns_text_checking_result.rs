@@ -10,7 +10,8 @@
 //! `range` and zero or more capture group ranges accessible via
 //! `rangeAtIndex:`.
 //!
-//! Reference: <https://developer.apple.com/documentation/foundation/nstextcheckingresult>
+//! Reference:
+//<https://developer.apple.com/documentation/foundation/nstextcheckingresult>
 
 use super::{NSRange, NSUInteger};
 use crate::objc::{autorelease, id, objc_classes, ClassExports, HostObject, NSZonePtr};

@@ -46,7 +46,8 @@ pub struct Options {
     /// `--screen-size=WxH` override below.
     pub host_screen_size: Option<(u32, u32)>,
     pub initial_orientation: DeviceOrientation,
-    /// iOS version reported to guest applications. `None` uses the latest compatibility version.
+    ///  iOS version reported to guest applications. `None` uses the latest
+    /// compatibility version.
     pub ios_version: Option<(i32, i32, i32)>,
     pub scale_hack: NonZeroU32,
     /// `--ui-scale=N`: resolution multiplier for UIKit/Core Animation UI
@@ -114,7 +115,8 @@ pub struct Options {
     /// `GL_TEXTURE_MIN_FILTER` themselves. The fix-up only fires for
     /// `level == 0` uploads that find the default mipmap filter still
     /// active; once the guest sets any non-default filter (mipmap or not)
-    /// we leave it alone, and any subsequent `glTexParameteri(GL_TEXTURE_MIN_FILTER, …)`
+    ///  we leave it alone, and any subsequent
+    /// `glTexParameteri(GL_TEXTURE_MIN_FILTER, …)`
     /// from the guest will override our `GL_LINEAR` write. Multi-level uploads
     /// (`level > 0`) do not trigger the fix-up so games that actually use
     /// mipmaps are unaffected.

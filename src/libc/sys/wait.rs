@@ -23,8 +23,10 @@ fn waitpid(env: &mut Environment, pid: pid_t, stat_loc: MutPtr<i32>, options: i3
     // Why would process want to wait on their own pid? Glad you've asked!
     // Apparently, Unity 1.0 iPhone is built atop of mono 2.0,
     // which have a bug of waiting on pid without checking their value
-    // against own process first [link](https://github.com/mono/mono/blob/a1f3cf39287ceaca189ae1b4c06ad1677c8988cf/mono/io-layer/processes.c#L266).
-    // Allegedly, it was fixed in mono 2.11 with [this commit](https://github.com/mono/mono/commit/afb1937e56100e368bc339045a685ef3c3b58e81).
+    //  against own process first
+    // [link](https://github.com/mono/mono/blob/a1f3cf39287ceaca189ae1b4c06ad1677c8988cf/mono/io-layer/processes.c#L266).
+    //  Allegedly, it was fixed in mono 2.11 with [this
+    // commit](https://github.com/mono/mono/commit/afb1937e56100e368bc339045a685ef3c3b58e81).
     // There probably more nuisances here, but to answer your original question:
     // "It's because of mono bug!" ;-)
     assert_eq!(pid, getpid(env));

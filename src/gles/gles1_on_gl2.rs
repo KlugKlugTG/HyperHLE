@@ -662,7 +662,8 @@ impl GLES1OnGL2<'_> {
                 let mut pointer: *mut GLvoid = std::ptr::null_mut();
                 // The second argument to glGetPointerv must be a mutable
                 // pointer, but gl_generator generates the wrong signature
-                // by mistake, see https://github.com/brendanzab/gl-rs/issues/541
+                //  by mistake, see
+                // https://github.com/brendanzab/gl-rs/issues/541
                 #[allow(clippy::unnecessary_mut_passed)]
                 gl21::GetPointerv(array_info.pointer, &mut pointer);
                 pointer.cast_const()
@@ -2960,7 +2961,8 @@ impl GLES for GLES1OnGL2<'_> {
             gl21::TEXTURE => MatrixModeState::Texture,
             // GL_MATRIX_PALETTE_OES == GL_MATRIX_PALETTE_ARB == 0x8840, from
             // OES_matrix_palette. Subsequent matrix-stack operations target the
-            // palette slot selected by glCurrentPaletteMatrixOES. We emulate the
+            //  palette slot selected by glCurrentPaletteMatrixOES. We emulate
+            // the
             // palette CPU-side (desktop GL 2.1 / Mesa do not expose working
             // fixed-function palette skinning), so don't forward this to the
             // host MatrixMode (it would raise GL_INVALID_ENUM).
@@ -3253,7 +3255,8 @@ impl GLES for GLES1OnGL2<'_> {
     }
     unsafe fn ResolveMultisampleFramebufferAPPLE(&mut self) {
         // Apple's GL_APPLE_framebuffer_multisample doesn't take any arguments:
-        // the source is whatever is currently bound to GL_READ_FRAMEBUFFER_APPLE
+        //  the source is whatever is currently bound to
+        // GL_READ_FRAMEBUFFER_APPLE
         // and the destination is whatever is currently bound to
         // GL_DRAW_FRAMEBUFFER_APPLE. Their numeric values are identical to
         // GL_READ_FRAMEBUFFER_EXT / GL_DRAW_FRAMEBUFFER_EXT, so we can hand

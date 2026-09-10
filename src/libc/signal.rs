@@ -24,16 +24,16 @@ const SIG_DFL: u32 = 0;
 
 fn sigaction(env: &mut Environment, _signum: i32, _act: ConstVoidPtr, _old_act: MutVoidPtr) -> i32 {
     set_errno(env, 0);
-    // Пока возвращаем 0 (успех), убрав TODO, так как sigaction сложнее в
-    // реализации
-    // и редко ломает логику игр, если просто рапортует об успехе.
-    0
+    // Пока возвращаем 0 (успех), убрав TODO, так
+    // как sigaction сложнее в
+    // и редко ломает логику игр, если просто
+    // рапортует об успехе.
 }
 
 fn signal(env: &mut Environment, signum: i32, handler: MutVoidPtr) -> MutVoidPtr {
     set_errno(env, 0);
-    // Честная эмуляция: сохраняем новый обработчик и возвращаем старый.
-
+    // Честная эмуляция: сохраняем новый
+    // обработчик и возвращаем старый.
     env.libc_state
         .signal
         .handlers

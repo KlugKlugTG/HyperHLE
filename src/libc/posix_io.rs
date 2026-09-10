@@ -226,8 +226,8 @@ pub fn open_direct(env: &mut Environment, path: ConstPtr<u8>, flags: i32) -> Fil
         );
     }
     // ИСПРАВЛЕНИЕ 1: убран assert!(flags & O_EXCL == 0).
-    // O_EXCL — валидный флаг (создание файла с проверкой на существование).
-    // Вместо паники — корректная обработка ниже, после разрешения пути.
+    // O_EXCL — валидный флаг (создание файла с
+    // проверкой на существование).
 
     if path.is_null() {
         log_dbg!("open({:?}, {:#x}) => -1", path, flags);
@@ -293,8 +293,8 @@ pub fn open_direct(env: &mut Environment, path: ConstPtr<u8>, flags: i32) -> Fil
     // `/dev/random` and `/dev/urandom` are identical non-blocking CSPRNG
     // character devices on Apple platforms (see the `random(4)` manual page).
     // The emulated filesystem has no such node, so opening it used to fail;
-    // apps — and libc++'s `std::random_device` — then read from the resulting
-    // fd -1, which failed and made libc++ throw `std::system_error`, aborting
+    // apps — and libc++'s `std::random_device` — then read from the
+    // resulting
     // launch (e.g. Minecraft PE). Back these paths with a real random source.
     if path_string == "/dev/urandom" || path_string == "/dev/random" {
         let host_object = PosixFileHostObject {
@@ -378,11 +378,11 @@ pub fn open_direct(env: &mut Environment, path: ConstPtr<u8>, flags: i32) -> Fil
         })
         .unwrap_or_else(|| path_string.clone());
 
-    // ИСПРАВЛЕНИЕ 2: корректная реализация O_EXCL.
-    // O_CREAT|O_EXCL означает «создать файл, но вернуть ошибку, если он уже
+    // ИСПРАВЛЕНИЕ 2: корректная реализация
+    // O_EXCL.
     // есть».
-    // Без этой проверки приложения, использующие O_EXCL как lock-файл,
-    // получали паник вместо штатного EEXIST.
+    // Без этой проверки приложения,
+    // использующие O_EXCL как lock-файл,
     use crate::libc::errno::EEXIST;
     if (flags & O_EXCL) != 0
         && (flags & O_CREAT) != 0
@@ -458,17 +458,18 @@ pub fn read(
             if bytes_read == 0 && size != 0 {
                 file.reached_eof = true;
             }
-            // ИСПРАВЛЕНИЕ 3: не выдавать Warning при нормальном EOF (bytes_read
-            // == 0).
-            // Многие приложения читают файлы побайтово до конца — это штатное
-            // поведение, не ошибка. Warning остаётся только для частичного
+            // ИСПРАВЛЕНИЕ 3: не выдавать Warning при
+            // нормальном EOF (bytes_read
+            // Многие приложения читают файлы
+            // побайтово до конца — это штатное
             // чтения
-            // (когда прочитано больше 0 байт, но меньше запрошенного).
-            if bytes_read == 0 {
+            // (когда прочитано больше 0 байт, но
+            // меньше запрошенного).
                 log_dbg!("read({:?}, {:?}, {:#x}) => 0 (EOF)", fd, buffer, size);
             } else if bytes_read < buffer_slice.len() {
                 // POSIX read(2) returning fewer bytes than requested is normal
-                // (e.g., near EOF or for non-regular files). Demote to debug log.
+                //  (e.g., near EOF or for non-regular files). Demote to debug
+                // log.
                 log_dbg!(
                     "read({:?}, {:?}, {:#x}) read only {:#x} bytes",
                     fd,
@@ -795,25 +796,25 @@ pub fn close(env: &mut Environment, fd: FileDescriptor) -> i32 {
     }
 
     if fd < NORMAL_FILENO_BASE {
-        // Игнорируем попытки закрыть стандартные потоки (stdin=0, stdout=1,
-        // stderr=2)
+        // Игнорируем попытки закрыть
+        // стандартные потоки (stdin=0, stdout=1,
         log_dbg!("close({}): ignored standard stream", fd);
         return 0;
     }
 
     // Берем слот по индексу FD
     if let Some(file_obj_slot) = env.libc_state.posix_io.files.get_mut(fd_to_file_idx(fd)) {
-        // Честно извлекаем объект (take заменяет его на None в массиве,
-        // освобождая FD)
+        // Честно извлекаем объект (take заменяет
+        // его на None в массиве,
         if let Some(mut file_obj) = file_obj_slot.take() {
             file_obj.file.close_pipe_endpoint();
-            // Если это был сокет, ОБЯЗАТЕЛЬНО удаляем его из таблицы в
-            // socket.rs
+            // Если это был сокет, ОБЯЗАТЕЛЬНО
+            // удаляем его из таблицы в
             if matches!(file_obj.file, GuestFile::Socket) {
                 close_socket(env, fd);
             }
-            // Если это обычный файл с правами на запись, честно сбрасываем
-            // буфер
+            // Если это обычный файл с правами на
+            // запись, честно сбрасываем
             else if file_obj.needs_flush {
                 let _ = file_obj.file.sync_all();
             }
@@ -1244,6 +1245,7 @@ fn fcntl(
 
 /// `int flock(int fd, int operation);` — BSD-style whole-file advisory
 /// locking, as documented by Apple `man 2 flock`:
+///
 /// <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/flock.2.html>
 ///
 /// `flock(2)` advisory locks only contend between *different* processes.

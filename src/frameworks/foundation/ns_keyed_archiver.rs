@@ -11,7 +11,8 @@
 //! - You can get a good intuitive grasp of how the format works just by staring
 //!   at a pretty-print of a simple archive file from something that can parse
 //!   plists, e.g. `plutil -p` or `println!("{:#?}", plist::Value::...);`.
-//! - Apple's [Archives and Serializations Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving/Articles/archives.html)
+//! - Apple's [Archives and Serializations Programming
+//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving/Articles/archives.html)
 
 use std::collections::HashMap;
 use std::io::Cursor;
@@ -134,7 +135,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         _ => 4, // default to 4 bytes for unknown types (pointer-sized on 32-bit)
     };
     let data = env.mem.bytes_at(addr.cast(), size).to_vec();
-    // Store as raw data in the current encoding scope under a type-prefixed key.
+    //  Store as raw data in the current encoding scope under a type-prefixed
+    // key.
     // NSKeyedArchiver on real iOS uses "$0", "$1", ... for positional encoding;
     // we use a similar scheme with a type prefix for debuggability.
     let scope = get_value_to_encode_for_current_key(env, this);
@@ -323,7 +325,8 @@ fn normalize_key(env: &mut Environment, key: id) -> Option<String> {
     let key_str = to_rust_string(env, key);
 
     if key_str.starts_with('$') {
-        // Если ключ начинается с $, добавляем еще один $, чтобы избежать конфликтов с системными ключами
+        // Если ключ начинается с $, добавляем
+        // еще один $, чтобы избежать
         log!(
             "Warning: NSKeyedArchiver mangling key starting with '$': {}",
             key_str
@@ -503,10 +506,11 @@ fn encode_object_for_key(env: &mut Environment, archiver: id, object: id, normal
 /// of container classes (e.g. `NSArray`'s `NS.objects`, `NSDictionary`'s
 /// `NS.keys`/`NS.objects`), and it's exactly what the decode side
 /// (`ns_keyed_unarchiver::keys_for_key`, used by `decode_current_array` and
-/// `decode_current_dict`) expects. `NSArray`/`NSDictionary`'s `encodeWithCoder:`
+///  `decode_current_dict`) expects. `NSArray`/`NSDictionary`'s
+/// `encodeWithCoder:`
 /// use this so that touchHLE-produced archives round-trip correctly; the
-/// previous bespoke layouts (`NS.objects.0`, `NS.objects.1`, … for arrays and a
-/// single object reference for dictionaries) could not be read back by the
+/// previous bespoke layouts (`NS.objects.0`, `NS.objects.1`, … for arrays and
+//a
 /// decoder, which produced empty collections on unarchive.
 pub fn encode_objects_as_uid_array(env: &mut Environment, archiver: id, key: &str, objects: &[id]) {
     let uids: Vec<Value> = objects

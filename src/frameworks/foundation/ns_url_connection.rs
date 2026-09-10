@@ -92,7 +92,8 @@ fn make_fake_success_data(env: &mut crate::Environment) -> id {
     let bytes_ptr = ptr.cast_const().cast_void();
     let data: id = msg_class![env; NSData dataWithBytes:bytes_ptr length:len];
 
-    // dataWithBytes:length: copies the buffer, so free our temporary guest memory.
+    //  dataWithBytes:length: copies the buffer, so free our temporary guest
+    // memory.
     env.mem.free(ptr.cast());
     data
 }

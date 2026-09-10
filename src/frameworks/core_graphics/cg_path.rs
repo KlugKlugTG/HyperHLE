@@ -334,6 +334,7 @@ fn CGPathAddRect(
 /// they form and is tangent to both segments.
 ///
 /// Apple `CGPath.h`:
+///
 /// <https://developer.apple.com/documentation/coregraphics/cgmutablepath/1408935-addarc>
 /// The geometric construction below follows the standard "two tangent
 /// line corner-fillet" formula (see e.g. PostScript Language

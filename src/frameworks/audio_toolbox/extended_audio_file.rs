@@ -5,8 +5,8 @@
  */
 //! `ExtendedAudioFile.h` (Extended Audio File Services)
 //!
-//! Реализовано как обертка над Audio File Services, работающая с форком.
-
+//! Реализовано как обертка над Audio File Services,
+//работающая с форком.
 // TODO: Конвертация аудио форматов
 
 use super::audio_file::{
@@ -222,8 +222,8 @@ fn ExtAudioFileSetProperty(
     }
     host_object.client_data_format = Some(client_audio_desc);
 
-    // Достаем объект AudioFile, чтобы проверить описание.
-    // Обрабатываем перечисление из форка (Real или Dummy).
+    // Достаем объект AudioFile, чтобы проверить
+    // описание.
     let Some(host_object) = env
         .framework_state
         .audio_toolbox
@@ -255,8 +255,8 @@ fn ExtAudioFileSetProperty(
         AudioFileHostObject::Dummy { format, .. } => *format,
     };
 
-    // TODO: Поддержка конвертации аудио форматов
-    // assert_eq!(_audio_desc, client_audio_desc);
+    // TODO: Поддержка конвертации аудио
+    // форматов
 
     0 // успех
 }

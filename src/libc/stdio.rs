@@ -154,14 +154,14 @@ fn fopen(env: &mut Environment, filename: ConstPtr<u8>, mode: ConstPtr<u8>) -> M
         -1 => Ptr::null(),
         fd => {
             let res = env.mem.alloc_and_write(FILE { fd });
-            // Без заглушек: игры часто грешат тем, что вызывают free() на
-            // указатель FILE*,
-            // минуя вызов fclose(). В результате память освобождается,
-            // аллокатор выдает
-            // этот же адрес при следующем fopen, но в нашей мапе остаётся
-            // старый "призрак".
-            // Мы просто перезаписываем его новым состоянием, так как память уже
-            // легально наша.
+            // Без заглушек: игры часто грешат тем,
+            // что вызывают free() на
+            // минуя вызов fclose(). В результате
+            // память освобождается,
+            // этот же адрес при следующем fopen, но в
+            // нашей мапе остаётся
+            // Мы просто перезаписываем его новым
+            // состоянием, так как память уже
             State::get_mut(env).file_streams.insert(
                 res,
                 FILEHostObject {
@@ -186,13 +186,13 @@ fn freopen(
         return Ptr::null();
     }
 
-    // 1. Сбрасываем буфер и закрываем старый дескриптор
-    let FILE { fd: old_fd } = env.mem.read(stream);
+    // 1. Сбрасываем буфер и закрываем старый
+    // дескриптор
     let _ = posix_io::fflush(env, old_fd);
     let _ = posix_io::close(env, old_fd);
 
-    // Очищаем состояние в хост-объекте (ошибки и возвращенные символы ungetc)
-    let host_obj = env
+    // Очищаем состояние в хост-объекте
+    // (ошибки и возвращенные символы ungetc)
         .libc_state
         .stdio
         .get_file_host_obj_mut(&mut env.mem, stream);
@@ -204,8 +204,8 @@ fn freopen(
         return Ptr::null();
     }
 
-    // 2. Парсим режим открытия (точно так же, как в fopen)
-    let mode_str = env.mem.cstr_at(mode);
+    // 2. Парсим режим открытия (точно так же,
+    // как в fopen)
     let [basic_mode @ (b'r' | b'w' | b'a'), flags @ ..] = mode_str else {
         log!(
             "freopen(): Unexpected or missing mode first character: {:?}",
@@ -249,8 +249,8 @@ fn freopen(
         return Ptr::null();
     }
 
-    // 4. Связываем новый дескриптор со старым потоком
-    // В памяти гостя перезаписываем структуру FILE
+    // 4. Связываем новый дескриптор со старым
+    // потоком
     env.mem.write(stream, FILE { fd: new_fd });
 
     log_dbg!(
@@ -649,12 +649,12 @@ fn fclose(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
         );
     }
 
-    // Честное поведение C-рантайма: защита от double-close или закрытия
-    // невалидного потока.
-    // Если игра вызывает fclose два раза для одного адреса, не крашим эмулятор
-    // assert-ом,
-    // а легально возвращаем EOF (ошибку), как и делают реальные ОС.
-    if State::get_mut(env).file_streams.remove(&file_ptr).is_none() {
+    // Честное поведение C-рантайма: защита от
+    // double-close или закрытия
+    // Если игра вызывает fclose два раза для
+    // одного адреса, не крашим эмулятор
+    // а легально возвращаем EOF (ошибку), как и
+    // делают реальные ОС.
         log!(
             "Warning: fclose called on unknown or already closed stream {:?}",
             file_ptr
@@ -670,7 +670,8 @@ fn fclose(env: &mut Environment, file_ptr: MutPtr<FILE>) -> i32 {
         0 => 0,
         -1 => EOF,
         other => {
-            // posix_io::close should only ever return 0 or -1, but be defensive.
+            //  posix_io::close should only ever return 0 or -1, but be
+            // defensive.
             log!(
                 "Warning: posix_io::close returned unexpected value {} from fclose(); treating as EOF.",
                 other
@@ -864,8 +865,8 @@ fn tmpfile(env: &mut Environment) -> MutPtr<FILE> {
         .bytes_at_mut(path_ptr.cast(), path_len)
         .copy_from_slice(tmp_path.as_bytes());
 
-    // "w+b": read/write, create, truncate — matches the C standard requirement
-    // for tmpfile().
+    // "w+b": read/write, create, truncate — matches the C standard
+    // requirement
     let mode = b"w+b\0";
     let mode_ptr: MutPtr<u8> = env.mem.alloc(mode.len() as GuestUSize).cast();
     env.mem

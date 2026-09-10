@@ -84,15 +84,18 @@ pub(super) struct CALayerHostObject {
     pub(super) mask: id,
     /// `contentsGravity` — one of the `kCAGravity*` strings. Defaults to
     /// `"resize"` per Apple's CALayer documentation:
+    ///
     /// <https://developer.apple.com/documentation/quartzcore/calayer/1410933-contentsgravity>
     pub(super) contents_gravity: String,
     /// `contentsRect` — sub-rectangle of the contents to draw, normalized
     /// (`[0..1]`). Defaults to the unit rectangle `(0,0,1,1)`.
+    ///
     /// <https://developer.apple.com/documentation/quartzcore/calayer/1410893-contentsrect>
     pub(super) contents_rect: CGRect,
     /// `edgeAntialiasingMask` — bitmask of `CAEdgeAntialiasingMask` edges
     /// (left/right/top/bottom). Stored verbatim so the property
     /// round-trips through `-[CALayer edgeAntialiasingMask]`.
+    ///
     /// <https://developer.apple.com/documentation/quartzcore/calayer/1410868-edgeantialiasingmask>
     pub(super) edge_antialiasing_mask: u32,
     /// `minificationFilter` / `magnificationFilter` — one of
@@ -168,9 +171,12 @@ pub const kCAGravityBottomRight: &str = "bottomRight";
 // against with `-[NSString isEqualToString:]`.
 //
 // References:
-// * Apple [`CAShapeLayer.lineCap`](https://developer.apple.com/documentation/quartzcore/cashapelayer/1521905-linecap)
-// * Apple [`CAShapeLayer.lineJoin`](https://developer.apple.com/documentation/quartzcore/cashapelayer/1521918-linejoin)
-// * Apple [`CAShapeLayer.fillRule`](https://developer.apple.com/documentation/quartzcore/cashapelayer/1522146-fillrule)
+//  * Apple
+// [`CAShapeLayer.lineCap`](https://developer.apple.com/documentation/quartzcore/cashapelayer/1521905-linecap)
+//  * Apple
+// [`CAShapeLayer.lineJoin`](https://developer.apple.com/documentation/quartzcore/cashapelayer/1521918-linejoin)
+//  * Apple
+// [`CAShapeLayer.fillRule`](https://developer.apple.com/documentation/quartzcore/cashapelayer/1522146-fillrule)
 pub const kCALineCapButt: &str = "butt";
 pub const kCALineCapRound: &str = "round";
 pub const kCALineCapSquare: &str = "square";
@@ -453,17 +459,19 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)superlayer { env.objc.borrow::<CALayerHostObject>(this).superlayer }
 
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410744-presentationlayer
 // Apple returns a copy of the layer holding the values that are currently
 // "in flight" (i.e. the state as displayed on screen mid-animation), or nil if
 // the layer has not yet been committed for rendering. touchHLE has no separate
-// presentation-layer tree — the model layer doubles as the render/presentation
-// layer (see core_animation::composition) — so the correct approximation is to
+// presentation-layer tree — the model layer doubles as the
+// render/presentation
 // return the layer itself rather than nil. Games query this (e.g. to read
 // `[[layer presentationLayer] position]` for hit-testing during a move
 // animation), and returning nil would make them dereference a null object.
 - (id)presentationLayer { this }
 
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410631-modellayer
 // When sent to a presentation layer this returns the underlying model layer;
 // when sent to a model layer it returns the layer itself. Since our model
@@ -682,7 +690,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (void)renderInContext:(CGContextRef)ctx` —
-// per Apple's [CALayer Reference](https://developer.apple.com/documentation/quartzcore/calayer/1521914-renderincontext):
+//  per Apple's [CALayer
+// Reference](https://developer.apple.com/documentation/quartzcore/calayer/1521914-renderincontext):
 // renders the layer tree (this layer plus all sublayers) into the supplied
 // CGContext, ignoring any animations. Apple documents this as the API for
 // capturing a snapshot of a layer hierarchy on the CPU (used e.g. by
@@ -905,6 +914,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Per Apple's CALayer reference:
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410868-edgeantialiasingmask
 - (())setEdgeAntialiasingMask:(u32)mask {
     env.objc.borrow_mut::<CALayerHostObject>(this).edge_antialiasing_mask = mask;
@@ -913,6 +923,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow::<CALayerHostObject>(this).edge_antialiasing_mask
 }
 
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410907-magnificationfilter
 - (())setMagnificationFilter:(id)filter {
     let s = ns_string::to_rust_string(env, filter).into_owned();
@@ -923,6 +934,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     ns_string::from_rust_string(env, s)
 }
 
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410898-minificationfilter
 - (())setMinificationFilter:(id)filter {
     let s = ns_string::to_rust_string(env, filter).into_owned();
@@ -933,6 +945,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     ns_string::from_rust_string(env, s)
 }
 
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410933-contentsgravity
 - (())setContentsGravity:(id)gravity {
     let s = ns_string::to_rust_string(env, gravity).into_owned();
@@ -943,6 +956,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     ns_string::from_rust_string(env, s)
 }
 
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/1410893-contentsrect
 - (())setContentsRect:(CGRect)rect {
     env.objc.borrow_mut::<CALayerHostObject>(this).contents_rect = rect;
@@ -1049,6 +1063,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // Apple: -[CALayer animationForKey:] - returns the CAAnimation for the
 // given key, or nil if there is no such animation.
+//
 // https://developer.apple.com/documentation/quartzcore/calayer/animation(forkey:)
 - (id)animationForKey:(id)key {
     if key == nil {
@@ -1067,20 +1082,23 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())removeAllAnimations {
     let host = env.objc.borrow_mut::<CALayerHostObject>(this);
 
-    // Забираем коллекции, оставляя пустые на их месте
+    // Забираем коллекции, оставляя пустыми
     let named_animations = std::mem::take(&mut host.animations);
     let anonymous_animations = std::mem::take(&mut host.anonymous_animations);
 
-    // Освобождаем память (release) для каждой именованной анимации
+    // Освобождаем память (release) каждой
+    // именованной анимации
     for (_, anim) in named_animations {
         release(env, anim);
     }
 
-    // Освобождаем память (release) для каждой анонимной анимации
+    // Освобождаем память (release) каждой
+    // анонимной анимации
     for anim in anonymous_animations {
         release(env, anim);
     }
 }
+
 
 @end
 

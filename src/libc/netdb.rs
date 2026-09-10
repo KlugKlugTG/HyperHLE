@@ -160,7 +160,8 @@ fn service_port(name: &str) -> Option<u16> {
         "imap" => Some(143),
         "imap2" => Some(143),
         "ldap" => Some(389),
-        // Убрано дублирующееся значение "https" => Some(443),
+        // Убрано дублирующееся значение "https" =>
+        // Some(443),
         "smtps" => Some(465),
         "imaps" => Some(993),
         "pop3s" => Some(995),
@@ -661,8 +662,8 @@ fn getnameinfo(
         return EAI_FAIL;
     }
 
-    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Прямое чтение из гостевой памяти по смещениям
-    // (AF_INET/sockaddr_in layout)
+    // ИСПРАВЛЕНИЕ ЗДЕСЬ: Прямое чтение из
+    // гостевой памяти по смещениям
     let sa_ptr = sa.cast::<u8>();
     let port = u16::from_be_bytes([env.mem.read(sa_ptr + 2u32), env.mem.read(sa_ptr + 3u32)]);
     let octets: [u8; 4] = [

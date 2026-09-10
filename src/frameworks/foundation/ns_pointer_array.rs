@@ -33,7 +33,8 @@ use crate::objc::{
     autorelease, id, msg, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr,
 };
 
-// `NSPointerFunctionsOptions` (subset). Apple `<Foundation/NSPointerFunctions.h>`.
+//  `NSPointerFunctionsOptions` (subset). Apple
+// `<Foundation/NSPointerFunctions.h>`.
 // touchHLE always uses strong-object personality, so these are exposed for the
 // public type signatures only and do not switch behaviour.
 pub type NSPointerFunctionsOptions = NSUInteger;

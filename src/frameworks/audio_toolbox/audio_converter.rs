@@ -138,11 +138,11 @@ fn AudioConverterFillComplexBuffer(
     }
 
     // Трюк с пробросом (Passthrough hack):
-    // Поскольку у нас LPCM -> LPCM, нам не нужно конвертировать данные.
-    // Мы просто передаем выходные буферы (out_output_data) напрямую в игровой
+    // Поскольку у нас LPCM -> LPCM, нам не нужно
+    // конвертировать данные.
     // коллбэк,
-    // и игра сама запишет звук сразу в нужный буфер!
-
+    // и игра сама запишет звук сразу в нужный
+    // буфер!
     let callback_status: OSStatus = in_input_data_proc.call_from_host(
         env,
         (
@@ -154,8 +154,8 @@ fn AudioConverterFillComplexBuffer(
         ),
     );
 
-    // Возвращаем статус коллбэка. Размеры пакетов уже обновлены самой игрой по
-    // указателям.
+    // Возвращаем статус коллбэка. Размеры
+    // пакетов уже обновлены самой игрой по
     callback_status
 }
 
@@ -165,6 +165,6 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(AudioConverterReset(_)),
     export_c_func!(AudioConverterGetProperty(_, _, _, _)),
     export_c_func!(AudioConverterSetProperty(_, _, _, _)),
-    // У функции 6 аргументов помимо env, поэтому 6 подчеркиваний
-    export_c_func!(AudioConverterFillComplexBuffer(_, _, _, _, _, _)),
+    // У функции 6 аргументов помимо env, поэтому
+    // 6 подчеркиваний
 ];

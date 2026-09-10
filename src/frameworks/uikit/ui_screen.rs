@@ -179,6 +179,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple's
+//
 // <https://developer.apple.com/documentation/uikit/uiscreen/1617815-setcurrentmode>
 // (now deprecated, was originally on UIScreen but in iOS 5+ Apple moved
 // resolution control to UIScreenMode itself). The setter is documented as

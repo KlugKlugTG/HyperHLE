@@ -12,8 +12,8 @@ use crate::objc::{
     id, msg, nil, objc_classes, release, retain, ClassExports, HostObject, NSZonePtr,
 };
 
-// Константы результатов, которые Twitter возвращает в completionHandler
-const TWTweetComposeViewControllerResultCancelled: NSInteger = 0;
+// Константы результатов, которые Twitter
+// возвращает в completionHandler
 const TWTweetComposeViewControllerResultDone: NSInteger = 1;
 
 // MARK: - TWTweetComposeViewControllerHostObject
@@ -50,7 +50,9 @@ pub const CLASSES: ClassExports = objc_classes! {
 // added a Twitter account in Settings → Twitter (iOS 5+). touchHLE has
 // no Accounts framework backing and no system Twitter login, so we
 // report `NO`; apps then take their documented "Twitter is not
-// configured" branch instead of crashing inside `+[TWTweetComposeViewController alloc]`.
+//  configured" branch instead of crashing inside
+// `+[TWTweetComposeViewController alloc]`.
+//
 // https://developer.apple.com/documentation/twitter/twtweetcomposeviewcontroller/1622184-cansendtweet
 + (bool)canSendTweet {
     false
@@ -81,8 +83,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)addImage:(id)_image {
-    // Сохранение картинки не критично для логики эмулятора, просто возвращаем
-    // успешный статус
+    // Сохранение картинки не критично для
+    // логики эмулятора, просто возвращаем
     true
 }
 
@@ -105,8 +107,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())setCompletionHandler:(id)handler {
-    // В Objective-C блоки всегда должны копироваться (copy), а не просто
-    // удерживаться (retain)
+    // В Objective-C блоки всегда должны
+    // копироваться (copy), а не просто
     let copied_handler: id = if handler != nil {
         msg![env;
         handler copy]
@@ -129,14 +131,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     let handler = env.objc.borrow::<TWTweetComposeViewControllerHostObject>(this).completion_handler;
     if handler != nil {
-        // Примечание: Для честного вызова Objective-C блока (вместо делегата)
-        // из Rust нужно использовать
-        // внутреннее FFI эмулятора (вызов указателя функции).
-        // Чтобы избежать паник компилятора из-за
-        // разницы в версиях touchHLE, мы оставляем логирование.
-        // Игра не зависнет, так как
-        // окно будет считаться "закрытым" через базовый UIViewController.
-        log!("TWTweetComposeViewController: Completion handler is present. Simulating result 'Done'.");
+        // Примечание: Для честного вызова
+        // Objective-C блока (вместо делегата)
+        // внутреннее FFI эмулятора (вызов
+        // указателя функции).
+        // разницы в версиях touchHLE, мы оставляем
+        // логирование.
+        // окно будет считаться "закрытым" через
+        // базовый UIViewController.
     }
 }
 

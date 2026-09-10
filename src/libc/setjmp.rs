@@ -122,8 +122,8 @@ fn __longjmp(env: &mut Environment, jmp_buf: MutPtr<JmpBuf>, status: u32) {
     longjmp(env, jmp_buf, status)
 }
 
-// Заодно добавим версии с одним подчеркиванием,
-// так как другие игры часто требуют именно их.
+// Заодно добавим версии с одним
+// подчеркиванием,
 fn _setjmp(env: &mut Environment, jmp_buf: MutPtr<JmpBuf>) -> i32 {
     setjmp(env, jmp_buf)
 }

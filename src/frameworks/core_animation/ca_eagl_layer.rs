@@ -113,23 +113,23 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - Scale / Retina Support
 
 - (CGFloat)contentScaleFactor {
-    // Жестко задаем масштаб 1.0 (стандартный не-Retina экран)
-    1.0
+    // Жестко задаем масштаб 1.0 (стандартный
+    // не-Retina экран)
 }
 
 - (())setContentScaleFactor:(CGFloat)scale {
-    // Заглушка, чтобы игра не упала, если попытается сама установить масштаб
-    log_dbg!("CAEAGLLAYER setContentScaleFactor: {} (stubbed)", scale);
+    // Заглушка, чтобы игра не упала, если
+    // попытается сама установить масштаб
 }
 
 - (CGFloat)contentsScale {
-    // Жестко задаем масштаб 1.0 (стандартный не-Retina экран)
-    1.0
+    // Жестко задаем масштаб 1.0 (стандартный
+    // не-Retina экран)
 }
 
 - (())setContentsScale:(CGFloat)scale {
-    // Заглушка, чтобы игра не упала, если попытается сама установить масштаб
-    log_dbg!("CAEAGLLAYER setContentsScale: {} (stubbed)", scale);
+    // Заглушка, чтобы игра не упала, если
+    // попытается сама установить масштаб
 }
 
 - (id)initWithLayer:(id)layer {

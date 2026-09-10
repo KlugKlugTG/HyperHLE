@@ -52,11 +52,11 @@ fn mmap(
     if (flags & MAP_ANON) != 0 {
         assert!(ptr.to_bits() & PAGE_SIZE_ALIGN_MASK == 0);
 
-        // Убираем жесткие assert_eq!(fd, -1) и assert_eq!(offset, 0).
-        // В реальной iOS/Darwin при наличии флага MAP_ANON аргументы fd и
+        // Убираем жесткие assert_eq!(fd, -1) и
+        // assert_eq!(offset, 0).
         // offset
-        // просто игнорируются ОС. Движки вроде Adobe AIR передают сюда мусор.
-        if fd != -1 || offset != 0 {
+        // просто игнорируются ОС. Движки вроде
+        // Adobe AIR передают сюда мусор.
             log_dbg!("Warning: mmap MAP_ANON called with fd={} and offset={}. Ignoring them as per OS behavior.", fd, offset);
         }
 
@@ -162,8 +162,8 @@ fn shm_open(env: &mut Environment, name: ConstPtr<u8>, oflag: i32, mode: u32) ->
     let name_str = env.mem.cstr_at_utf8(name).unwrap_or("<invalid>");
     log_dbg!("shm_open({:?}, {:#x}, {:#x})", name_str, oflag, mode);
 
-    // Используем open_direct! Параметр mode для эмулятора здесь не нужен,
-    // поэтому просто передаем env, name и oflag.
+    // Используем open_direct! Параметр mode для
+    // эмулятора здесь не нужен,
     open_direct(env, name, oflag)
 }
 

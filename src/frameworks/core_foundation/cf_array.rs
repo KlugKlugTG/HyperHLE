@@ -570,8 +570,8 @@ pub fn CFArraySortValues(
             val
         })
         .collect();
-    // Simple insertion sort — avoids the borrow-checker complexity of in-place
-    // sort with a closure that borrows env.
+    // Simple insertion sort — avoids the borrow-checker complexity of
+    // in-place
     let n = items.len();
     for i in 1..n {
         let mut j = i;

@@ -214,8 +214,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 (env, this, _cmd);
 
-// Добавляем приватный класс, на который ругается NIB-декодер
-@implementation UITableViewCellContentView: UIView
+// Добавляем приватный класс, на который
+// ругается NIB-декодер
 
 - (id)initWithFrame:(CGRect)frame {
     msg_super![env; this initWithFrame:frame]
@@ -238,8 +238,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let this: id = msg_super![env; this initWithFrame:frame];
 
     // Честно создаем внутренний content_view.
-    // Передаем имя класса напрямую в макрос msg_class!
-    let content_view: id = msg_class![env; UITableViewCellContentView alloc];
+    // Передаем имя класса напрямую в макрос
+    // msg_class!
     let content_view: id = msg![env; content_view initWithFrame:frame];
 
     // Добавляем его как subview (как в iOS)
@@ -262,20 +262,21 @@ pub const CLASSES: ClassExports = objc_classes! {
 // implementation routes it through the frame-only initializer and
 // records the reuse identifier — the reuse identifier itself is held by
 // the cell so that `+[UITableView dequeueReusableCellWithIdentifier:]`
-// can later match it. <https://developer.apple.com/documentation/uikit/uitableviewcell/1623200-initwithframe>
+//  can later match it.
+// <https://developer.apple.com/documentation/uikit/uitableviewcell/1623200-initwithframe>
 - (id)initWithFrame:(CGRect)frame reuseIdentifier:(id)_identifier {
     msg![env; this initWithFrame:frame]
 }
 
 - (id)initWithCoder:(id)coder {
     let this: id = msg_super![env; this initWithCoder:coder];
-    // При загрузке из NIB contentView обычно уже внутри (как под-вьюха).
-    // Мы можем просто инициализировать поле, если NIB его создал,
-    // но для безопасности создадим пустой, если его нет.
-    let frame = <CGRect as Default>::default();
+    // При загрузке из NIB contentView обычно уже
+    // внутри (как под-вьюха).
+    // но для безопасности создадим пустой,
+    // если его нет.
 
-    // Исправлено здесь: убран get_known_class и переменная, имя класса передано
-    // напрямую
+    // Исправлено здесь: убран get_known_class и
+    // переменная, имя класса передано
     let content_view: id = msg_class![env; UITableViewCellContentView alloc];
     let content_view: id = msg![env; content_view initWithFrame:frame];
 
@@ -682,8 +683,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     this
 }
 
-// Честный iOS-подход: переопределяем создание вьюхи по умолчанию.
-// Если NIB'а нет, мы принудительно создаем UITableView, а не UIView.
+// Честный iOS-подход: переопределяем
+// создание вьюхи по умолчанию.
 - (())loadView {
     let frame = <CGRect as Default>::default();
     let style = env.objc.borrow::<UITableViewControllerHostObject>(this).style;
@@ -696,8 +697,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     () = msg![env; table_view setDataSource:this];
     () = msg![env; table_view setDelegate:this];
 
-    // Устанавливаем таблицу как главную view этого контроллера
-    () = msg![env; this setView:table_view];
+    // Устанавливаем таблицу как главную view
+    // этого контроллера
     release(env, table_view);
 }
 

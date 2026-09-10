@@ -8,19 +8,22 @@
 // ============================================================
 // ИСПРАВЛЕНИЕ:
 //
-// OpenAL::GetBufferi — параметр value должен быть *const ALint → *mut ALint
+// OpenAL::GetBufferi — параметр value должен быть *const
+// ALint → *mut ALint
+//  СТАРОЕ: pub unsafe fn GetBufferi(&self, buffer: ALuint, param: ALenum,
+// value: *const ALint)
+//  НОВОЕ: pub unsafe fn GetBufferi(&self, buffer: ALuint, param: ALenum,
+// value: *mut ALint)
 //
-// СТАРОЕ: pub unsafe fn GetBufferi(&self, buffer: ALuint, param: ALenum, value: *const ALint)
-// НОВОЕ:  pub unsafe fn GetBufferi(&self, buffer: ALuint, param: ALenum, value: *mut ALint)
-//
-// alGetBufferi в OpenAL API является getter-функцией: она ЗАПИСЫВАЕТ
-// возвращаемое целое значение по указателю value. В al.h объявлено:
-//   AL_API void AL_APIENTRY alGetBufferi(ALuint buffer, ALenum param, ALint *value);
-// Передача *const ALint означает, что вызывающий код не может получить
-// результат через изменяемую ссылку, а Rust не позволяет тривиально
+// alGetBufferi в OpenAL API является getter-функцией: она
+// ЗАПИСЫВАЕТ
+//  AL_API void AL_APIENTRY alGetBufferi(ALuint buffer, ALenum param, ALint
+// *value);
+// Передача *const ALint означает, что вызывающий
+// код не может получить
 // передать &mut i32 туда, где ожидается *const.
-// Исправлено в соответствии с lib.rs (openal-soft wrapper).
-// ============================================================
+// Исправлено в соответствии с lib.rs (openal-soft
+// wrapper).
 
 use al_sys::alc_types::{ALCcontext, ALCdevice};
 use std::marker::PhantomData;
@@ -176,9 +179,12 @@ impl OpenALContext {
 
                 unsafe {
                     al_sys::alcCloseDevice(device);
-                    // SAFETY: This is a last-chance fallback during audio context creation.
-                    // touchHLE is still on the main startup/audio path here, and this is only
-                    // used after the selected OpenAL device failed to create a context.
+                    //  SAFETY: This is a last-chance fallback during audio
+                    // context creation.
+                    //  touchHLE is still on the main startup/audio path here,
+                    // and this is only
+                    //  used after the selected OpenAL device failed to create
+                    // a context.
                     std::env::set_var("ALSOFT_DRIVERS", "null");
                 }
 
@@ -282,7 +288,8 @@ impl OpenAL<'_> {
     }
 
     // FIX: value изменён с *const ALint на *mut ALint —
-    // alGetBufferi записывает значение по этому указателю.
+    // alGetBufferi записывает значение по этому
+    // указателю.
     pub unsafe fn GetBufferi(&self, buffer: ALuint, param: ALenum, value: *mut ALint) {
         al_sys::alGetBufferi(buffer, param, value)
     }

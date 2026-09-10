@@ -283,7 +283,8 @@ pub fn AudioQueueNewOutput(
 /// pan 0 and panned at ±1.
 // Standard OpenAL enum values (al.h). They are missing from the local
 // `openal_soft_wrapper::al_defines` re-export but are part of the public
-// 1.1 ABI, see <https://www.openal.org/documentation/openal-1.1-specification.pdf>.
+//  1.1 ABI, see
+// <https://www.openal.org/documentation/openal-1.1-specification.pdf>.
 const AL_SOURCE_RELATIVE: ALenum = 0x202;
 const AL_POSITION: ALenum = 0x1004;
 const AL_TRUE_I32: ALint = 1;
@@ -891,7 +892,8 @@ pub fn log_if_broken_audio_format(format: &AudioStreamBasicDescription) {
     // format uses interleaved float samples where each sample is 4 bytes
     // but channels_per_frame * bytes_per_channel may differ from
     // bytes_per_frame in packed non-interleaved layouts.
-    // See: https://developer.apple.com/documentation/coreaudiotypes/audiostreambasicdescription
+    //  See:
+    // https://developer.apple.com/documentation/coreaudiotypes/audiostreambasicdescription
     if format.format_id == kAudioFormatLinearPCM
         && (format.format_flags & kAudioFormatFlagIsFloat) != 0
     {
@@ -934,6 +936,7 @@ pub fn is_supported_audio_format(format: &AudioStreamBasicDescription) -> bool {
         }
         // MPEG-1 / MPEG-2 Layer III. Apple's documentation for
         // `kAudioFormatMPEGLayer3` (see
+        //
         // <https://developer.apple.com/documentation/coreaudiotypes/kaudioformatmpeglayer3>)
         // says the format is compressed: `bytes_per_packet`,
         // `bytes_per_frame` and `bits_per_channel` are conventionally 0
@@ -1081,7 +1084,8 @@ pub fn decode_buffer(
                 (1, 16) => al::AL_FORMAT_MONO16,
                 (2, 8) => al::AL_FORMAT_STEREO8,
                 (2, 16) => al::AL_FORMAT_STEREO16,
-                // --- ДОБАВЛЕНА РАБОЧАЯ ВЕТКА ДЛЯ (1, 32) ---
+                // --- ДОБАВЛЕНА РАБОЧАЯ ВЕТКА ДЛЯ (1,
+                // 32) ---
                 (1, 32) => {
                     let valid_len = processed_data.len() / 4 * 4;
                     processed_data.truncate(valid_len);
@@ -1092,6 +1096,7 @@ pub fn decode_buffer(
                         // 32-bit float PCM: convert float [-1.0, 1.0] to i16
                         // Apple Core Audio docs: kAudioFormatFlagIsFloat
                         // indicates IEEE 754 floating point samples.
+                        //
                         // https://developer.apple.com/documentation/coreaudiotypes/kaudioformatflagisfloat
                         for chunk in processed_data.chunks(4) {
                             let val = f32::from_le_bytes(chunk.try_into().unwrap());
@@ -1122,7 +1127,8 @@ pub fn decode_buffer(
                     let mut new_processed_data = Vec::<u8>::with_capacity(new_size);
 
                     if (format.format_flags & kAudioFormatFlagIsFloat) != 0 {
-                        // 32-bit float PCM stereo: convert float [-1.0, 1.0] to i16
+                        //  32-bit float PCM stereo: convert float [-1.0, 1.0]
+                        // to i16
                         for chunk in processed_data.chunks(4) {
                             let val = f32::from_le_bytes(chunk.try_into().unwrap());
                             let clamped = val.clamp(-1.0, 1.0);
@@ -1143,11 +1149,11 @@ pub fn decode_buffer(
                         new_processed_data,
                     );
                 }
-                // ... предыдущие рабочие ветки (1, 32) и (2, 32) остаются как
-                // есть ...
+                // ... предыдущие рабочие ветки (1, 32) и
+                // (2, 32) остаются как
                 _ => {
-                    // Копируем значение в локальную переменную, чтобы избежать
-                    // создания ссылки на packed-поле
+                    // Копируем значение в локальную
+                    // переменную, чтобы избежать
                     let bits = format.bits_per_channel;
                     log!(
                         "Warning: decode_buffer: unhandled audio format: {} channels, {} bits; returning empty mono16 buffer.",
@@ -1858,10 +1864,11 @@ pub fn AudioQueueDispose(
         // Games that allocate many short-lived AVAudioPlayers for sound
         // effects (e.g. BAROQUE) eventually exhausted the pool: alGenSources
         // then failed with AL_OUT_OF_MEMORY (0xA005), all further audio went
-        // silent, and the game aborted ("これ以上オーディを再生できません").
-        //
+        // silent, and the game aborted
+        // ("これ以上オーディを再生できません").
         // Apple's AudioQueueDispose documents that it "disposes of an audio
         // queue object and all of its resources"
+        //
         // <https://developer.apple.com/documentation/audiotoolbox/audioqueuedispose(_:_:)>,
         // so releasing the source here matches the documented behaviour.
         unsafe {

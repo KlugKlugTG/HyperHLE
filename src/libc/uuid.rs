@@ -7,7 +7,8 @@
 //!
 //! Apple references:
 //! * `uuid(3)` man page:
-//!   <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/uuid.3.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/uuid.3.html>
 //! * Header `<uuid/uuid.h>` (open-source `libutil` /
 //!   `Libsystem` projects).
 //!

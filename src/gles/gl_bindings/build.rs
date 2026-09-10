@@ -103,7 +103,8 @@ fn main() {
     .write_bindings(GlobalGenerator, &mut file)
     .unwrap();
 
-    // OpenGL ES 3.0 — full Core profile. This is what `kEAGLRenderingAPIOpenGLES3`
+    //  OpenGL ES 3.0 — full Core profile. This is what
+    // `kEAGLRenderingAPIOpenGLES3`
     // routes to. ES 3.0 is a strict superset of ES 2.0 in terms of API surface
     // and re-exposes everything ES 2.0 provides plus VAOs, transform feedback,
     // sampler objects, multiple render targets, integer attributes/uniforms,

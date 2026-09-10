@@ -14,8 +14,8 @@ use regex::Regex;
 
 use super::ns_text_checking_result;
 
-/// Хост-объект для хранения скомпилированного регулярного выражения.
-#[derive(Default)]
+/// Хост-объект для хранения
+//скомпилированного регулярного выражения.
 struct NSRegularExpressionHostObject {
     regex: Option<Regex>,
 }
@@ -72,10 +72,10 @@ pub const CLASSES: ClassExports = objc_classes! {
                     pattern_str,
                     e
                 );
-                // В полноценной реализации здесь нужно создавать NSError, но
-                // пока возвращаем nil и освобождаем приёмник, как и положено
-                // по соглашению Cocoa для неудавшегося -init.
-                release(env, this);
+                // В полноценной реализации здесь
+                // нужно создавать NSError, но
+                // по соглашению Cocoa для
+                // неудавшегося -init.
                 nil
             }
         }
@@ -165,7 +165,8 @@ pub const CLASSES: ClassExports = objc_classes! {
             return empty;
         };
         let target_text = &full_text[start_byte..end_byte];
-        // Clone regex to release the borrow before calling env-mutating functions.
+        //  Clone regex to release the borrow before calling env-mutating
+        // functions.
         let re_clone = {
             let host_obj = env.objc.borrow::<NSRegularExpressionHostObject>(this);
             match &host_obj.regex {

@@ -194,8 +194,10 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - Shadow (UILabel + UIStringDrawing semantics)
 //
 // Apple documentation:
-//   - https://developer.apple.com/documentation/uikit/uilabel/1620539-shadowcolor
-//   - https://developer.apple.com/documentation/uikit/uilabel/1620546-shadowoffset
+//  -
+// https://developer.apple.com/documentation/uikit/uilabel/1620539-shadowcolor
+//  -
+// https://developer.apple.com/documentation/uikit/uilabel/1620546-shadowoffset
 //
 // `shadowColor` is a retained `UIColor` (nil = no shadow). `shadowOffset` is
 // a `CGSize` whose `height` is in *UIKit* coordinates: a negative value pulls
@@ -437,7 +439,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     // (origin + shadowOffset) using shadowColor, then paints the foreground
     // text on top. The shadow pass uses the same line-break/alignment
     // policy as the foreground pass so multi-line labels stay aligned.
-    // See: https://developer.apple.com/documentation/uikit/uilabel/1620539-shadowcolor
+    //  See:
+    // https://developer.apple.com/documentation/uikit/uilabel/1620539-shadowcolor
     if shadow_color != nil {
         let (sr, sg, sb, sa) = ui_color::get_rgba(&env.objc, shadow_color);
         CGContextSetRGBFillColor(env, context, sr, sg, sb, sa);

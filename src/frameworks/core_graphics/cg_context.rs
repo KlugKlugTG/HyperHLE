@@ -100,6 +100,7 @@ pub struct CGShadowState {
 impl Default for CGShadowState {
     fn default() -> Self {
         // Apple defaults: black shadow, alpha 1/3, see
+        //
         // <https://developer.apple.com/documentation/coregraphics/1455324-cgcontextsetshadow>.
         CGShadowState {
             enabled: false,
@@ -187,8 +188,8 @@ pub fn CGContextSetRGBStrokeColor(
     if context.is_null() {
         return;
     }
-    // Пишем напрямую в поле структуры через borrow_mut
-    env.objc
+    // Пишем напрямую в поле структуры через
+    // borrow_mut
         .borrow_mut::<CGContextHostObject>(context)
         .rgb_stroke_color = (red, green, blue, alpha);
 }
@@ -303,6 +304,7 @@ fn CGContextSetShadow(
     // to draw the shadow with a blurred edge; a blur of 0.0 produces no
     // blur." The default shadow color when no explicit color is passed is
     // "black with 1/3 alpha".
+    //
     // https://developer.apple.com/documentation/coregraphics/1454559-cgcontextsetshadow
     let host = env.objc.borrow_mut::<CGContextHostObject>(context);
     host.shadow = CGShadowState {
@@ -326,6 +328,7 @@ fn CGContextSetShadowWithColor(
     }
     // Per Apple:
     // "If the color parameter is NULL, then shadowing is disabled."
+    //
     // https://developer.apple.com/documentation/coregraphics/1456225-cgcontextsetshadowwithcolor
     if color.is_null() {
         env.objc
@@ -359,6 +362,7 @@ fn CGContextSetFillColorSpace(
     //      fill color space in the graphics state.
     //   2. Core Graphics sets the fill color to a default value that's
     //      appropriate for the color space."
+    //
     // https://developer.apple.com/documentation/coregraphics/1455380-cgcontextsetfillcolorspace
     //
     // touchHLE always works in device RGB internally — switching color
@@ -384,6 +388,7 @@ fn CGContextSetStrokeColorSpace(
         return;
     }
     // Same rationale as CGContextSetFillColorSpace.
+    //
     // https://developer.apple.com/documentation/coregraphics/1455379-cgcontextsetstrokecolorspace
     let _ = color_space;
     env.objc
@@ -396,6 +401,7 @@ fn CGContextSetRenderingIntent(env: &mut Environment, context: CGContextRef, int
         return;
     }
     // Per Apple's "CGColorRenderingIntent" reference:
+    //
     // https://developer.apple.com/documentation/coregraphics/cgcolorrenderingintent
     // - kCGRenderingIntentDefault (0)
     // - kCGRenderingIntentAbsoluteColorimetric (1)
@@ -973,7 +979,8 @@ pub fn CGContextDrawImage(
     cg_bitmap_context::draw_image(env, context, rect, image);
 }
 
-/// `void CGContextDrawTiledImage(CGContextRef c, CGRect rect, CGImageRef image)`
+///  `void CGContextDrawTiledImage(CGContextRef c, CGRect rect, CGImageRef
+/// image)`
 ///
 /// Apple documentation: draws an image repeatedly, tiling it across the entire
 /// clipping region of the context. `rect` defines the origin (the tiling
@@ -1052,7 +1059,8 @@ pub fn CGContextDrawLinearGradient(
     _end_point: CGPoint,
     _options: u32,
 ) {
-    // Stubbed: the previous implementation filled the clip bounding box with the
+    //  Stubbed: the previous implementation filled the clip bounding box with
+    // the
     // current fill color as an approximation, but this caused two problems for
     // Mirror's Edge iPad: (1) the tutorial overlay background is drawn with a
     // white fill color, producing an opaque white screen that hides all 3D
@@ -1060,7 +1068,8 @@ pub fn CGContextDrawLinearGradient(
     // context on the CPU caused a multi-second hang that Windows reported as
     // "Not Responding". True gradient rendering would require per-pixel color
     // interpolation using the CGGradientRef color stops; for now we skip the
-    // draw entirely so overlays remain transparent and the game stays responsive.
+    //  draw entirely so overlays remain transparent and the game stays
+    // responsive.
     log_dbg!("CGContextDrawLinearGradient: stubbed (skipped)");
 }
 
@@ -1139,8 +1148,8 @@ fn CGContextSetInterpolationQuality(
         return;
     }
 
-    // Честно записываем качество в структуру контекста
-    env.objc
+    // Честно записываем качество в структуру
+    // контекста
         .borrow_mut::<CGContextHostObject>(context)
         .interpolation_quality = quality;
 }
@@ -1213,7 +1222,8 @@ fn CGContextSetFont(env: &mut Environment, context: CGContextRef, font: CGFontRe
     if context.is_null() {
         return;
     }
-    // On real iOS, UIFont and CGFont are toll-free bridged. In HyperHLE they are
+    //  On real iOS, UIFont and CGFont are toll-free bridged. In HyperHLE they
+    // are
     // separate types. Handle three cases:
     // 1. Already a _touchHLE_CGFont — use as-is.
     // 2. A live UIFont — wrap it in a _touchHLE_CGFont on the fly.
@@ -1433,7 +1443,8 @@ fn CGContextShowGlyphsWithAdvances(
     );
 }
 
-/// `void CGContextShowGlyphs(CGContextRef c, const CGGlyph *glyphs, size_t count)`
+///  `void CGContextShowGlyphs(CGContextRef c, const CGGlyph *glyphs, size_t
+/// count)`
 ///
 /// Draws glyphs at the current text position. Since we don't track text
 /// position fully yet, we draw at (0, 0).
@@ -1453,7 +1464,8 @@ fn CGContextShowGlyphs(
 /// no-op.  Exporting the symbol eliminates the "unimplemented function"
 /// warning produced by apps that call it unconditionally.
 ///
-/// Reference: <https://developer.apple.com/documentation/coregraphics/1454839-cgcontextsetallowsfontsubpixelpo>
+///  Reference:
+/// <https://developer.apple.com/documentation/coregraphics/1454839-cgcontextsetallowsfontsubpixelpo>
 fn CGContextSetAllowsFontSubpixelPositioning(
     _env: &mut Environment,
     _context: CGContextRef,
@@ -1467,7 +1479,9 @@ fn CGContextSetAllowsFontSubpixelPositioning(
 /// boundaries.  No-op for the same reasons as
 /// `CGContextSetAllowsFontSubpixelPositioning`.
 ///
-/// Reference: <https://developer.apple.com/documentation/coregraphics/1455671-cgcontextsetshouldsub pixelquanti>
+///  Reference:
+/// <https://developer.apple.com/documentation/coregraphics/1455671-cgcontextsetshouldsub
+/// pixelquanti>
 fn CGContextSetShouldSubpixelQuantizeFonts(
     _env: &mut Environment,
     _context: CGContextRef,

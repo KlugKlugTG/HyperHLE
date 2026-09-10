@@ -120,7 +120,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 - (())setDelegate:(id)delegate { // something implementing UIApplicationDelegate
     let host_object = env.objc.borrow_mut::<UIApplicationHostObject>(this);
-    // This property is quasi-non-retaining: https://stackoverflow.com/a/14271150/736162
+    //  This property is quasi-non-retaining:
+    // https://stackoverflow.com/a/14271150/736162
     let old_delegate = std::mem::replace(&mut host_object.delegate, delegate);
     if host_object.delegate_is_retained {
         host_object.delegate_is_retained = false;
@@ -250,6 +251,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // Schemes the host environment (browsers / mail / phone / SMS /
     // file viewers) is guaranteed to handle on every reasonable
     // device. Source: Apple "URL Schemes" Technote (
+    //
     // https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/
     // ).
     const HOST_HANDLED_SCHEMES: &[&str] = &[
@@ -338,10 +340,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     if *count > 0 {
         *count -= 1;
     } else {
-        // В реальной iOS здесь выбрасывается исключение
-        // NSInternalInconsistencyException,
-        // но для стабильности эмулятора мы просто залогируем предупреждение,
-        // если игра ошиблась со счетчиком.
+        // В реальной iOS здесь выбрасывается
+        // исключение
+        // но для стабильности эмулятора мы
+        // просто залогируем предупреждение,
         log!("Warning: endIgnoringInteractionEvents called without matching beginIgnoringInteractionEvents");
     }
 }
@@ -579,7 +581,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (UIRemoteNotificationType)enabledRemoteNotificationTypes` —
-// per Apple's [UIApplication Reference](https://developer.apple.com/documentation/uikit/uiapplication/1623060-enabledremotenotificationtypes):
+//  per Apple's [UIApplication
+// Reference](https://developer.apple.com/documentation/uikit/uiapplication/1623060-enabledremotenotificationtypes):
 // the bitmask of remote notification types the user has explicitly
 // enabled in Settings. touchHLE has no system Settings UI and no real
 // push notification subsystem, so no notification types are enabled —
@@ -594,7 +597,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // app icon badge. touchHLE has no SpringBoard, but games (e.g.
 // notification-driven trial flows) often *read* the value back after
 // setting it to gate logic, so we store it for round-trip fidelity per
-// Apple's [UIApplication Reference](https://developer.apple.com/documentation/uikit/uiapplication/1622918-applicationiconbadgenumber).
+//  Apple's [UIApplication
+// Reference](https://developer.apple.com/documentation/uikit/uiapplication/1622918-applicationiconbadgenumber).
 - (NSInteger)applicationIconBadgeNumber {
     env.objc.borrow::<UIApplicationHostObject>(this).application_icon_badge_number
 }
@@ -618,9 +622,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // UIUserNotificationSettings — holds notification permission settings.
 // https://developer.apple.com/documentation/uikit/uiusernotificationsettings
-// On iOS 8+, apps call [UIApplication registerUserNotificationSettings:settings]
-// with an instance of this class. Since touchHLE does not deliver notifications,
-// we expose a minimal stub that satisfies alloc/init and settingsForTypes:categories:.
+//  On iOS 8+, apps call [UIApplication
+// registerUserNotificationSettings:settings]
+//  with an instance of this class. Since touchHLE does not deliver
+// notifications,
+//  we expose a minimal stub that satisfies alloc/init and
+// settingsForTypes:categories:.
 @implementation UIUserNotificationSettings: NSObject
 
 + (id)allocWithZone:(NSZonePtr)_zone {
@@ -805,7 +812,7 @@ pub(super) fn UIApplicationMain(
         //   6. Assign the window to the app delegate's `window` property
         //      via KVC (Apple's UIApplicationMain does this so app
         //      delegates can return the window from `-window` without any
-        //      manual wiring inside `application:didFinishLaunchingWithOptions:`).
+        // manual wiring inside `application:didFinishLaunchingWithOptions:`).
         let storyboard_name = env
             .bundle
             .main_storyboard_filename(device_family)
@@ -906,7 +913,8 @@ pub(super) fn UIApplicationMain(
     // sit forever in the run loop waiting for it. Post an initial
     // notification here so the app can transition out of its idle splash
     // state. See `UIDevice` documentation:
-    //   https://developer.apple.com/documentation/uikit/uidevice/1620018-beginGeneratingdeviceorientationn
+    //
+    // https://developer.apple.com/documentation/uikit/uidevice/1620018-beginGeneratingdeviceorientationn
     {
         let pool: id = msg_class![env; NSAutoreleasePool new];
         let current_device: id = msg_class![env; UIDevice currentDevice];
@@ -932,7 +940,8 @@ pub(super) fn UIApplicationMain(
 /// iOS `applicationWillResignActive:`). Unlike [exit], this does NOT
 /// terminate the process — the app may return to the foreground later.
 ///
-/// Apple docs: <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillresignactive(_:)>
+///  Apple docs:
+/// <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillresignactive(_:)>
 pub(super) fn handle_will_resign_active(env: &mut Environment) {
     let ui_application: id = msg_class![env; UIApplication sharedApplication];
     let center: id = msg_class![env; NSNotificationCenter defaultCenter];
@@ -953,7 +962,8 @@ pub(super) fn handle_will_resign_active(env: &mut Environment) {
 /// Dispatches `applicationDidEnterBackground:` and posts
 /// `UIApplicationDidEnterBackgroundNotification`.
 ///
-/// Apple docs: <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidenterbackground(_:)>
+///  Apple docs:
+/// <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidenterbackground(_:)>
 pub(super) fn handle_did_enter_background(env: &mut Environment) {
     let ui_application: id = msg_class![env; UIApplication sharedApplication];
     let center: id = msg_class![env; NSNotificationCenter defaultCenter];
@@ -981,7 +991,8 @@ pub(super) fn handle_did_enter_background(env: &mut Environment) {
 /// Dispatches `applicationWillEnterForeground:` and posts
 /// `UIApplicationWillEnterForegroundNotification`.
 ///
-/// Apple docs: <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillenterforeground(_:)>
+///  Apple docs:
+/// <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationwillenterforeground(_:)>
 pub(super) fn handle_will_enter_foreground(env: &mut Environment) {
     let ui_application: id = msg_class![env; UIApplication sharedApplication];
     let center: id = msg_class![env; NSNotificationCenter defaultCenter];
@@ -1003,7 +1014,8 @@ pub(super) fn handle_will_enter_foreground(env: &mut Environment) {
 /// `UIApplicationDidBecomeActiveNotification`. Used both at launch time and
 /// when the app returns to the foreground after being inactive/backgrounded.
 ///
-/// Apple docs: <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidbecomeactive(_:)>
+///  Apple docs:
+/// <https://developer.apple.com/documentation/uikit/uiapplicationdelegate/applicationdidbecomeactive(_:)>
 pub(super) fn handle_did_become_active(env: &mut Environment) {
     let ui_application: id = msg_class![env; UIApplication sharedApplication];
     let center: id = msg_class![env; NSNotificationCenter defaultCenter];
@@ -1081,9 +1093,12 @@ const UIApplicationDidReceiveMemoryWarningNotification: &str =
 // resolve correctly.
 //
 // References:
-// * Apple [UIApplication notification names](https://developer.apple.com/documentation/uikit/uiapplication)
-// * Apple [Launch options keys](https://developer.apple.com/documentation/uikit/uiapplication/launchoptionskey)
-// * Apple [Status-bar related notifications](https://developer.apple.com/documentation/uikit/uiapplicationdidchangestatusbarframenotification)
+//  * Apple [UIApplication notification
+// names](https://developer.apple.com/documentation/uikit/uiapplication)
+//  * Apple [Launch options
+// keys](https://developer.apple.com/documentation/uikit/uiapplication/launchoptionskey)
+//  * Apple [Status-bar related
+// notifications](https://developer.apple.com/documentation/uikit/uiapplicationdidchangestatusbarframenotification)
 const UIApplicationProtectedDataDidBecomeAvailable: &str =
     "UIApplicationProtectedDataDidBecomeAvailable";
 const UIApplicationProtectedDataWillBecomeUnavailable: &str =
@@ -1104,7 +1119,8 @@ const UIApplicationStatusBarOrientationUserInfoKey: &str =
 const UIApplicationBackgroundFetchIntervalMinimum: &str =
     "UIApplicationBackgroundFetchIntervalMinimum";
 const UIApplicationBackgroundFetchIntervalNever: &str = "UIApplicationBackgroundFetchIntervalNever";
-// Launch options keys — Apple `UIApplication.h` (`UIApplicationLaunchOptionsKey`).
+//  Launch options keys — Apple `UIApplication.h`
+// (`UIApplicationLaunchOptionsKey`).
 const UIApplicationLaunchOptionsURLKey: &str = "UIApplicationLaunchOptionsURLKey";
 const UIApplicationLaunchOptionsSourceApplicationKey: &str =
     "UIApplicationLaunchOptionsSourceApplicationKey";
@@ -1122,7 +1138,8 @@ const UIApplicationLaunchOptionsShortcutItemKey: &str = "UIApplicationLaunchOpti
 // `UIApplicationOpenSettingsURLString` from `UIApplication.h`. iOS apps
 // pass this to `-[UIApplication openURL:]` to open the system Settings
 // app at their own page; the literal value is `"app-settings:"` per
-// Apple's docs (<https://developer.apple.com/documentation/uikit/uiapplicationopensettingsurlstring>).
+//  Apple's docs
+// (<https://developer.apple.com/documentation/uikit/uiapplicationopensettingsurlstring>).
 const UIApplicationOpenSettingsURLString: &str = "app-settings:";
 // Newer (iOS 9) open-URL option keys — `UIApplicationOpenURLOptionsKey`.
 const UIApplicationOpenURLOptionsSourceApplicationKey: &str =

@@ -79,6 +79,7 @@ fn task_set_exception_ports(
     assert_eq!(behavior, EXCEPTION_DEFAULT);
     // Mono's exception handler thread (Unity) installs an EXC_BAD_ACCESS
     // handler with this call. Per Apple's
+    //
     // [task_set_exception_ports](https://developer.apple.com/documentation/kernel/1402141-task_set_exception_ports?language=objc)
     // docs the kernel is supposed to forward matching exceptions to
     // `new_port`. touchHLE does not deliver guest faults via Mach ports —
@@ -104,11 +105,12 @@ fn task_set_exception_ports(
 ///                                          thread_state_flavor_t new_flavor,
 ///                                          exception_mask_array_t masks,
 ///                                          mach_msg_type_number_t *masksCnt,
-///                                          exception_handler_array_t old_handlers,
-///                                          exception_behavior_array_t old_behaviors,
-///                                          exception_flavor_array_t old_flavors)`
+// exception_handler_array_t old_handlers,
+// exception_behavior_array_t old_behaviors,
+// exception_flavor_array_t old_flavors)`
 ///
-/// Per Apple's [task_swap_exception_ports](https://developer.apple.com/documentation/kernel/1418564-task_swap_exception_ports?language=objc)
+///  Per Apple's
+/// [task_swap_exception_ports](https://developer.apple.com/documentation/kernel/1418564-task_swap_exception_ports?language=objc)
 /// docs: installs `new_port` as the exception handler for `exception_mask`
 /// and returns the previously-installed ports in the `old_*` out parameters.
 ///

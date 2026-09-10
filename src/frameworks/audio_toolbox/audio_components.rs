@@ -51,8 +51,8 @@ pub struct MixerDistanceParams {
     pub rolloff_factor: f32,
 }
 
-// ИСПРАВЛЕНИЕ: Реализация SafeRead для возможности чтения из памяти
-unsafe impl SafeRead for MixerDistanceParams {}
+// ИСПРАВЛЕНИЕ: Реализация SafeRead для
+// возможности чтения из памяти
 
 #[derive(Clone)]
 pub struct MixerBusState {
@@ -267,8 +267,8 @@ fn AudioComponentInstanceNew(
     0
 }
 
-/// Создать AudioUnit instance напрямую (используется из
-//`au_graph::AUGraphOpen`),
+/// Создать AudioUnit instance напрямую (используется
+//из
 /// минуя обычный путь `AudioComponentInstanceNew`.
 pub fn create_audio_unit_instance(env: &mut Environment) -> AudioComponentInstance {
     let mut host_object = AudioComponentInstanceHostObject::default();

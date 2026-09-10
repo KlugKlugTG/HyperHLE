@@ -6,7 +6,8 @@
 //! `NSRunLoop`.
 //!
 //! Resources:
-//! - Apple's [Threading Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/Introduction/Introduction.html)
+//! - Apple's [Threading Programming
+//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/Introduction/Introduction.html)
 
 use super::{ns_port, ns_string, ns_timer, NSTimeInterval};
 use crate::dyld::{ConstantExports, HostConstant};
@@ -25,7 +26,8 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 /// `NSString*`
 pub type NSRunLoopMode = id;
-// FIXME: Maybe this shouldn't be the same value? See: https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html
+//  FIXME: Maybe this shouldn't be the same value? See:
+// https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/RunLoopManagement/RunLoopManagement.html
 pub const NSRunLoopCommonModes: &str = kCFRunLoopCommonModes;
 pub const NSDefaultRunLoopMode: &str = kCFRunLoopDefaultMode;
 
@@ -128,6 +130,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Adds a port as an input source to the run loop. See:
+//
 // https://developer.apple.com/documentation/foundation/nsrunloop/1417511-addport
 // touchHLE has no Mach message delivery, so the port never fires an input
 // source, but the run loop takes ownership of it (retains it) exactly as
@@ -155,6 +158,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Removes a port previously added with `addPort:forMode:`. See:
+//
 // https://developer.apple.com/documentation/foundation/nsrunloop/1408625-removeport
 - (())removePort:(id)port // NSPort*
          forMode:(NSRunLoopMode)mode {
@@ -215,22 +219,22 @@ pub const CLASSES: ClassExports = objc_classes! {
 
         log_dbg!("NSRunLoop: cancelPerformSelectorsWithTarget: {:?}", target);
 
-        // Клонируем список таймеров, так как вызов invalidate приведет к
-        // удалению таймера из списка (через remove_timer), что изменит массив.
+        // Клонируем список таймеров, так как
+        // вызов invalidate приведет к
         let timers = env.objc.borrow::<NSRunLoopHostObject>(this).timers.clone();
 
-        // Делаем локальный retain всех таймеров, чтобы избежать use-after-free,
-        // аналогично тому, как это сделано ниже в функции `run_run_loop`.
+        // Делаем локальный retain всех таймеров,
+        // чтобы избежать use-after-free,
         for &timer in &timers {
             retain(env, timer);
         }
 
         for &timer in &timers {
-            // Запрашиваем целевой объект у таймера напрямую через сообщение.
-            let timer_target: id = msg![env; timer target];
+            // Запрашиваем целевой объект у
+            // таймера напрямую через сообщение.
 
-            // Если цель совпадает, инвалидируем таймер (он сам удалится из run
-            // loop)
+            // Если цель совпадает, инвалидируем
+            // таймер (он сам удалится из run
             if timer_target == target {
                 log_dbg!("NSRunLoop: invalidating timer {:?} for target {:?}", timer, target);
                 let _: () = msg![env; timer invalidate];
@@ -307,8 +311,8 @@ pub fn remove_audio_queue(env: &mut Environment, run_loop: id, queue: AudioQueue
 pub(super) fn remove_timer(env: &mut Environment, run_loop: id, timer: id) {
     log_dbg!("Removing timer {:?} from run loop {:?}", timer, run_loop);
 
-    // Честная логика Objective-C: если run_loop равен nil, нам не откуда
-    // удалять таймер.
+    // Честная логика Objective-C: если run_loop равен
+    // nil, нам не откуда
     if run_loop == nil {
         return;
     }
@@ -327,8 +331,8 @@ pub(super) fn remove_timer(env: &mut Environment, run_loop: id, timer: id) {
     }
 
     // Убираем жесткий assert!(release_count == 1);
-    // В iOS таймер мог быть отменен до добавления в цикл или отменен дважды.
-    // Мы просто делаем release столько раз, сколько реально удалили из массива.
+    // В iOS таймер мог быть отменен до
+    // добавления в цикл или отменен дважды.
     for _ in 0..release_count {
         release(env, timer);
     }

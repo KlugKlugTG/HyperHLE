@@ -24,7 +24,8 @@ static LAST_FPS_TEXT: OnceLock<Mutex<String>> = OnceLock::new();
 // Per-process cached GL glyph textures. Created lazily on first overlay draw.
 static GLYPH_TEXTURES: OnceLock<Mutex<Option<Vec<u32>>>> = OnceLock::new();
 // Runtime-controlled flag to enable the on-screen FPS overlay without requiring
-// an environment variable. Use set_onscreen_fps_enabled(true/false) to control it
+//  an environment variable. Use set_onscreen_fps_enabled(true/false) to
+// control it
 // from other parts of the runtime (e.g., the app picker or window input).
 use std::sync::atomic::{AtomicBool, Ordering};
 static ONSCREEN_FPS_ENABLED: OnceLock<AtomicBool> = OnceLock::new();
@@ -126,8 +127,8 @@ pub unsafe fn present_frame(
     // Apply the device-rotation matrix to the TEXTURE matrix, but rotate
     // around the centre of the tex coord square (0.5, 0.5) instead of the
     // origin. The naive `LoadMatrixf(rotation_matrix)` rotates around (0, 0),
-    // which sends standard [0, 1]² UVs out of range — e.g. for a 90° rotation
-    // (v, -u) reaches v' = -u ∈ [-1, 0]. On lenient drivers (Mesa, Apple
+    // which sends standard [0, 1]² UVs out of range — e.g. for a 90°
+    // rotation
     // PowerVR) GL_REPEAT wrap quietly maps that back into [0, 1], but
     // strict drivers (Qualcomm Adreno's native ES 1.1 path) treat the
     // resulting sample of an NPOT texture (renderbuffer is typically

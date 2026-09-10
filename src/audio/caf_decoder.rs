@@ -5,8 +5,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-//! Standalone CAF (Apple Core Audio Format) → 16-bit little-endian PCM decoder.
-//!
+//! Standalone CAF (Apple Core Audio Format) → 16-bit little-endian PCM
+//decoder.
 //! This is used as a fallback when [`super::symphonia_formats`] cannot probe a
 //! CAF file. The CAF demuxer in `symphonia-format-caf 0.6.0-alpha.1` does not
 //! correctly handle CAF files where the Audio Data chunk's `mChunkSize` is set
@@ -19,41 +19,44 @@
 //!
 //! References:
 //! - Apple, *Apple Core Audio Format Specification 1.0*, "The Audio Data Chunk"
-//!   <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html>
 //! - Apple, *Apple Core Audio Format Specification 1.0*, "The Audio Description
 //! Chunk"
-//!   <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html#//apple_ref/doc/uid/TP40001862-CH210-SW2>
+//!
+//<https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html#//apple_ref/doc/uid/TP40001862-CH210-SW2>
 //! - Apple, *AudioServicesCreateSystemSoundID*
-//!   <https://developer.apple.com/documentation/audiotoolbox/audioservicescreatesystemsoundid(_:_:)>
+//!
+//<https://developer.apple.com/documentation/audiotoolbox/audioservicescreatesystemsoundid(_:_:)>
 
 // ============================================================
 // ИСПРАВЛЕНИЯ (относительно исходника):
 //
 // 1. ulaw_to_linear — неверный знак:
 //    По стандарту ITU-T G.711 и реализации Sun/POSIX:
-//    В µ-law ПОСЛЕ инвертирования всех битов (!u_val):
-//      бит 7 (0x80) == 1  →  ПОЛОЖИТЕЛЬНОЕ число
+// В µ-law ПОСЛЕ инвертирования всех битов
+// (!u_val):
 //      бит 7 (0x80) == 0  →  ОТРИЦАТЕЛЬНОЕ число
-//    Исходный код делал наоборот: возвращал BIAS-t при бите 7==1
-//    и t-BIAS при бите 7==0, что перепутывает знак всех семплов.
-//    ИСПРАВЛЕНО: при (u_val & 0x80) != 0 → (t - BIAS), иначе → (BIAS - t).
-//
-// 2. kCAFLinearPCMFormatFlagIsFloat и kCAFLinearPCMFormatFlagIsLittleEndian —
-//    биты проверяются корректно (bit 0 и bit 1 соответственно), как определено
+// Исходный код делал наоборот: возвращал
+// BIAS-t при бите 7==1
+// ИСПРАВЛЕНО: при (u_val & 0x80) != 0 → (t - BIAS), иначе
+// → (BIAS - t).
+// 2. kCAFLinearPCMFormatFlagIsFloat и kCAFLinearPCMFormatFlagIsLittleEndian
+// —
 //    в Apple CAF Spec:
 //      kCAFLinearPCMFormatFlagIsFloat        = (1L << 0)   // 0x1
 //      kCAFLinearPCMFormatFlagIsLittleEndian = (1L << 1)   // 0x2
 //    Маски 0b01 и 0b10 правильны.
 //
 // 3. 8-bit LPCM в CAF — знаковый:
-//    Согласно CAF spec, 8-bit LPCM в CAF — знаковый (signed). При конвертации
-//    в 16-bit расширяем знак и масштабируем: (v as i16) << 8.
+// Согласно CAF spec, 8-bit LPCM в CAF — знаковый (signed).
+// При конвертации
 //    Это оставлено без изменений (правильно).
 //
-// 4. IMA4 bytes_per_packet: спецификация Apple (Table 2-5) явно указывает
-//    mBytesPerPacket = mChannelsPerFrame * 34 при фиксированном размере.
-//    Поле может быть 0 при переменном размере (VBR), поэтому проверка
-//    `desc.bytes_per_packet != 0` перед сравнением оставлена корректной.
+// 4. IMA4 bytes_per_packet: спецификация Apple (Table 2-5) явно
+// указывает
+// Поле может быть 0 при переменном размере
+// (VBR), поэтому проверка
 // ============================================================
 
 use super::ima4::decode_ima4;
@@ -243,7 +246,8 @@ fn decode_caf_to_pcm_inner(file: Cursor<Vec<u8>>) -> Result<SymphoniaDecodedToPc
                     buf[..sample.len()].copy_from_slice(sample);
                     let s16 = match (bits, is_little_endian) {
                         (8, _) => {
-                            // CAF 8-bit LPCM is signed per spec; sign-extend to 16-bit
+                            //  CAF 8-bit LPCM is signed per spec; sign-extend
+                            // to 16-bit
                             // and scale (high-align): shift left by 8.
                             let v = buf[0] as i8;
                             (v as i16) << 8
@@ -251,14 +255,16 @@ fn decode_caf_to_pcm_inner(file: Cursor<Vec<u8>>) -> Result<SymphoniaDecodedToPc
                         (16, true) => i16::from_le_bytes([buf[0], buf[1]]),
                         (16, false) => i16::from_be_bytes([buf[0], buf[1]]),
                         (24, true) => {
-                            // Packed little-endian 24-bit signed → i16 (discard LSB byte).
+                            //  Packed little-endian 24-bit signed → i16
+                            // (discard LSB byte).
                             let v = (buf[0] as i32)
                                 | ((buf[1] as i32) << 8)
                                 | (((buf[2] as i8) as i32) << 16);
                             (v >> 8) as i16
                         }
                         (24, false) => {
-                            // Packed big-endian 24-bit signed → i16 (discard LSB byte).
+                            //  Packed big-endian 24-bit signed → i16 (discard
+                            // LSB byte).
                             let v = (buf[2] as i32)
                                 | ((buf[1] as i32) << 8)
                                 | (((buf[0] as i8) as i32) << 16);
@@ -354,17 +360,20 @@ fn decode_caf_to_pcm_inner(file: Cursor<Vec<u8>>) -> Result<SymphoniaDecodedToPc
 ///   bits 6–4 — segment (exponent), 0–7
 ///   bits 3–0 — quantization step within segment
 ///
-/// The bias of 0x84 (132) is used during reconstruction. Output range ≈ ±32124.
-///
+/// The bias of 0x84 (132) is used during reconstruction. Output range ≈
+//±32124.
 /// # Bug fixed vs. original
 /// The original code had the sign check inverted:
-///   `if (u_val & 0x80) != 0 { BIAS - t }` — WRONG (returned negative for positive)
-///   `else { t - BIAS }`                     — WRONG (returned positive for negative)
+///  `if (u_val & 0x80) != 0 { BIAS - t }` — WRONG (returned negative for
+/// positive)
+// `else { t - BIAS }`                     — WRONG (returned positive for
+// negative)
 /// Correct behaviour (per G.711 and Sun reference):
 ///   `if (u_val & 0x80) != 0 { t - BIAS }`  — positive sample
-///   `else { BIAS - t }`                     — negative sample (return negated)
-///
-/// Reference: ITU-T Rec. G.711 (11/88); Sun Microsystems g711.c (public domain).
+///   `else { BIAS - t }`                     — negative sample (return
+//negated)
+///  Reference: ITU-T Rec. G.711 (11/88); Sun Microsystems g711.c (public
+/// domain).
 fn ulaw_to_linear(u_val: u8) -> i16 {
     // Un-complement to obtain the normal µ-law value.
     let u_val = !u_val;
@@ -402,7 +411,8 @@ fn ulaw_to_linear(u_val: u8) -> i16 {
 ///
 /// Output range ≈ ±32256.
 ///
-/// Reference: ITU-T Rec. G.711 (11/88); Sun Microsystems g711.c (public domain).
+///  Reference: ITU-T Rec. G.711 (11/88); Sun Microsystems g711.c (public
+/// domain).
 fn alaw_to_linear(a_val: u8) -> i16 {
     // Restore even-bit inversion used in A-law transmission.
     let a_val = a_val ^ 0x55;

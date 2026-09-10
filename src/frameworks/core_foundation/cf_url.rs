@@ -926,6 +926,7 @@ fn CFURLGetByteRangeForComponent(
 // invalid or incomplete escape sequences make the function return NULL.
 // Passing an empty string as `characters_to_leave_escaped` removes all
 // percent escapes.
+//
 // https://developer.apple.com/documentation/corefoundation/1541961-cfurlcreatestringbyreplacingpercente
 fn decode_percent_escapes(original: &str, leave_escaped: Option<&str>) -> Option<Vec<u8>> {
     let mut out = Vec::with_capacity(original.len());
@@ -1194,8 +1195,8 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CFURLGetString(_)),
     export_c_func!(CFURLGetBytes(_, _, _)),
     export_c_func!(CFURLGetByteRangeForComponent(_, _, _)),
-    // Percent Escaping (ИСПРАВЛЕНО КОЛИЧЕСТВО АРГУМЕНТОВ ЗДЕСЬ)
-    export_c_func!(CFURLCreateStringByReplacingPercentEscapes(_, _, _)),
+    // Percent Escaping (ИСПРАВЛЕНО КОЛИЧЕСТВО
+    // АРГУМЕНТОВ ЗДЕСЬ)
     export_c_func!(CFURLCreateStringByReplacingPercentEscapesUsingEncoding(
         _,
         _,

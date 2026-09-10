@@ -10,7 +10,9 @@
 //! too.
 //!
 //! Resources:
-//! - `objc_setProperty` and friends are not documented, so [reading the source code](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/Accessors.subproj/objc-accessors.mm.auto.html) is useful.
+//! - `objc_setProperty` and friends are not documented, so [reading the source
+//code](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/Accessors.subproj/objc-accessors.mm.auto.html)
+//is useful.
 //!
 //! See also: [crate::frameworks::foundation::ns_object].
 
@@ -448,7 +450,8 @@ pub(super) fn objc_setProperty_atomic_copy(
     )
 }
 
-// note: https://opensource.apple.com/source/objc4/objc4-723/runtime/objc-accessors.mm.auto.html
+//  note:
+// https://opensource.apple.com/source/objc4/objc4-723/runtime/objc-accessors.mm.auto.html
 //       says that hasStrong is unused.
 pub(super) fn objc_copyStruct(
     env: &mut Environment,
@@ -468,6 +471,7 @@ pub(super) fn objc_copyStruct(
 /// name of the declared `@property`, as a C string.
 ///
 /// Per Apple's Objective-C Runtime Reference
+///
 /// (<https://developer.apple.com/documentation/objectivec/property_getname(_:)>):
 ///
 /// > Returns the name of a property.
@@ -502,6 +506,7 @@ pub fn property_getName(env: &mut Environment, property: ConstVoidPtr) -> ConstP
 /// the attribute string of the declared `@property`, as a C string.
 ///
 /// Per Apple's Objective-C Runtime Reference
+///
 /// (<https://developer.apple.com/documentation/objectivec/property_getattributes(_:)>):
 ///
 /// > Returns the attribute string of a property.
@@ -509,6 +514,7 @@ pub fn property_getName(env: &mut Environment, property: ConstVoidPtr) -> ConstP
 ///
 /// The format of this string is documented in "Declared Properties" of the
 /// Objective-C Runtime Programming Guide
+///
 /// (<https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtPropertyIntrospection.html>):
 /// it begins with `T` followed by the `@encode` type, then comma-separated
 /// attribute codes (e.g. `T@"NSString",&,N,V_name`).

@@ -1487,11 +1487,11 @@ fn __isinfd(_env: &mut Environment, arg: f64) -> i32 {
     }
 }
 
-// Честные 64-битные целочисленные операции (Compiler Intrinsics)
-
+// Честные 64-битные целочисленные операции
+// (Compiler Intrinsics)
 // ___udivdi3: unsigned long long / unsigned long long
-// Честные 64-битные целочисленные операции (Compiler Intrinsics)
-
+// Честные 64-битные целочисленные операции
+// (Compiler Intrinsics)
 // __udivdi3: unsigned long long / unsigned long long
 fn __udivdi3(_env: &mut Environment, a: u64, b: u64) -> u64 {
     if b == 0 {
@@ -1663,22 +1663,22 @@ fn __fixunsdfdi(_env: &mut Environment, a: f64) -> u64 {
     a as u64
 }
 
-// Честная реализация C++ Singleton<TimerManager>::getInstance()
-fn _ZN9SingletonI12TimerManagerE11getInstanceEv(env: &mut Environment) -> u32 {
-    // Проверяем, создавали ли мы уже этот объект
-    if env.libc_state.math.timer_manager_instance == 0 {
-        // Выделяем память под объект TimerManager (1024 байта с запасом).
-        // Используем calloc, чтобы вся память была заполнена нулями —
-        // это предотвратит краш, если игра попытается прочитать внутренние поля
-        // класса.
+// Честная реализация C++
+// Singleton<TimerManager>::getInstance()
+    // Проверяем, создавали ли мы уже этот
+    // объект
+        // Выделяем память под объект TimerManager (1024
+        // байта с запасом).
+        // это предотвратит краш, если игра
+        // попытается прочитать внутренние поля
         let ptr = env.mem.calloc(1024);
         env.libc_state.math.timer_manager_instance = ptr.to_bits();
 
         log_dbg!("Allocated TimerManager singleton at {:#x}", ptr.to_bits());
     }
 
-    // Возвращаем один и тот же валидный указатель при каждом вызове
-    env.libc_state.math.timer_manager_instance
+    // Возвращаем один и тот же валидный
+    // указатель при каждом вызове
 }
 
 pub const FUNCTIONS: FunctionExports = &[

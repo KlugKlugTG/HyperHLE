@@ -83,8 +83,8 @@ pub trait GLES {
     }
     /// Returns `true` if this backend is a real OpenGL ES 2.0 / 3.0 driver and
     /// therefore does NOT support fixed-function pipeline calls (`MatrixMode`,
-    /// `EnableClientState`, `Color4f`, …). Used by `present_renderbuffer` so it
-    /// can take a shader-based code path on such backends.
+    /// `EnableClientState`, `Color4f`, …). Used by `present_renderbuffer` so
+    //it
     fn is_es2(&self) -> bool {
         false
     }
@@ -921,6 +921,7 @@ pub trait GLES {
     // empty and the screen never updates — see Apple's "Working with EAGL
     // Contexts" docs and the
     // [GL_APPLE_framebuffer_multisample]
+    //
     // (https://registry.khronos.org/OpenGL/extensions/APPLE/APPLE_framebuffer_multisample.txt)
     // extension spec.
     unsafe fn RenderbufferStorageMultisampleAPPLE(

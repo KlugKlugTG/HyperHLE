@@ -11,18 +11,24 @@
 //! Apple:
 //!
 //! ```c
-//! CFHTTPMessageRef CFHTTPMessageCreateRequest (CFAllocatorRef, CFStringRef method,
-//!                                              CFURLRef url, CFStringRef httpVersion);
-//! CFHTTPMessageRef CFHTTPMessageCreateResponse(CFAllocatorRef, CFIndex statusCode,
+//! CFHTTPMessageRef CFHTTPMessageCreateRequest (CFAllocatorRef, CFStringRef
+//method,
+// !                                              CFURLRef url, CFStringRef
+// httpVersion);
+//! CFHTTPMessageRef CFHTTPMessageCreateResponse(CFAllocatorRef, CFIndex
+//statusCode,
 //!                                              CFStringRef statusDescription,
 //!                                              CFStringRef httpVersion);
-//! CFHTTPMessageRef CFHTTPMessageCreateEmpty   (CFAllocatorRef, Boolean isRequest);
-//! CFHTTPMessageRef CFHTTPMessageCreateCopy    (CFAllocatorRef, CFHTTPMessageRef);
+//! CFHTTPMessageRef CFHTTPMessageCreateEmpty (CFAllocatorRef, Boolean
+//isRequest);
+//! CFHTTPMessageRef CFHTTPMessageCreateCopy (CFAllocatorRef,
+//CFHTTPMessageRef);
 //!
 //! void       CFHTTPMessageSetHeaderFieldValue (CFHTTPMessageRef,
 //!                                              CFStringRef name,
 //!                                              CFStringRef value);
-//! CFStringRef CFHTTPMessageCopyHeaderFieldValue(CFHTTPMessageRef, CFStringRef);
+//! CFStringRef CFHTTPMessageCopyHeaderFieldValue(CFHTTPMessageRef,
+//CFStringRef);
 //! CFDictionaryRef CFHTTPMessageCopyAllHeaderFields(CFHTTPMessageRef);
 //!
 //! void  CFHTTPMessageSetBody (CFHTTPMessageRef, CFDataRef bodyData);

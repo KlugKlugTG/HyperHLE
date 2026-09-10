@@ -8,9 +8,11 @@
 //! UIKit NIB Archives decoder. This is _not_ a part of public API!
 //!
 //! Resources:
-//! - [UIKit NIB Archives](https://www.mothersruin.com/software/Archaeology/reverse/uinib.html)
+//! - [UIKit NIB
+//Archives](https://www.mothersruin.com/software/Archaeology/reverse/uinib.html)
 //!
-//! - [NibArchive File Format](https://github.com/matsmattsson/nibsqueeze/blob/master/NibArchive.md)
+//! - [NibArchive File
+//Format](https://github.com/matsmattsson/nibsqueeze/blob/master/NibArchive.md)
 
 use crate::environment::Environment;
 use crate::frameworks::core_graphics::{CGPoint, CGRect, CGSize};

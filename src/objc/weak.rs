@@ -13,7 +13,8 @@
 //! References:
 //! - The clang Automatic Reference Counting specification, section
 //!   "Runtime support", subsection "Weak references":
-//!   <https://clang.llvm.org/docs/AutomaticReferenceCounting.html#runtime-support>
+//!
+//<https://clang.llvm.org/docs/AutomaticReferenceCounting.html#runtime-support>
 //! - Apple's open-source objc4 runtime, `objc-weak.{h,mm}` on
 //!   <https://opensource.apple.com/source/objc4/>
 //!

@@ -226,8 +226,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 + (id)valueWithRange:(NSRange)value {
-    // Упаковываем структуру в наш HostObject и выделяем под это память
-    let host_object = Box::new(NSValueHostObject::NSRange(value));
+    // Упаковываем структуру в наш HostObject и
+    // выделяем под это память
     let new = env.objc.alloc_object(this, host_object, &mut env.mem);
     autorelease(env, new)
 }
@@ -286,15 +286,15 @@ pub const CLASSES: ClassExports = objc_classes! {
     if this == other { return true; }
     if other == crate::objc::nil { return false; }
 
-    // Сначала вызываем функции, использующие env, ДО заимствования `this`
-    let host_b_class: crate::objc::Class = msg![env; other class];
+    // Сначала вызываем функции, использующие
+    // env, ДО заимствования `this`
     let ns_value_class = env.objc.get_known_class("NSValue", &mut env.mem);
     if !env.objc.class_is_subclass_of(host_b_class, ns_value_class) {
         return false;
     }
 
-    // Теперь можно безопасно заимствовать оба объекта
-    let host_a = env.objc.borrow::<NSValueHostObject>(this);
+    // Теперь можно безопасно заимствовать
+    // оба объекта
     let b = env.objc.borrow::<NSValueHostObject>(other);
 
     match (host_a, b) {
@@ -337,8 +337,8 @@ pub const CLASSES: ClassExports = objc_classes! {
             )
         }
         NSValueHostObject::NSRange(r) => {
-            // Копируем значения в локальные переменные, чтобы избежать взятия
-            // ссылки на packed-структуру
+            // Копируем значения в локальные
+            // переменные, чтобы избежать взятия
             let loc = r.location;
             let len = r.length;
             format!("NSRange: {{{}, {}}}", loc, len)
@@ -1134,11 +1134,11 @@ pub const CLASSES: ClassExports = objc_classes! {
         NSNumberHostObject::Short(_) => b"s\0",
         NSNumberHostObject::UnsignedShort(_) => b"S\0",
     };
-    // Переводим [u8; 2] в u16 (little-endian), так как u16 поддерживает
-    // SafeWrite
+    // Переводим [u8; 2] в u16 (little-endian), так как u16
+    // поддерживает
     let typ_val = u16::from_le_bytes(*typ);
-    // Выделяем память под u16 и возвращаем указатель
-    env.mem.alloc_and_write(typ_val).cast_void().cast_const()
+    // Выделяем память под u16 и возвращаем
+    // указатель
 }
 
 // MARK: - CGFloat accessors
@@ -1190,12 +1190,14 @@ pub fn is_conversion_lossless(env: &mut Environment, this: id, type_: CFNumberTy
             let val: i8 = num.as_char();
             msg_class![env; NSNumber numberWithChar:val]
         }
-        // ИСПРАВЛЕНИЕ: Добавляем проверку для 64-битных целых чисел (Type 4 и 11)
+        // ИСПРАВЛЕНИЕ: Добавляем проверку для
+        // 64-битных целых чисел (Type 4 и
         kCFNumberSInt64Type | kCFNumberLongLongType => {
             let val: i64 = num.as_long_long();
             msg_class![env; NSNumber numberWithLongLong:val]
         }
-        // ИСПРАВЛЕНИЕ: Добавляем проверку для 64-битных чисел с плавающей точкой (Type 6 и 13)
+        // ИСПРАВЛЕНИЕ: Добавляем проверку для
+        // 64-битных чисел с плавающей
         kCFNumberFloat64Type | kCFNumberDoubleType => {
             let val: f64 = num.as_double();
             msg_class![env; NSNumber numberWithDouble:val]

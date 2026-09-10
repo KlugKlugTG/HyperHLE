@@ -297,7 +297,8 @@ fn strncat(env: &mut Environment, s1: MutPtr<u8>, s2: ConstPtr<u8>, n: GuestUSiz
 }
 /// `__strncat_chk` — fortified variant of strncat.
 /// Per Apple's Secure Coding Guide and the GCC/Clang SSP implementation:
-/// `char *__strncat_chk(char *dest, const char *src, size_t n, size_t dest_size)`
+///  `char *__strncat_chk(char *dest, const char *src, size_t n, size_t
+/// dest_size)`
 /// The `dest_size` parameter is the total buffer size of `dest` (as known at
 /// compile time via `__builtin_object_size`). If the concatenation would
 /// overflow, the real implementation calls `__chk_fail`. We simply delegate
@@ -605,37 +606,37 @@ fn strnlen(env: &mut Environment, s: ConstPtr<u8>, maxlen: GuestUSize) -> GuestU
 }
 
 fn strcasestr(env: &mut Environment, haystack: MutPtr<u8>, needle: ConstPtr<u8>) -> MutPtr<u8> {
-    // Если указатели нулевые, безопасно возвращаем null, чтобы избежать краша
-    if haystack.is_null() || needle.is_null() {
+    // Если указатели нулевые, безопасно
+    // возвращаем null, чтобы избежать краша
         return Ptr::null();
     }
 
-    // Читаем C-строки из памяти эмулятора в виде слайсов байтов &[u8]
-    let haystack_str = env.mem.cstr_at(haystack.cast_const());
+    // Читаем C-строки из памяти эмулятора в
+    // виде слайсов байтов &[u8]
     let needle_str = env.mem.cstr_at(needle);
 
-    // Если искомая подстрока пустая, стандартное поведение — вернуть саму
-    // строку
+    // Если искомая подстрока пустая,
+    // стандартное поведение — вернуть саму
     if needle_str.is_empty() {
         return haystack;
     }
 
     let needle_len = needle_str.len();
 
-    // ИСПРАВЛЕНИЕ: Если строка, в которой ищем, короче искомого слова,
-    // совпадение невозможно в принципе. Выходим сразу.
+    // ИСПРАВЛЕНИЕ: Если строка, в которой
+    // ищем, короче искомого слова,
     if haystack_str.len() < needle_len {
         return Ptr::null();
     }
 
-    // Ищем совпадение, используя стандартный метод Rust без учета
-    // ASCII-регистра
+    // Ищем совпадение, используя стандартный
+    // метод Rust без учета
     for i in 0..=haystack_str.len() - needle_len {
         // saturating_sub больше не нужен
         let window = &haystack_str[i..i + needle_len];
         if window.eq_ignore_ascii_case(needle_str) {
-            // Возвращаем указатель на начало найденной подстроки
-            return haystack + i as GuestUSize;
+            // Возвращаем указатель на начало
+            // найденной подстроки
         }
     }
 

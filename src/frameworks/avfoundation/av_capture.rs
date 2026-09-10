@@ -34,7 +34,8 @@ use crate::objc::{
 // ============================================================================
 //
 // All AVCapture* string constants are exported as NSString. Apps reach them
-// through Mach-O symbol lookup (e.g. `extern NSString * const AVMediaTypeVideo`)
+//  through Mach-O symbol lookup (e.g. `extern NSString * const
+// AVMediaTypeVideo`)
 // which `dyld::HostConstant::NSString` handles.
 
 // AVMediaType.h — per Apple's
@@ -55,6 +56,7 @@ pub const AVMediaTypeMetadataObject: &str = "meta-object";
 pub const AVMediaTypeDepthData: &str = "dpth";
 
 // AVMediaFormat.h — `AVMediaCharacteristic*` per Apple's
+//
 // <https://developer.apple.com/documentation/avfoundation/avmediacharacteristic>.
 // These tag a `AVMediaSelectionOption` / `AVAssetTrack` with a high-level
 // purpose (audible, visual, legible, ...). The string value is the literal

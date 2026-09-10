@@ -508,6 +508,7 @@ const KV_IMAGE_INVALID_PARAMETER: i32 = -21767;
 ///                                      void *tempBuffer,
 ///                                      vImage_Flags flags)` — vImage
 /// "universal" pixel-format converter. See
+///
 /// <https://developer.apple.com/documentation/accelerate/1533487-vimageconvert_anytoany>.
 ///
 /// touchHLE does not implement `vImageConverter_CreateWithCGImageFormat`
@@ -589,7 +590,8 @@ fn vImageCopyBuffer(
 /// `vDSP_dotpr` — dot product of two vectors (single-precision).
 /// Apple docs: Calculates the dot product of vectors A and B.
 /// C = sum(A[i*strideA] * B[i*strideB]) for i in 0..n
-/// Reference: https://developer.apple.com/documentation/accelerate/1450392-vdsp_dotpr
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450392-vdsp_dotpr
 fn vDSP_dotpr(
     env: &mut Environment,
     input_a: ConstPtr<f32>,
@@ -612,7 +614,8 @@ fn vDSP_dotpr(
 
 /// `vDSP_vsdiv` — vector scalar divide (single-precision).
 /// C[i] = A[i*strideA] / B, for i in 0..n
-/// Reference: https://developer.apple.com/documentation/accelerate/1450156-vdsp_vsdiv
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450156-vdsp_vsdiv
 fn vDSP_vsdiv(
     env: &mut Environment,
     input: ConstPtr<f32>,
@@ -641,7 +644,8 @@ fn vDSP_vsdiv(
 
 /// `vDSP_vsub` — vector subtract (single-precision).
 /// **Important**: Apple's vDSP_vsub is C[i] = B[i] - A[i] (NOT A-B!)
-/// Reference: https://developer.apple.com/documentation/accelerate/1450250-vdsp_vsub
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450250-vdsp_vsub
 fn vDSP_vsub(
     env: &mut Environment,
     input_a: ConstPtr<f32>,
@@ -664,7 +668,8 @@ fn vDSP_vsub(
 
 /// `vDSP_vmax` — element-wise maximum of two vectors (single-precision).
 /// C[i] = max(A[i], B[i])
-/// Reference: https://developer.apple.com/documentation/accelerate/1450032-vdsp_vmax
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450032-vdsp_vmax
 #[allow(non_snake_case)]
 fn vDSP_vmax(
     env: &mut Environment,
@@ -688,7 +693,8 @@ fn vDSP_vmax(
 
 /// `vDSP_vmin` — element-wise minimum of two vectors (single-precision).
 /// C[i] = min(A[i], B[i])
-/// Reference: https://developer.apple.com/documentation/accelerate/1449984-vdsp_vmin
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1449984-vdsp_vmin
 #[allow(non_snake_case)]
 fn vDSP_vmin(
     env: &mut Environment,
@@ -711,7 +717,8 @@ fn vDSP_vmin(
 }
 
 /// `vDSP_sve` — sum of vector elements (single-precision).
-/// Reference: https://developer.apple.com/documentation/accelerate/1450236-vdsp_sve
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450236-vdsp_sve
 fn vDSP_sve(
     env: &mut Environment,
     input: ConstPtr<f32>,
@@ -729,7 +736,8 @@ fn vDSP_sve(
 }
 
 /// `vDSP_normalize` — normalize a vector (subtract mean, divide by std dev).
-/// Reference: https://developer.apple.com/documentation/accelerate/1450668-vdsp_normalize
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450668-vdsp_normalize
 fn vDSP_normalize(
     env: &mut Environment,
     input: ConstPtr<f32>,
@@ -781,7 +789,8 @@ fn vDSP_normalize(
 }
 
 /// `vDSP_vabs` — absolute value of vector elements (single-precision).
-/// Reference: https://developer.apple.com/documentation/accelerate/1450407-vdsp_vabs
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450407-vdsp_vabs
 fn vDSP_vabs(
     env: &mut Environment,
     input: ConstPtr<f32>,
@@ -799,7 +808,8 @@ fn vDSP_vabs(
 }
 
 /// `vDSP_vneg` — negate vector elements (single-precision).
-/// Reference: https://developer.apple.com/documentation/accelerate/1450042-vdsp_vneg
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450042-vdsp_vneg
 fn vDSP_vneg(
     env: &mut Environment,
     input: ConstPtr<f32>,
@@ -818,7 +828,8 @@ fn vDSP_vneg(
 
 /// `vDSP_vsadd` — vector scalar add (single-precision).
 /// C[i] = A[i] + B
-/// Reference: https://developer.apple.com/documentation/accelerate/1450060-vdsp_vsadd
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450060-vdsp_vsadd
 fn vDSP_vsadd(
     env: &mut Environment,
     input: ConstPtr<f32>,
@@ -838,7 +849,8 @@ fn vDSP_vsadd(
 }
 
 /// `vDSP_vma` — vector multiply-add. D[i] = A[i]*B[i] + C[i]
-/// Reference: https://developer.apple.com/documentation/accelerate/1450096-vdsp_vma
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1450096-vdsp_vma
 fn vDSP_vma(
     env: &mut Environment,
     input_a: ConstPtr<f32>,
@@ -892,7 +904,8 @@ fn vDSP_vintb(
 // ===========================================================================
 
 /// `cblas_saxpy` — Y = alpha*X + Y (single-precision).
-/// Reference: https://developer.apple.com/documentation/accelerate/1513065-cblas_saxpy
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1513065-cblas_saxpy
 fn cblas_saxpy(
     env: &mut Environment,
     n: i32,
@@ -916,7 +929,8 @@ fn cblas_saxpy(
 
 /// `cblas_snrm2` — Euclidean norm of vector X (single-precision).
 /// Returns sqrt(sum(X[i]^2))
-/// Reference: https://developer.apple.com/documentation/accelerate/1513280-cblas_snrm2
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1513280-cblas_snrm2
 fn cblas_snrm2(env: &mut Environment, n: i32, x: ConstPtr<f32>, inc_x: i32) -> f32 {
     if n <= 0 {
         return 0.0;
@@ -931,7 +945,8 @@ fn cblas_snrm2(env: &mut Environment, n: i32, x: ConstPtr<f32>, inc_x: i32) -> f
 }
 
 /// `cblas_sscal` — X = alpha*X (single-precision).
-/// Reference: https://developer.apple.com/documentation/accelerate/1513178-cblas_sscal
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1513178-cblas_sscal
 fn cblas_sscal(env: &mut Environment, n: i32, alpha: f32, x: MutPtr<f32>, inc_x: i32) {
     if n <= 0 {
         return;
@@ -945,7 +960,8 @@ fn cblas_sscal(env: &mut Environment, n: i32, alpha: f32, x: MutPtr<f32>, inc_x:
 
 /// `cblas_sdot` — dot product of X and Y (single-precision).
 /// Returns sum(X[i] * Y[i])
-/// Reference: https://developer.apple.com/documentation/accelerate/1513264-cblas_sdot
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1513264-cblas_sdot
 fn cblas_sdot(
     env: &mut Environment,
     n: i32,
@@ -969,7 +985,8 @@ fn cblas_sdot(
 }
 
 /// `cblas_scopy` — copy vector X to vector Y (single-precision).
-/// Reference: https://developer.apple.com/documentation/accelerate/1513235-cblas_scopy
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1513235-cblas_scopy
 fn cblas_scopy(
     env: &mut Environment,
     n: i32,
@@ -991,7 +1008,8 @@ fn cblas_scopy(
 
 /// `cblas_sgemv` — matrix-vector multiply (single-precision).
 /// y = alpha * op(A) * x + beta * y
-/// Reference: https://developer.apple.com/documentation/accelerate/1513338-cblas_sgemv
+///  Reference:
+/// https://developer.apple.com/documentation/accelerate/1513338-cblas_sgemv
 fn cblas_sgemv(
     env: &mut Environment,
     _order: i32, // CblasRowMajor=101 or CblasColMajor=102

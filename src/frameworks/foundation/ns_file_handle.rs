@@ -7,9 +7,12 @@
 //! `NSFileHandle`, `NSPipe`, and `NSCache`.
 //!
 //! References:
-//!  * Apple documentation: <https://developer.apple.com/documentation/foundation/nsfilehandle>
-//!  * Apple documentation: <https://developer.apple.com/documentation/foundation/nspipe>
-//!  * Apple documentation: <https://developer.apple.com/documentation/foundation/nscache>
+//! * Apple documentation:
+//<https://developer.apple.com/documentation/foundation/nsfilehandle>
+//! * Apple documentation:
+//<https://developer.apple.com/documentation/foundation/nspipe>
+//! * Apple documentation:
+//<https://developer.apple.com/documentation/foundation/nscache>
 //!
 //! Note: `NSTask` is a macOS-only class; it does not exist on iPhone OS / iOS
 //! and is intentionally not implemented here.
@@ -83,7 +86,8 @@ struct NSPipeHostObject {
     file_handle_for_writing: id,
 }
 impl Default for NSPipeHostObject {
-    // Phantom-fallback value; `nil` handles match `allocWithZone:` before `-init`.
+    //  Phantom-fallback value; `nil` handles match `allocWithZone:` before
+    // `-init`.
     fn default() -> Self {
         NSPipeHostObject {
             file_handle_for_reading: nil,
@@ -428,7 +432,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - NSPipe
 // =========================================================================
 //
-// Apple documentation: https://developer.apple.com/documentation/foundation/nspipe
+//  Apple documentation:
+// https://developer.apple.com/documentation/foundation/nspipe
 //
 // NSPipe is an object-oriented wrapper around a one-way IPC channel. Bytes
 // written to `fileHandleForWriting` become available on `fileHandleForReading`.
@@ -509,7 +514,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - NSCache
 // =========================================================================
 //
-// Apple documentation: https://developer.apple.com/documentation/foundation/nscache
+//  Apple documentation:
+// https://developer.apple.com/documentation/foundation/nscache
 //
 // Available since iOS 4.0. The cache stores `(key, value)` pairs and may
 // evict entries automatically to respect `countLimit` and `totalCostLimit`.
@@ -722,6 +728,7 @@ fn enforce_limits(env: &mut crate::Environment, cache: id) {
         };
 
         // -cache:willEvictObject: notification — Apple docs:
+        //
         // https://developer.apple.com/documentation/foundation/nscachedelegate/cache(_:willevictobject:)
         if delegate != nil {
             let victim_obj: id = msg![env; dict objectForKey:victim_key];

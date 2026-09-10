@@ -6,8 +6,10 @@
 //! `UIWindow`.
 //!
 //! Useful resources:
-//! - [Technical Q&A QA1588: Automatic orientation support for iPhone and iPad apps](https://developer.apple.com/library/archive/qa/qa1588/_index.html)
-//! - [Technical Q&A QA1688: Why won't my UIViewController rotate with the device?](https://developer.apple.com/library/archive/qa/qa1688/_index.html)
+//! - [Technical Q&A QA1588: Automatic orientation support for iPhone and iPad
+//apps](https://developer.apple.com/library/archive/qa/qa1588/_index.html)
+//! - [Technical Q&A QA1688: Why won't my UIViewController rotate with the
+//device?](https://developer.apple.com/library/archive/qa/qa1688/_index.html)
 
 use super::UIViewHostObject;
 use crate::dyld::{ConstantExports, HostConstant};
@@ -156,8 +158,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())layoutIfNeeded {
     log_dbg!("[(UIWindow*){:?} layoutIfNeeded]", this);
-    // Честная реализация: немедленно форсируем пересчет layout'а,
-    // отправляя сообщение layoutSubviews самому себе (наследуется от UIView)
+    // Честная реализация: немедленно
+    // форсируем пересчет layout'а,
     () = msg![env; this layoutSubviews];
 }
 
@@ -273,7 +275,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Support for rootViewController (iOS 4+)
-// Per Apple's [UIWindow Reference](https://developer.apple.com/documentation/uikit/uiwindow/1621581-rootviewcontroller):
+//  Per Apple's [UIWindow
+// Reference](https://developer.apple.com/documentation/uikit/uiwindow/1621581-rootviewcontroller):
 // `rootViewController` is a strong reference. Setting a new root view
 // controller installs its `-view` as a full-bounds subview of the window,
 // optionally replacing the previously installed root view. We mirror that
@@ -526,7 +529,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 /// compares against with `-[NSString isEqualToString:]`.
 ///
 /// References:
-/// * Apple [UIWindow notifications](https://developer.apple.com/documentation/uikit/uiwindow)
+///  * Apple [UIWindow
+/// notifications](https://developer.apple.com/documentation/uikit/uiwindow)
 const UIWindowDidBecomeKeyNotification: &str = "UIWindowDidBecomeKeyNotification";
 const UIWindowDidResignKeyNotification: &str = "UIWindowDidResignKeyNotification";
 const UIWindowDidBecomeHiddenNotification: &str = "UIWindowDidBecomeHiddenNotification";

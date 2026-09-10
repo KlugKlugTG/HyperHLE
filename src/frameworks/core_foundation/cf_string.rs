@@ -1475,7 +1475,8 @@ fn CFStringNormalize(
     // - FormD (NFD): Canonical Decomposition
     // - FormKD (NFKD): Compatibility Decomposition
     // - FormC (NFC): Canonical Decomposition followed by Canonical Composition
-    // - FormKC (NFKC): Compatibility Decomposition followed by Canonical Composition
+    //  - FormKC (NFKC): Compatibility Decomposition followed by Canonical
+    // Composition
     //
     // For ASCII-only strings (the common case in iOS game paths), all forms
     // are identity operations. We detect ASCII-only content and skip
@@ -1609,7 +1610,8 @@ fn CFStringGetTypeID(_env: &mut Environment) -> u32 {
 /// them in a C-string buffer in a form suitable for use with POSIX file
 /// system calls. Returns true if the operation was successful."
 /// The file system representation on iOS is UTF-8.
-/// Reference: https://developer.apple.com/documentation/corefoundation/1542721-cfstringgetfilesystemrepresentat
+///  Reference:
+/// https://developer.apple.com/documentation/corefoundation/1542721-cfstringgetfilesystemrepresentat
 fn CFStringGetFileSystemRepresentation(
     env: &mut Environment,
     the_string: CFStringRef,
@@ -1654,13 +1656,13 @@ fn CFStringCreateExternalRepresentation(
 
     let lossy = loss_byte != 0;
 
-    // Вызываем метод -[NSString dataUsingEncoding:allowLossyConversion:]
-    let data: id = msg![env; the_string dataUsingEncoding:ns_encoding allowLossyConversion:lossy];
+    // Вызываем метод -[NSString
+    // dataUsingEncoding:allowLossyConversion:]
 
-    // Core Foundation функции со словом "Create" обязаны возвращать объект с +1
-    // retain count.
-    // Так как метод dataUsingEncoding возвращает autoreleased объект, его нужно
-    // вручную удержать.
+    // Core Foundation функции со словом "Create" обязаны
+    // возвращать объект с +1
+    // Так как метод dataUsingEncoding возвращает
+    // autoreleased объект, его нужно
     if data != nil {
         let _: () = msg![env; data retain];
     }
@@ -2235,6 +2237,7 @@ fn compose_pair(a: char, b: char) -> Option<char> {
 /// CFStringTransform built-in transform identifier constants. Apple
 /// publishes these as `CFStringRef` globals (`kCFStringTransform…`) in
 /// `<CoreFoundation/CFString.h>`; see
+///
 /// <https://developer.apple.com/documentation/corefoundation/kcfstringtransformtolatin>.
 pub const CONSTANTS: ConstantExports = &[
     (

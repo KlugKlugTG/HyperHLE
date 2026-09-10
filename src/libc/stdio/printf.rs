@@ -35,8 +35,8 @@ const MAX_FIELD_WIDTH: u32 = 1 << 20;
 const MAX_TOTAL_OUTPUT: usize = 64 * 1024 * 1024;
 
 // ALL_SPECIFIERS: d i o u x X f F e E g G a A c s p n C S % @ D U O = 25
-// + b'+' b'#' b'-' would be 28 but those are flags not specifiers — omit them.
-// Add b'A' which was missing from the original.
+// + b'+' b'#' b'-' would be 28 but those are flags not specifiers — omit
+// them.
 const ALL_SPECIFIERS: [u8; 26] = [
     // IEEE printf specifiers
     b'd', b'i', b'o', b'u', b'x', b'X', b'f', b'F', b'e', b'E', b'g', b'G', b'a', b'A', b'c', b's',
@@ -177,6 +177,7 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 }
             }
             // q seems to be an equivalent of 'll'
+            //
             // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html#//apple_ref/doc/uid/TP40004265-SW1
             b'q' => {
                 format_char_idx += 1;
@@ -232,12 +233,12 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 // silently ignored rather than aborting.
                 let _ = prepend_sign;
 
-                // Если передали %lc, обрабатываем как широкий символ (аналог
-                // %C)
+                // Если передали %lc, обрабатываем
+                // как широкий символ (аналог
                 if length_modifier == Some("l") {
                     let c: wchar_t = args.next(env);
-                    // Безопасно парсим, если символ кривой - ставим '?' вместо
-                    // краша
+                    // Безопасно парсим, если символ
+                    // кривой - ставим '?' вместо
                     let ch = char::from_u32(c as u32).unwrap_or('?');
                     write!(&mut res, "{ch}").unwrap();
                 } else {
@@ -268,8 +269,8 @@ pub fn printf_inner<const NS_LOG: bool, F: Fn(&Mem, GuestUSize) -> u8>(
                 let _ = prepend_sign;
                 // Убрали assert!(length_modifier.is_none());
                 let c: unichar = args.next(env);
-                // Заменяем .unwrap() на .unwrap_or('?'), чтобы не было паники
-                // на невалидном UTF-16!
+                // Заменяем .unwrap() на .unwrap_or('?'), чтобы
+                // не было паники
                 let c = char::from_u32(c.into()).unwrap_or('?');
                 if pad_width > 0 {
                     let pad_width = pad_width as usize;
@@ -1603,6 +1604,7 @@ where
                 }
             }
             // q seems to be an equivalent of 'll'
+            //
             // https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/Articles/formatSpecifiers.html#//apple_ref/doc/uid/TP40004265-SW1
             b'q' => {
                 format_char_idx += 1;
@@ -1931,6 +1933,7 @@ where
                 // `%[set]` conversion. The character set is parsed per the
                 // C standard (ISO C / POSIX, mirrored by Apple's BSD
                 // `vfscanf`): see
+                //
                 // <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/scanf.3.html>.
                 //
                 // Two well-known special cases must NOT be treated as
@@ -2363,8 +2366,8 @@ fn vfprintf(env: &mut Environment, stream: MutPtr<FILE>, format: ConstPtr<u8>, a
 fn vwprintf(env: &mut Environment, format: ConstPtr<wchar_t>, arg: VaList) -> i32 {
     // Очищаем errno перед выполнением
     set_errno(env, 0);
-    // Используем 'C' локаль для корректной работы с широкими символами,
-    // как это реализовано в vswprintf
+    // Используем 'C' локаль для корректной
+    // работы с широкими символами,
     // Only the "C" locale is supported, but apps sometimes request e.g.
     // "UTF-8"; tolerate a mismatch rather than aborting the emulator.
     let ctype_locale = setlocale(env, LC_CTYPE, Ptr::null());
@@ -2388,8 +2391,8 @@ fn vwprintf(env: &mut Environment, format: ConstPtr<wchar_t>, arg: VaList) -> i3
         },
         arg,
     );
-    // Пишем результат напрямую в стандартный вывод (stdout)
-    // Real libc returns a negative value when writing to stdout fails;
+    // Пишем результат напрямую в стандартный
+    // вывод (stdout)
     // mirror that instead of ignoring the error.
     if std::io::stdout().write_all(&res).is_err() {
         log!("Warning: vwprintf(): writing to stdout failed; returning EOF.");

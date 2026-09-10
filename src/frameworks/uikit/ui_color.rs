@@ -85,6 +85,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // are interpreted in the CIColor's colour space, which defaults to
 // `kCGColorSpaceDeviceRGB` (sRGB on iOS). Returns a UIColor with
 // equivalent RGBA components.
+//
 // <https://developer.apple.com/documentation/uikit/uicolor/1621941-colorwithcicolor>
 + (id)colorWithCIColor:(id)ci_color {
     if ci_color == nil {

@@ -23,8 +23,8 @@ use crate::objc::{
 struct NSMethodSignatureHostObject {
     return_type: String,
     argument_types: Vec<String>,
-    // Кэшированные указатели на строки в памяти гостя для возврата через методы
-    return_type_ptr: Option<MutPtr<u8>>,
+    // Кэшированные указатели на строки в
+    // памяти гостя для возврата через методы
     argument_type_ptrs: Vec<Option<MutPtr<u8>>>,
 }
 impl HostObject for NSMethodSignatureHostObject {}
@@ -37,12 +37,12 @@ impl HostObject for NSMethodSignatureHostObject {}
 struct NSInvocationHostObject {
     /// `NSMethodSignature *`
     sig: id,
-    /// Строки типов аргументов, полученные из `sig` во время создания
-    argument_types: Vec<String>,
+    /// Строки типов аргументов, полученные из
+    //`sig` во время создания
     target: id,
     selector: Option<SEL>,
-    /// Выделенный буфер для каждого аргумента. Option указывает, был ли
-    //аргумент задан через `setArgument:atIndex:`
+    /// Выделенный буфер для каждого
+    //аргумента. Option указывает, был ли
     arguments: Vec<Option<MutVoidPtr>>,
     arguments_retained: bool,
     /// Объекты, удержанные через `retainArguments`
@@ -77,8 +77,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let sig: id = msg![env; sig init];
 
     if !_types.is_null() {
-        // ИСПРАВЛЕНИЕ E0308: Приводим Ptr<c_void> к Ptr<u8> через .cast()
-        let types_str = env.mem.cstr_at_utf8(_types.cast_const().cast()).unwrap_or("");
+        // ИСПРАВЛЕНИЕ E0308: Приводим Ptr<c_void> к Ptr<u8>
+        // через .cast()
         let mut parsed_types = Vec::new();
         let mut chars = types_str.chars().peekable();
 
@@ -90,8 +90,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
             let mut current_type = String::new();
 
-            // Читаем модификаторы (const, in, inout, out, bycopy, byref,
-            // oneway) и указатели
+            // Читаем модификаторы (const, in, inout, out,
+            // bycopy, byref,
             while let Some(&m) = chars.peek() {
                 if "rnNoORV^".contains(m) {
                     current_type.push(chars.next().unwrap());
@@ -166,8 +166,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         let bytes = host.return_type.as_bytes();
         let ptr: crate::mem::MutPtr<u8> = env.mem.alloc(bytes.len() as u32 + 1).cast();
         for (i, &b) in bytes.iter().enumerate() {
-            // ИСПРАВЛЕНИЕ E0599: Используем оператор сложения (ptr + i) вместо
-            // .offset()
+            // ИСПРАВЛЕНИЕ E0599: Используем
+            // оператор сложения (ptr + i) вместо
             env.mem.write(ptr + (i as u32), b);
         }
         env.mem.write(ptr + (bytes.len() as u32), 0u8);

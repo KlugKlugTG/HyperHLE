@@ -123,7 +123,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // - (instancetype)initWithURL:(NSURL *)url
 //                  statusCode:(NSInteger)statusCode
 //                 HTTPVersion:(NSString *)HTTPVersion
-//                headerFields:(NSDictionary<NSString *,NSString *> *)headerFields;
+// headerFields:(NSDictionary<NSString *,NSString *> *)headerFields;
 - (id)initWithURL:(id)url
        statusCode:(NSInteger)status_code
       HTTPVersion:(id)_http_version

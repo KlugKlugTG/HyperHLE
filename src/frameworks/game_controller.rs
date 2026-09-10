@@ -12,10 +12,12 @@
 //! defined:
 //!
 //!   * `+[GCController controllers]` returns an empty array — see
-//!     <https://developer.apple.com/documentation/gamecontroller/gccontroller/1454801-controllers>.
+//!
+//<https://developer.apple.com/documentation/gamecontroller/gccontroller/1454801-controllers>.
 //!   * `+startWirelessControllerDiscoveryWithCompletionHandler:` finishes
 //!     immediately and invokes the completion handler with no result.
-//!     See <https://developer.apple.com/documentation/gamecontroller/gccontroller/1454822-startwirelesscontrollerdiscovery>.
+//! See
+//<https://developer.apple.com/documentation/gamecontroller/gccontroller/1454822-startwirelesscontrollerdiscovery>.
 //!   * `+stopWirelessControllerDiscovery` is a no-op when no discovery is
 //!     in progress.
 //!

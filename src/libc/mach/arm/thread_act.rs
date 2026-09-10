@@ -94,7 +94,8 @@ fn task_set_exception_ports(
     assert_eq!(exception_mask, EXC_MASK_BAD_ACCESS);
     assert_eq!(behavior, EXCEPTION_DEFAULT);
     // This function is used by Unity to install an `exception handler`.
-    // (See mono's [mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L188))
+    //  (See mono's
+    // [mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L188))
     // We would prefer to crash on exception anyway,
     // so it should be fine to just have a stub.
     log!(

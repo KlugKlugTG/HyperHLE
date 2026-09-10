@@ -515,6 +515,7 @@ pub const CONSTANTS: ConstantExports = &[
 /// exceptions are already converted to Rust panics or bypassed, but we
 /// save the handler address to maintain accurate guest state and so that
 /// `NSGetUncaughtExceptionHandler` can return whatever was last installed.
+///
 /// <https://developer.apple.com/documentation/foundation/1409609-nssetuncaughtexceptionhandler>
 fn NSSetUncaughtExceptionHandler(env: &mut Environment, handler: MutVoidPtr) {
     env.framework_state
@@ -533,6 +534,7 @@ fn NSSetUncaughtExceptionHandler(env: &mut Environment, handler: MutVoidPtr) {
 /// installed in this process. Apple crash-reporting libraries (PLCrashReporter,
 /// Crashlytics, Flurry, …) call this on init so they can chain to any
 /// existing handler instead of clobbering it.
+///
 /// <https://developer.apple.com/documentation/foundation/1416853-nsgetuncaughtexceptionhandler>
 fn NSGetUncaughtExceptionHandler(env: &mut Environment) -> MutVoidPtr {
     let handler = env

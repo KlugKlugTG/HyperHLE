@@ -189,8 +189,8 @@ type thread_t = mach_port_t;
 type thread_policy_flavor_t = natural_t;
 type thread_policy_t = MutPtr<integer_t>;
 
-// Идентификаторы политик планировщика потоков
-const THREAD_EXTENDED_POLICY: thread_policy_flavor_t = 1;
+// Идентификаторы политик планировщика
+// потоков
 const THREAD_TIME_CONSTRAINT_POLICY: thread_policy_flavor_t = 2;
 const THREAD_PRECEDENCE_POLICY: thread_policy_flavor_t = 3;
 const THREAD_AFFINITY_POLICY: thread_policy_flavor_t = 4;
@@ -237,10 +237,10 @@ fn thread_policy_set(
     policy_info: thread_policy_t,
     count: mach_msg_type_number_t,
 ) -> kern_return_t {
-    // Читаем из памяти переданные приложением параметры политики,
-    // чтобы эмуляция доступа к памяти была корректной.
-    // Фактически применять приоритеты в touchHLE пока не нужно,
-    // поэтому мы просто поглощаем запрос и рапортуем об успехе.
+    // Читаем из памяти переданные
+    // приложением параметры политики,
+    // Фактически применять приоритеты в touchHLE
+    // пока не нужно,
     match flavor {
         THREAD_EXTENDED_POLICY => {
             let _policy: thread_extended_policy = env.mem.read(policy_info.cast());

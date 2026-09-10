@@ -43,6 +43,7 @@ pub fn ci_color_components(
 /// Parse a `CIColor`-style component string. Apple documents
 /// `colorWithString:` and `-stringRepresentation` as producing a
 /// space-separated component list (`"r g b"` or `"r g b a"`), see
+///
 /// <https://developer.apple.com/documentation/coreimage/cicolor/1438098-colorwithstring>.
 fn parse_ci_color_string(s: &str) -> Option<(CGFloat, CGFloat, CGFloat, CGFloat)> {
     let mut parts = s.split_whitespace();

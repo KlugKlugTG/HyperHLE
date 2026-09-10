@@ -6,7 +6,8 @@
 //!
 //! AVAudioPlayer
 //!
-//! Implemented using Audio Queue Services based on [the PlayingAudio example](https://developer.apple.com/library/archive/documentation/MusicAudio/Conceptual/AudioQueueProgrammingGuide/AQPlayback/PlayingAudio.html)
+//! Implemented using Audio Queue Services based on [the PlayingAudio
+//example](https://developer.apple.com/library/archive/documentation/MusicAudio/Conceptual/AudioQueueProgrammingGuide/AQPlayback/PlayingAudio.html)
 
 use crate::dyld::HostFunction;
 use crate::frameworks::audio_toolbox::audio_file::{
@@ -202,6 +203,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // `AVAudioPlayer.pan` (iOS 4.0+) — stereo panning. Apple documents the
 // range as -1.0 (full left) to 1.0 (full right) with 0.0 centered.
+//
 // <https://developer.apple.com/documentation/avfaudio/avaudioplayer/1387672-pan>
 - (f32)pan {
     let host_object = env.objc.borrow::<AVAudioPlayerHostObject>(this);
@@ -669,10 +671,10 @@ fn derive_buffer_size(
     const min_buffer_size: u32 = 0x4000;
 
     // ЧЕСТНЫЙ ФИКС: Защита от деления на ноль.
-    // Если upper bound размера пакета = 0, пытаемся взять размер из дескриптора
-    // формата.
-    // Если и там пусто, ставим безопасный дефолт, как это делает настоящий
-    // CoreAudio.
+    // Если upper bound размера пакета = 0, пытаемся
+    // взять размер из дескриптора
+    // Если и там пусто, ставим безопасный
+    // дефолт, как это делает настоящий
     let actual_max_packet_size = if max_packet_size > 0 {
         max_packet_size
     } else if audio_desc.bytes_per_packet > 0 {

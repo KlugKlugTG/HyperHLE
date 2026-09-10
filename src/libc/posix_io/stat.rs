@@ -64,8 +64,8 @@ unsafe impl SafeRead for stat {}
 fn mkdir(env: &mut Environment, path: ConstPtr<u8>, mode: mode_t) -> i32 {
     set_errno(env, 0);
 
-    // Безопасное чтение пути, чтобы избежать panic через unwrap()
-    let path_str = match env.mem.cstr_at_utf8(path) {
+    // Безопасное чтение пути, чтобы избежать
+    // panic через unwrap()
         Ok(s) => {
             // XaView BypassMkdirLoop: the game retries mkdir()/access() in a
             // tight loop when they fail on paths with doubled separators.
@@ -93,10 +93,10 @@ fn mkdir(env: &mut Environment, path: ConstPtr<u8>, mode: mode_t) -> i32 {
             0
         }
         Err(err) => {
-            // ИСПРАВЛЕНИЕ: Убираем спам в консоль через log! (превращаем в
-            // log_dbg!),
-            // так как приложения в iOS часто вызывают mkdir на уже существующих
-            // папках просто для гарантии их наличия (ожидая поведение EEXIST).
+            // ИСПРАВЛЕНИЕ: Убираем спам в консоль
+            // через log! (превращаем в
+            // так как приложения в iOS часто
+            // вызывают mkdir на уже существующих
             match err {
                 FsError::AlreadyExist => {
                     log_dbg!(
@@ -116,11 +116,11 @@ fn mkdir(env: &mut Environment, path: ConstPtr<u8>, mode: mode_t) -> i32 {
                     set_errno(env, EACCES);
                 }
                 _ => {
-                    // ИСПРАВЛЕНИЕ: Убрана заглушка unimplemented!(), которая
-                    // могла вызвать краш.
-                    // Если произошла другая системная ошибка файловой системы,
-                    // возвращаем ENOENT.
-                    log_dbg!(
+                    // ИСПРАВЛЕНИЕ: Убрана заглушка
+                    // unimplemented!(), которая
+                    // Если произошла другая
+                    // системная ошибка файловой
+                    // системы,
                         "mkdir({:?} {:?}, {:#x}) failed with {:?}, returning -1 (ENOENT)",
                         path,
                         path_str,
@@ -221,8 +221,8 @@ fn stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
         return -1;
     }
 
-    // Делаем путь владеемой строкой (String), чтобы «отвязать» нас от
-    // заимствования env.mem до вызова env.mem.write() в конце.
+    // Делаем путь владеемой строкой (String),
+    // чтобы «отвязать» нас от
     let path_str = match env.mem.cstr_at_utf8(path) {
         Ok(s) => s.to_string(),
         Err(_) => {
@@ -282,8 +282,8 @@ fn stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
         };
     }
 
-    // env.mem свободен для записи: path_str — это String, а не ссылка.
-    env.mem.write(buf, st);
+    // env.mem свободен для записи: path_str — это String,
+    // а не ссылка.
 
     log_dbg!("stat({:?} {:?}, {:?}) -> 0", path, resolved_path, buf);
     0
@@ -291,8 +291,8 @@ fn stat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
 
 fn lstat(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<stat>) -> i32 {
     set_errno(env, 0);
-    // В touchHLE GuestFS пока не поддерживает реальные симлинки,
-    // поэтому lstat работает так же, как stat.
+    // В touchHLE GuestFS пока не поддерживает
+    // реальные симлинки,
     let result = stat(env, path, buf);
     log_dbg!("lstat({:?}, {:?}) -> {}", path, buf, result);
     result

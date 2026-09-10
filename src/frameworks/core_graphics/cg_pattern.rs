@@ -8,9 +8,11 @@
 //! `CGPattern.h`
 //!
 //! Per Apple's [Quartz 2D Programming
-//! Guide](https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_patterns/dq_patterns.html)
+//!
+//Guide](https://developer.apple.com/library/archive/documentation/GraphicsImaging/Conceptual/drawingwithquartz2d/dq_patterns/dq_patterns.html)
 //! and the [`CGPattern`
-//! reference](https://developer.apple.com/documentation/coregraphics/cgpattern),
+//!
+//reference](https://developer.apple.com/documentation/coregraphics/cgpattern),
 //! a `CGPattern` is an opaque `CFType` that describes a repeating tile drawn
 //! by a guest-supplied callback (`drawPattern`). It is used as a "colour"
 //! when stroking or filling paths.
@@ -125,7 +127,8 @@ pub fn CGPatternRelease(env: &mut Environment, pattern: CGPatternRef) {
 
 // MARK: - Constructor
 
-/// `CGPatternCreate(info, bounds, matrix, xStep, yStep, tiling, isColored, callbacks)`.
+///  `CGPatternCreate(info, bounds, matrix, xStep, yStep, tiling, isColored,
+/// callbacks)`.
 ///
 /// Returns a retained `CGPatternRef`. The caller is responsible for matching
 /// it with a `CGPatternRelease` call.

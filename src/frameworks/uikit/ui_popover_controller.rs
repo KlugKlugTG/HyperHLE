@@ -288,8 +288,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         (h.popover_visible, h.popover_content_size)
     };
 
-    // Выносим поля из упакованной структуры CGSize в локальные переменные
-    let width = size.width;
+    // Выносим поля из упакованной структуры
+    // CGSize в локальные переменные
     let height = size.height;
 
     let s = format!(

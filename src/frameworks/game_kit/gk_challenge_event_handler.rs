@@ -59,6 +59,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - Singleton accessor
 //
 // Apple reference:
+//
 // <https://developer.apple.com/documentation/gamekit/gkchallengeeventhandler/1521033-challengeeventhandler>
 // "Returns the singleton challenge event handler."
 + (id)challengeEventHandler {

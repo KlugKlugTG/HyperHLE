@@ -152,9 +152,11 @@ fn CGFontCreateWithDataProvider(env: &mut Environment, provider: CGDataProviderR
     let font = match Font::from_vec(bytes) {
         Some(f) => f,
         None => {
-            // The font data could not be parsed — most likely a CFF/OTTO OpenType
+            //  The font data could not be parsed — most likely a CFF/OTTO
+            // OpenType
             // font, which rusttype does not support. Fall back to the bundled
-            // sans-serif font so text is at least visible rather than invisible.
+            //  sans-serif font so text is at least visible rather than
+            // invisible.
             log!(
                 "CGFontCreateWithDataProvider: could not parse font data (possibly CFF/OTTO); \
                   falling back to Liberation Sans"

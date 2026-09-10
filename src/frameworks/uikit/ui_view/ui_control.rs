@@ -6,7 +6,9 @@
 //! `UIControl`.
 //!
 //! Useful resources:
-//! - The [Target-Action section](https://developer.apple.com/library/archive/documentation/General/Conceptual/CocoaEncyclopedia/Target-Action/Target-Action.html) of Apple's "Concepts in Objective-C Programming".
+//! - The [Target-Action
+//section](https://developer.apple.com/library/archive/documentation/General/Conceptual/CocoaEncyclopedia/Target-Action/Target-Action.html)
+//of Apple's "Concepts in Objective-C Programming".
 
 pub mod ui_bar_button_item;
 pub mod ui_button;

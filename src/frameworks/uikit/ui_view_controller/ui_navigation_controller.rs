@@ -137,8 +137,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // Delegate: willShow. Use `register_host_selector` so we don't panic when
     // the app's delegate doesn't implement (and therefore never references)
-    // this selector — some apps simply skip the optional UINavigationController
-    // delegate callbacks.
+    // this selector — some apps simply skip the optional
+    // UINavigationController
     let delegate = env.objc.borrow::<UINavigationControllerHostObject>(this).delegate;
     if delegate != nil {
         let sel = env.objc.register_host_selector(

@@ -2576,6 +2576,7 @@ fn xmlInitMemory(_env: &mut Environment) -> i32 {
 /// `void xmlCleanupMemory(void)` — releases module-private allocator
 /// state. Mirrors `xmlCleanupParser()` in the lifecycle pairing
 /// (`xmlInitMemory` ↔ `xmlCleanupMemory`). Documented at
+///
 /// <https://gnome.pages.gitlab.gnome.org/libxml2/devhelp/libxml2-xmlmemory.html>.
 #[allow(non_snake_case)]
 fn xmlCleanupMemory(_env: &mut Environment) {

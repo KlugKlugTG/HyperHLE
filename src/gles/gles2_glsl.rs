@@ -73,7 +73,8 @@ fn translate_glsl_es_with_version(source: &str, version_directive: &'static str)
 
         // Collect #extension directives separately so we can hoist them.
         if trimmed.starts_with("#extension") {
-            // Strip GL_EXT_shader_texture_lod extension — desktop GLSL 1.20/3.30
+            //  Strip GL_EXT_shader_texture_lod extension — desktop GLSL
+            // 1.20/3.30
             // doesn't have this extension (texture2DLod is built-in in 1.30+).
             if trimmed.contains("GL_EXT_shader_texture_lod") {
                 continue;
@@ -123,7 +124,8 @@ fn translate_glsl_es_with_version(source: &str, version_directive: &'static str)
     out = translate_frag_data(&out);
 
     // Replace texture*LodEXT calls with their desktop equivalents.
-    // In GLSL 1.20 we have texture2DLod as a built-in (from GL_ARB_shader_texture_lod
+    //  In GLSL 1.20 we have texture2DLod as a built-in (from
+    // GL_ARB_shader_texture_lod
     // which is required by GL 2.1). In GLSL 3.30 we have textureLod.
     if version_directive.contains("120") {
         out = replace_texture_lod_ext_desktop_120(&out);

@@ -16,8 +16,8 @@ pub type CFTypeRef = objc::id;
 pub type CFTypeID = CFIndex;
 
 pub fn CFRetain(env: &mut Environment, object: CFTypeRef) -> CFTypeRef {
-    // ИСПРАВЛЕНИЕ: Убираем жесткий assert. Из-за отсутствующих функций
-    // сюда может прилетать NULL. Игнорируем, чтобы не крашить эмулятор.
+    // ИСПРАВЛЕНИЕ: Убираем жесткий assert. Из-за
+    // отсутствующих функций
     if object.is_null() {
         log_dbg!("Warning: CFRetain called with NULL. Ignoring to prevent crash.");
         return object;
@@ -44,12 +44,11 @@ pub fn CFGetRetainCount(env: &mut Environment, object: CFTypeRef) -> CFIndex {
 }
 
 pub fn CFEqual(env: &mut Environment, object1: CFTypeRef, object2: CFTypeRef) -> bool {
-    // Если оба NULL — они равны (уже обрабатывается здесь)
+    // Если оба NULL — они равны
     if object1 == object2 {
         return true;
     }
-    // ИСПРАВЛЕНИЕ: Если только один из них NULL — они точно не равны.
-    // Это спасет от краша при вызове [object class] ниже.
+    // — они точно не равны.
     if object1.is_null() || object2.is_null() {
         return false;
     }
@@ -126,6 +125,7 @@ pub fn CFURLGetTypeID(env: &mut Environment) -> CFTypeID {
 /// `CFStringRef CFCopyDescription(CFTypeRef cf);`
 ///
 /// Per the Core Foundation reference
+///
 /// (<https://developer.apple.com/documentation/corefoundation/1521252-cfcopydescription>):
 ///
 /// > Returns the textual description of a Core Foundation object.

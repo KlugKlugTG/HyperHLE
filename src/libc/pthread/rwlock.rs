@@ -6,11 +6,16 @@
 //! Read–write locks (`pthread_rwlock_t`).
 //!
 //! Apple references:
-//! - <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_init.3.html>
-//! - <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_rdlock.3.html>
-//! - <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_wrlock.3.html>
-//! - <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_unlock.3.html>
-//! - <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_destroy.3.html>
+//! -
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_init.3.html>
+//! -
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_rdlock.3.html>
+//! -
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_wrlock.3.html>
+//! -
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_unlock.3.html>
+//! -
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/pthread_rwlock_destroy.3.html>
 //!
 //! POSIX permits a conforming implementation that does not allow multiple
 //! concurrent readers, provided every reader/writer is serialised through a
@@ -50,7 +55,8 @@ unsafe impl SafeRead for pthread_rwlock_t {}
 const MAGIC_RWLOCKATTR: u32 = u32::from_be_bytes(*b"RwAt");
 const MAGIC_RWLOCK: u32 = u32::from_be_bytes(*b"RWLK");
 /// Magic word used by Apple's `PTHREAD_RWLOCK_INITIALIZER`. This is the
-/// observed bit-pattern from `pthread/_pthread_types.h` (`_PTHREAD_RWLOCK_SIG_init`).
+///  observed bit-pattern from `pthread/_pthread_types.h`
+/// (`_PTHREAD_RWLOCK_SIG_init`).
 const MAGIC_RWLOCK_STATIC: u32 = 0x2DA8B3B4;
 
 fn pthread_rwlockattr_init(env: &mut Environment, attr: MutPtr<pthread_rwlockattr_t>) -> i32 {

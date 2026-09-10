@@ -554,7 +554,8 @@ pub const CLASSES: ClassExports = objc_classes! {
                 unsafe { gles.RenderbufferStorageOES(target, internalformat, width.try_into().unwrap(), height.try_into().unwrap()); }
                 let needs_fallback = unsafe { gles.GetError() != gles11::NO_ERROR };
                 let alloc_ok = if needs_fallback {
-                    // RGBA8 is optional in OpenGL ES 1.1 Common Profile (requires
+                    //  RGBA8 is optional in OpenGL ES 1.1 Common Profile
+                    // (requires
                     // OES_rgb8_rgba8). Fall back to RGBA4 (0x8056) which is
                     // required by OES_framebuffer_object.
                     const GL_RGBA4: gles11::types::GLenum = 0x8056;
@@ -581,7 +582,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     };
 
     // `window` borrow dropped here — safe to use `retain`/`release` again.
-    // `None` means either no GL context was available, or storage allocation failed.
+    //  `None` means either no GL context was available, or storage allocation
+    // failed.
     let renderbuffer = match renderbuffer_result {
         None => {
             if needs_temp_current {
@@ -1584,7 +1586,8 @@ unsafe fn ensure_present_program(gles: &mut dyn GLES) -> Option<PresentProgram> 
     Some(result)
 }
 
-/// Returns the reusable framebuffer + texture used by [present_renderbuffer_es2]
+///  Returns the reusable framebuffer + texture used by
+/// [present_renderbuffer_es2]
 /// to resolve the guest renderbuffer into a presentable texture.
 ///
 /// These objects used to be created with `glGenFramebuffers` / `glGenTextures`

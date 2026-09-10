@@ -7,10 +7,10 @@
 
 use crate::audio::openal::{OpenAL, OpenALContext, OpenALManager};
 
-/// Макрос для проверки, является ли аргумент null, и возврата `paramErr` в этом
-//случае.
-/// Похоже, это именно то, что делает настоящий Audio Toolbox, и некоторые
-//приложения полагаются на это.
+/// Макрос для проверки, является ли аргумент
+//null, и возврата `paramErr` в этом
+/// Похоже, это именно то, что делает
+//настоящий Audio Toolbox, и некоторые
 macro_rules! return_if_null {
     ($param:ident) => {
         if $param.is_null() {
@@ -111,7 +111,8 @@ impl LazyALContext {
     }
 
     pub fn get_context(&mut self, manager: &mut OpenALManager) -> &mut OpenALContext {
-        // Preserve the previous (panicking) signature for callers that absolutely
+        //  Preserve the previous (panicking) signature for callers that
+        // absolutely
         // require a context. New callers should prefer `try_get_context`.
         if let Some(ctx) = self.try_get_context(manager) {
             // SAFETY: `try_get_context` just inserted a value into `self.0`

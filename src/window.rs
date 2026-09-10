@@ -551,8 +551,8 @@ pub fn host_screen_size() -> Option<(u32, u32)> {
 /// SDL loads its EGL and GLES libraries with `dlopen` at context-creation time
 /// and honours the `SDL_VIDEO_EGL_DRIVER` / `SDL_VIDEO_GL_DRIVER` environment
 /// variables (see SDL's `src/video/SDL_egl.c`). ANGLE ships as a pair of shared
-/// libraries — an `libEGL` and an `libGLESv2` — so to avoid clashing with the
-/// system driver of the same name we look for the conventional ANGLE-suffixed
+/// libraries — an `libEGL` and an `libGLESv2` — so to avoid clashing with
+//the
 /// sonames (`libEGL_angle.so` / `libGLESv2_angle.so`), which is how ANGLE is
 /// packaged inside an APK's native library directory.
 ///
@@ -756,9 +756,12 @@ impl Window {
         }
 
         // Separate mouse and touch events in both SDL synthesis directions.
-        // SDL_TOUCH_MOUSE_EVENTS=0 stops touch input from also generating mouse input.
-        // SDL_MOUSE_TOUCH_EVENTS=0 stops mouse input from also generating touch input.
-        // Without both, one physical press can become two UIKit touches on some hosts.
+        //  SDL_TOUCH_MOUSE_EVENTS=0 stops touch input from also generating
+        // mouse input.
+        //  SDL_MOUSE_TOUCH_EVENTS=0 stops mouse input from also generating
+        // touch input.
+        //  Without both, one physical press can become two UIKit touches on
+        // some hosts.
         sdl2::hint::set("SDL_TOUCH_MOUSE_EVENTS", "0");
         sdl2::hint::set("SDL_MOUSE_TOUCH_EVENTS", "0");
 
@@ -945,8 +948,8 @@ impl Window {
         // shader entry points requested through an ES 1.1 context, both of
         // which manifest as a black screen for many early iPhone OS games.
         // Google's ANGLE (OpenGL ES over Vulkan) is far more lenient and is the
-        // recommended driver on modern Adreno devices — the manifest opt-in and
-        // the SDL_VIDEO_GL_DRIVER hook let ANGLE be selected transparently, and
+        // recommended driver on modern Adreno devices — the manifest opt-in
+        // and
         // when it is, `driver_description()` reports an "ANGLE" renderer here.
         window.log_gpu_backend_hints();
 
@@ -971,7 +974,8 @@ impl Window {
         d.contains("Adreno") || d.contains("Qualcomm")
     }
 
-    /// The cached `GL_VERSION / GL_VENDOR / GL_RENDERER` string for the internal
+    ///  The cached `GL_VERSION / GL_VENDOR / GL_RENDERER` string for the
+    /// internal
     /// OpenGL ES context.
     #[allow(dead_code)]
     pub fn gl_driver_description(&self) -> &str {
@@ -1331,7 +1335,8 @@ impl Window {
                                 )]))
                             }
                             _ => {
-                                // Outer arm only matches ControllerButton{Up,Down}.
+                                //  Outer arm only matches
+                                // ControllerButton{Up,Down}.
                                 log!(
                                     "Warning: unexpected event {:?} in button-to-touch arm; ignoring.",
                                     event
@@ -2403,7 +2408,8 @@ pub fn show_error_messagebox(window: Option<&Window>, error_message: &str) {
 /// - status: [BatteryState] - the current status of the battery
 ///   (unplugged, charging, full, etc.)
 /// Battery state cached once at window creation. Guest code runs on a
-/// coroutine stack where JNI calls abort on Android (see populate_battery_cache),
+///  coroutine stack where JNI calls abort on Android (see
+/// populate_battery_cache),
 /// so [UIDevice batteryLevel] must never reach SDL_GetPowerInfo directly.
 static BATTERY_CACHE: std::sync::OnceLock<(i32, BatteryState)> = std::sync::OnceLock::new();
 

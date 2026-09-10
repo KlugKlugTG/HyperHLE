@@ -292,8 +292,8 @@ fn CGDataProviderCreateSequential(
 ) -> CGDataProviderRef {
     // CGDataProviderSequentialCallbacks struct layout (32-bit ARM):
     //   offset 0: version (u32)
-    //   offset 4: getBytes  — size_t (*)(void *info, void *buffer, size_t count)
-    //   offset 8: skipForward — off_t (*)(void *info, off_t count)
+    // offset 4: getBytes  — size_t (*)(void *info, void *buffer, size_t
+    // count)
     //   offset 12: rewind   — void (*)(void *info)
     //   offset 16: releaseInfo — void (*)(void *info)
     //
@@ -417,8 +417,10 @@ fn CGDataProviderCreateDirect(
         let ptr: MutVoidPtr = get_byte_pointer.call_from_host(env, (info,));
         ptr.cast_const()
     } else if get_bytes_at_position_addr != 0 {
-        // Allocate buffer and read data via getBytesAtPosition(info, buffer, position, count)
-        // Note: position is off_t (i64 on Darwin ARM32), passed in r2:r3 register pair
+        //  Allocate buffer and read data via getBytesAtPosition(info, buffer,
+        // position, count)
+        //  Note: position is off_t (i64 on Darwin ARM32), passed in r2:r3
+        // register pair
         let buf: MutVoidPtr = env.mem.alloc(size_u).cast();
         let get_bytes = GuestFunction::from_addr_with_thumb_bit(get_bytes_at_position_addr);
         let _bytes_read: GuestUSize = get_bytes.call_from_host(env, (info, buf, 0i64, size_u));

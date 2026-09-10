@@ -9,7 +9,10 @@
 //! Note that metaclasses are just a special case of classes.
 //!
 //! Resources:
-//! - [[objc explain]: Classes and metaclasses](http://www.sealiesoftware.com/blog/archive/2009/04/14/objc_explain_Classes_and_metaclasses.html), especially [the PDF diagram](http://www.sealiesoftware.com/blog/class%20diagram.pdf)
+//! - [[objc explain]: Classes and
+//metaclasses](http://www.sealiesoftware.com/blog/archive/2009/04/14/objc_explain_Classes_and_metaclasses.html),
+//especially [the PDF
+//diagram](http://www.sealiesoftware.com/blog/class%20diagram.pdf)
 
 use super::{
     id, ivar_list_t, method_list_t, nil, objc_object, AnyHostObject, HostIMP, HostObject, ObjC,
@@ -610,13 +613,21 @@ impl ObjC {
         if let Some(template) = Self::find_template(name) {
             // We have a template (host implementation) for this class, use it.
             if let Some(superclass_name) = template.superclass {
-                // В реальном Objective-C рантайме классы могут загружаться
+                // В реальном Objective-C рантайме
+                // классы могут загружаться
                 // динамически.
-                // Вместо жесткого падения (assert!), если шаблон суперкласса не
+                // Вместо жесткого падения (assert!),
+                // если шаблон суперкласса
+                // не
                 // найден,
-                // мы просто логируем это и позволяем рантайму легально создать
-                // UnimplementedClass (или FakeClass) через механизм link_class.
-                // Это честное поведение динамического линкера: иерархия
+                // мы просто логируем это и
+                // позволяем рантайму легально
+                // создать
+                // UnimplementedClass (или FakeClass) через
+                // механизм
+                // link_class.
+                // Это честное поведение
+                // динамического линкера: иерархия
                 // сохраняется!
                 if Self::find_template(superclass_name).is_none() {
                     log!("Warning: Host class template {} inherits from missing {}, falling back to dynamic placeholder.", name, superclass_name);
@@ -648,7 +659,8 @@ impl ObjC {
                 self,
             ));
         } else {
-            // ЗДЕСЬ ДОБАВЛЕНА ЛОГИКА ДЛЯ ДИНАМИЧЕСКИХ КЛАССОВ (GAD и др.)
+            // ЗДЕСЬ ДОБАВЛЕНА ЛОГИКА ДЛЯ
+            // ДИНАМИЧЕСКИХ КЛАССОВ (GAD и др.)
             let is_fake = name.starts_with("AdMob")
                 || name.starts_with("AltAds")
                 || name.starts_with("Mobclix")
@@ -659,7 +671,8 @@ impl ObjC {
                 || name.starts_with("UA")
                 || name.starts_with("GAD")
                 || name.starts_with("iSimulate")
-                // SpringBoard private classes (e.g. "SBSceneFor%@" → "SBSceneFor(null)").
+                //  SpringBoard private classes (e.g. "SBSceneFor%@" →
+                // "SBSceneFor(null)").
                 // Apps probing for jailbroken-device features look these up
                 // via NSClassFromString and only act if they exist; returning
                 // a fake class lets the probe fail gracefully instead of
@@ -773,7 +786,8 @@ impl ObjC {
                 ));
                 // Apple's Objective-C runtime guarantees that a class and its
                 // metaclass always share the same NUL-terminated UTF-8 name:
-                // `class_getName(cls)` and `class_getName(object_getClass(cls))`
+                //  `class_getName(cls)` and
+                // `class_getName(object_getClass(cls))`
                 // return the identical string (see <objc/runtime.h>). In a
                 // healthy Mach-O the `class_rw_t.name` pointer of the class and
                 // its metaclass point at the very same C string. Real-world
@@ -1399,19 +1413,20 @@ pub fn class_getInstanceSize(env: &mut crate::Environment, cls: Class, name: SEL
     ConstVoidPtr::null()
 }
 
-// ──────────────────────────────────────────────────────────────────
+// ------------------------------
 // Opaque `Method` handles
 //
 // Apple's `Method` is a pointer to the `method_t` entry inside a class's
 // method list; it identifies BOTH the class that defines the method and the
 // selector. touchHLE stores methods in a `HashMap<SEL, IMP>` per class, so we
 // materialise a stable 8-byte guest allocation per (defining class, selector)
-// pair — `[u32 class_bits][u32 selector_bits]` — and hand its pointer to the
+// pair — `[u32 class_bits][u32 selector_bits]` — and hand its pointer to
+// the
 // guest as the opaque `Method`. All `method_*` functions decode the handle
 // back into (class, selector) to operate on the real method table, which is
 // what makes swizzling (`method_exchangeImplementations`,
 // `method_setImplementation`) actually take effect.
-// ──────────────────────────────────────────────────────────────────
+// ------------------------------
 
 /// Returns the nearest class in `cls`'s superclass chain that defines an
 /// uninherited implementation of `sel`, or `nil` if none does.
@@ -1528,7 +1543,9 @@ fn guest_ptr_to_imp(env: &crate::Environment, imp: ConstVoidPtr) -> Option<IMP> 
 
 /// `Method class_getInstanceMethod(Class cls, SEL name)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418889-class_getinstancemethod?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418889-class_getinstancemethod?language=objc):
 ///
 /// > Returns a specified instance method for a given class, searching
 /// > superclasses for the implementation. Returns `NULL` if `cls` is `Nil`,
@@ -1553,7 +1570,9 @@ pub fn class_getInstanceMethod(
 /// Apple: "Returns a Boolean value that indicates whether instances of a
 /// class respond to a particular selector." Walks the class chain and
 /// reports YES if any class in that chain implements `sel`.
-/// <https://developer.apple.com/documentation/objectivec/1418555-class_respondstoselector>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418555-class_respondstoselector>
 ///
 /// Per the documentation `class_respondsToSelector(Nil, …)` returns NO and
 /// `class_respondsToSelector(cls, NULL)` also returns NO. Mirroring the
@@ -1586,7 +1605,9 @@ pub fn class_respondsToSelector(env: &mut crate::Environment, cls: Class, sel: S
 
 /// `IMP method_getImplementation(Method m)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418551-method_getimplementation?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418551-method_getimplementation?language=objc):
 ///
 /// > Returns the implementation of a method.
 ///
@@ -1605,7 +1626,9 @@ pub fn method_getImplementation(env: &mut crate::Environment, m: ConstVoidPtr) -
 
 /// `IMP method_setImplementation(Method m, IMP imp)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418707-method_setimplementation?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418707-method_setimplementation?language=objc):
 ///
 /// > Sets the implementation of a method. Returns the previous
 /// > implementation of the method.
@@ -1635,7 +1658,9 @@ pub fn method_setImplementation(
 
 /// `const char *method_getTypeEncoding(Method m)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418488-method_gettypeencoding?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418488-method_gettypeencoding?language=objc):
 ///
 /// > Returns a string describing a method's parameter and return types.
 ///
@@ -1659,7 +1684,9 @@ pub fn method_getTypeEncoding(env: &mut crate::Environment, m: ConstVoidPtr) -> 
 
 /// `SEL method_getName(Method m)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418758-method_getname?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418758-method_getname?language=objc):
 ///
 /// > Returns the name of a method (the selector it is registered under).
 pub fn method_getName(env: &mut crate::Environment, m: ConstVoidPtr) -> SEL {
@@ -1694,7 +1721,9 @@ pub fn objc_getMetaClass(env: &mut crate::Environment, cls: Class, name: SEL) ->
 
 /// `IMP class_replaceMethod(Class cls, SEL name, IMP imp, const char *types)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418677-class_replacemethod?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418677-class_replacemethod?language=objc):
 ///
 /// > Replaces the implementation of a method for a given class.
 /// >
@@ -1742,7 +1771,9 @@ pub fn class_replaceMethod(
 
 /// `BOOL class_addMethod(Class cls, SEL name, IMP imp, const char *types)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc):
 ///
 /// > Adds a new method to a class with a given name and implementation.
 /// >
@@ -1834,7 +1865,9 @@ pub fn class_addMethod(
 
 /// `Method class_getClassMethod(Class cls, SEL name)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418680-class_getclassmethod?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418680-class_getclassmethod?language=objc):
 ///
 /// > Returns a pointer to the data structure describing the class method
 /// > identified by the given selector.
@@ -1960,7 +1993,9 @@ pub fn objc_msgForward_stret(
 }
 /// `void objc_storeStrong(id *location, id obj)` — ARC's strong-store
 /// runtime helper. The clang ARC specification
-/// (<https://clang.llvm.org/docs/AutomaticReferenceCounting.html#runtime-support>)
+///
+///
+//(<https://clang.llvm.org/docs/AutomaticReferenceCounting.html#runtime-support>)
 /// describes the canonical implementation as:
 ///
 /// ```text
@@ -1994,7 +2029,9 @@ pub fn objc_storeStrong(env: &mut crate::Environment, location: crate::mem::MutP
 
 /// `IMP class_getMethodImplementation(Class cls, SEL name)` — Objective-C
 /// runtime helper. Per Apple's reference
-/// (<https://developer.apple.com/documentation/objectivec/1418811-class_getmethodimplementation>):
+///
+///
+//(<https://developer.apple.com/documentation/objectivec/1418811-class_getmethodimplementation>):
 ///
 /// > Returns the function pointer that would be called if a particular
 /// > message were sent to an instance of a class. The function returned
@@ -2246,7 +2283,8 @@ pub fn objc_allocateClassPair(
         .link_class(&name_str, /* is_metaclass: */ false, &mut env.mem)
 }
 
-/// `Class objc_readClassPair(Class cls, const struct objc_image_info *info)` —
+/// `Class objc_readClassPair(Class cls, const struct objc_image_info *info)`
+//—
 /// iOS 8+ Swift-related helper. Apps from iOS 6/7 may import the
 /// symbol but rarely actually call it. Return the input class
 /// unchanged so any best-effort caller keeps working.
@@ -2283,7 +2321,9 @@ pub fn objc_allocWithZone(
 /// of a dynamically created class. touchHLE's [`objc_allocateClassPair`]
 /// already inserts the class into the runtime tables; the matching
 /// `register` call is therefore a no-op that just publishes the class.
-/// <https://developer.apple.com/documentation/objectivec/1418414-objc_registerclasspair>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418414-objc_registerclasspair>
 pub fn objc_registerClassPair(_env: &mut crate::Environment, _cls: Class) {}
 
 /// `void objc_disposeClassPair(Class cls)` — destroys a class created
@@ -2291,14 +2331,18 @@ pub fn objc_registerClassPair(_env: &mut crate::Environment, _cls: Class) {}
 /// touchHLE doesn't reclaim class storage, so we just drop the reference
 /// on the floor (Apple's runtime is also lazy about this for very small
 /// allocations).
-/// <https://developer.apple.com/documentation/objectivec/1418912-objc_disposeclasspair>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418912-objc_disposeclasspair>
 pub fn objc_disposeClassPair(_env: &mut crate::Environment, _cls: Class) {}
 
 /// `Class class_setSuperclass(Class cls, Class newSuper)` — deprecated
 /// since OS X 10.5 but still exported by libobjc and used by older
 /// hooking libraries. Returns the previous superclass and rewrites the
 /// class's inheritance chain in-place.
-/// <https://developer.apple.com/documentation/objectivec/1418687-class_setsuperclass>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418687-class_setsuperclass>
 pub fn class_setSuperclass(env: &mut crate::Environment, cls: Class, new_super: Class) -> Class {
     if cls.is_null() {
         return nil;
@@ -2325,7 +2369,9 @@ pub fn protocol_getName(_env: &mut crate::Environment, _p: id) -> ConstPtr<u8> {
 
 /// `BOOL protocol_conformsToProtocol(Protocol *proto, Protocol *other)`
 /// per Apple's Objective-C Runtime Reference
-/// (<https://developer.apple.com/documentation/objectivec/1418841-protocol_conformstoprotocol>):
+///
+///
+//(<https://developer.apple.com/documentation/objectivec/1418841-protocol_conformstoprotocol>):
 ///
 /// > Returns a Boolean value that indicates whether one protocol
 /// > conforms to another.
@@ -2338,7 +2384,9 @@ pub fn protocol_conformsToProtocol(_env: &mut crate::Environment, proto: id, oth
 
 /// `int objc_getClassList(Class *buffer, int bufferLen)` per Apple's
 /// Objective-C Runtime Reference
-/// (<https://developer.apple.com/documentation/objectivec/1418579-objc_getclasslist>):
+///
+///
+//(<https://developer.apple.com/documentation/objectivec/1418579-objc_getclasslist>):
 ///
 /// > Returns the number of currently registered classes. If `buffer` is
 /// > NULL or `bufferLen` is 0, it must just return the total count.
@@ -2395,7 +2443,9 @@ pub fn object_getIndexedIvars(_env: &mut crate::Environment, obj: id) -> ConstVo
 
 /// `void method_exchangeImplementations(Method m1, Method m2)`
 ///
-/// Per Apple's [Objective-C Runtime Reference](https://developer.apple.com/documentation/objectivec/1418769-method_exchangeimplementations?language=objc):
+///  Per Apple's [Objective-C Runtime
+///
+//Reference](https://developer.apple.com/documentation/objectivec/1418769-method_exchangeimplementations?language=objc):
 ///
 /// > Exchanges the implementations of two methods. This is an atomic
 /// > version of the following:
@@ -2483,11 +2533,14 @@ pub fn method_exchangeImplementations(
     );
 }
 
-/// `objc_property_t *class_copyPropertyList(Class cls, unsigned int *outCount)` —
+///  `objc_property_t *class_copyPropertyList(Class cls, unsigned int
+/// *outCount)` —
 /// returns a NULL-terminated, malloc'd array of `objc_property_t` opaque
 /// pointers describing every declared `@property` in `cls` (not in its
 /// superclasses). Per Apple's Objective-C Runtime Reference
-/// (<https://developer.apple.com/documentation/objectivec/1418553-class_copypropertylist>):
+///
+///
+//(<https://developer.apple.com/documentation/objectivec/1418553-class_copypropertylist>):
 ///
 /// > You should use `free()` to free the array.
 /// > If the class declares no properties, the function returns `NULL` and
@@ -2508,7 +2561,8 @@ pub fn class_copyPropertyList(
     if cls.is_null() {
         return Ptr::null();
     }
-    // Collect property pointers WITHOUT walking the hierarchy — class_getProperty
+    //  Collect property pointers WITHOUT walking the hierarchy —
+    // class_getProperty
     // walks it (matching the documented `class_getProperty` semantics), but
     // class_copyPropertyList must NOT, per Apple's runtime reference.
     let entries: Vec<ConstVoidPtr> = if let Some(host_obj) = env.objc.get_host_object(cls) {
@@ -2540,15 +2594,19 @@ pub fn class_copyPropertyList(
 /// `Method *class_copyMethodList(Class cls, unsigned int *outCount)` —
 /// returns a malloc'd array of `Method` pointers (one per instance method
 /// declared on `cls`). Per Apple's Objective-C Runtime Reference
-/// (<https://developer.apple.com/documentation/objectivec/1418490-class_copymethodlist>):
+///
+///
+//(<https://developer.apple.com/documentation/objectivec/1418490-class_copymethodlist>):
 ///
 /// > You must free the list with `free()`.
-/// > If `cls` declares no instance methods, returns `NULL` and `*outCount` is 0.
+///  > If `cls` declares no instance methods, returns `NULL` and `*outCount` is
+/// 0.
 ///
 /// touchHLE's `class_getInstanceMethod` returns the class pointer (it
 /// doesn't model real `Method` structs), so we mirror that by writing the
 /// class pointer once per known selector — callers walking the array can
-/// still use the pointers with `method_getImplementation`/`method_setImplementation`
+///  still use the pointers with
+/// `method_getImplementation`/`method_setImplementation`
 /// or `class_replaceMethod`, which expect this same opaque representation.
 pub fn class_copyMethodList(
     env: &mut crate::Environment,
@@ -2607,7 +2665,8 @@ pub fn class_copyIvarList(
     Ptr::null()
 }
 
-/// `Protocol * __unsafe_unretained *class_copyProtocolList(Class cls, unsigned int *outCount)` —
+///  `Protocol * __unsafe_unretained *class_copyProtocolList(Class cls,
+/// unsigned int *outCount)` —
 /// same shape. We don't model adopted protocols, so return NULL with
 /// `*outCount = 0`, which is also the spec-compliant answer for a class
 /// adopting no protocols.
@@ -2628,7 +2687,9 @@ pub fn class_copyProtocolList(
 /// no such property is declared.
 ///
 /// Per Apple's Objective-C Runtime Reference:
-/// https://developer.apple.com/documentation/objectivec/1418553-class_getproperty
+///
+///
+//https://developer.apple.com/documentation/objectivec/1418553-class_getproperty
 pub fn class_getProperty(
     env: &mut crate::Environment,
     cls: Class,

@@ -680,8 +680,8 @@ fn mbsrtowcs(
         i += 1;
     }
 
-    // Reached `len` without hitting null — update *src to point past converted
-    // chars.
+    // Reached `len` without hitting null — update *src to point past
+    // converted
     if !dest.is_null() {
         env.mem.write(src, src_ptr + i);
     }

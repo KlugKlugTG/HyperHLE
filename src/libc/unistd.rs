@@ -261,6 +261,7 @@ fn unlink(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
 /// `int rmdir(const char *path);` — POSIX/Darwin `rmdir(2)`. Removes the
 /// directory at `path`, which must be empty. Returns 0 on success and -1
 /// with `errno` set on failure. See Apple `man 2 rmdir`:
+///
 /// <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/rmdir.2.html>
 fn rmdir(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
     set_errno(env, 0);
@@ -310,6 +311,7 @@ fn rmdir(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
 
 /// `int link(const char *path1, const char *path2);` — POSIX/Darwin
 /// `link(2)`. Apple's documentation
+///
 /// (<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/link.2.html>)
 /// specifies that `link()` creates a new directory entry `path2` that
 /// refers to the same file as `path1`. Both names share the same inode
@@ -386,6 +388,7 @@ fn link(env: &mut Environment, path1: ConstPtr<u8>, path2: ConstPtr<u8>) -> i32 
 
 /// `int symlink(const char *path1, const char *path2);` — POSIX/Darwin
 /// `symlink(2)`. The Apple man page
+///
 /// (<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/symlink.2.html>)
 /// documents `ENOTSUP` ("The file system does not support the creation of
 /// symbolic links") as the canonical errno when the underlying filesystem
@@ -542,6 +545,7 @@ fn chmod(env: &mut Environment, path: ConstPtr<u8>, _mode: u32) -> i32 {
 /// `int fchmod(int fd, mode_t mode);`
 ///
 /// Per Apple's `fchmod(2)` man page
+///
 /// (<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/fchmod.2.html>):
 ///
 /// > Th
@@ -563,6 +567,7 @@ const SYS_GETEGID: i32 = 43;
 /// `long syscall(int number, ...);`
 ///
 /// Per the Apple `syscall(2)` man page
+///
 /// (<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/syscall.2.html>):
 ///
 /// > `syscall()` performs the system call whose assembly language

@@ -6,10 +6,10 @@
 
 //! Minimal `AUGraph.h` (Audio Unit Processing Graph Services).
 //!
-//! Реализован граф для эмуляции iOS 2.0-4.3.5. Поддерживаются структуры
-//! соединений узлов и рендер-коллбэков для полноценного отслеживания графа,
-//! нужного играм вроде Plants vs Zombies. Каждая input-шина 3D Mixer-а
-//! превращается в отдельный OpenAL-источник, callback дёргается из общего
+//! Реализован граф для эмуляции iOS 2.0-4.3.5.
+//Поддерживаются структуры
+//! нужного играм вроде Plants vs Zombies. Каждая
+//input-шина 3D Mixer-а
 //! run-loop'а через `audio_unit::render_audio_unit`.
 
 use std::collections::HashMap;
@@ -42,8 +42,8 @@ unsafe impl SafeRead for OpaqueAUGraph {}
 
 pub type AUGraph = MutPtr<OpaqueAUGraph>;
 
-/// Описание компонента, как у `AudioComponentDescription` в `audio_components`.
-#[repr(C, packed)]
+/// Описание компонента, как у `AudioComponentDescription`
+//в `audio_components`.
 #[derive(Copy, Clone, Default)]
 struct ComponentDesc {
     component_type: u32,
@@ -54,8 +54,8 @@ struct ComponentDesc {
 }
 unsafe impl SafeRead for ComponentDesc {}
 
-/// Соединение между двумя узлами графа (на основе AudioUnitNodeConnection).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+/// Соединение между двумя узлами графа (на
+//основе AudioUnitNodeConnection).
 struct AudioUnitNodeConnection {
     source_node: AUNode,
     source_output_number: u32,
@@ -77,8 +77,8 @@ struct GraphState {
     is_open: bool,
     is_initialized: bool,
     is_running: bool,
-    /// Какой узел является конечным выходом (RemoteIO).
-    /// Нужен, чтобы знать, какой `AudioUnit` стартовать в `AUGraphStart`.
+    /// Какой узел является конечным выходом
+    //(RemoteIO).
     output_node: Option<AUNode>,
 }
 
@@ -147,8 +147,8 @@ fn AUGraphAddNode(
         },
     );
 
-    // Если это RemoteIO — запоминаем его как выходной узел графа.
-    let is_output = desc.component_type == kAudioUnitType_Output
+    // Если это RemoteIO — запоминаем его как
+    // выходной узел графа.
         && desc.component_sub_type == kAudioUnitSubType_RemoteIO;
 
     if is_output {
@@ -157,8 +157,8 @@ fn AUGraphAddNode(
 
     env.mem.write(out_node, node_id);
 
-    // Вытаскиваем значения в локальные переменные (копии),
-    // чтобы избежать UB при взятии ссылки макросом log! из упакованной
+    // Вытаскиваем значения в локальные
+    // переменные (копии),
     // структуры.
     let dt = desc.component_type;
     let ds = desc.component_sub_type;
@@ -176,11 +176,7 @@ fn AUGraphAddNode(
 
 fn AUGraphRemoveNode(env: &mut Environment, graph: AUGraph, node: AUNode) -> OSStatus {
     if let Some(state) = State::get(&mut env.framework_state).graphs.get_mut(&graph) {
-        state.nodes.remove(&node);
-        // Очищаем любые соединения, связанные с удаленным узлом
-        state
-            .connections
-            .retain(|c| c.source_node != node && c.dest_node != node);
+        state.connections.retain(|c| c.source_node != node && c.dest_node != node);
     }
     0
 }
@@ -515,6 +511,6 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(AUGraphRemoveRenderNotify(_, _, _)),
 ];
 
-// Предотвращаем "unused" предупреждение для guest_size_of import.
-#[allow(dead_code)]
+// Предотвращаем "unused" предупреждение для
+// guest_size_of import.
 const _SIZE_PROBE: usize = guest_size_of::<OpaqueAUGraph>() as usize;

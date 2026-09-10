@@ -49,6 +49,7 @@ pub struct UIScrollViewHostObject {
     can_cancel_content_touches: bool, // <-- ДОБАВЛЕНО
     /// `UIScrollViewIndicatorStyle` — specifies the look of the scroll
     /// indicators. Per Apple's UIScrollView reference:
+    ///
     /// https://developer.apple.com/documentation/uikit/uiscrollview/1619615-indicatorstyle
     indicator_style: UIScrollViewIndicatorStyle,
 }

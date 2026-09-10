@@ -13,7 +13,8 @@
 //! ```
 //!
 //! Resources:
-//! - The GCC documentation's [Fast Enumeration Protocol section](https://gcc.gnu.org/onlinedocs/gcc/Fast-enumeration-protocol.html)
+//! - The GCC documentation's [Fast Enumeration Protocol
+//section](https://gcc.gnu.org/onlinedocs/gcc/Fast-enumeration-protocol.html)
 
 use crate::mem::{MutPtr, MutVoidPtr, SafeRead};
 use crate::objc::{id, msg, nil, objc_classes, ClassExports};

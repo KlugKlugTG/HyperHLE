@@ -20,7 +20,8 @@
 //! immediately:
 //!
 //! ```objc
-//! [[NSRunLoop currentRunLoop] addPort:[NSMachPort port] forMode:NSDefaultRunLoopMode];
+//! [[NSRunLoop currentRunLoop] addPort:[NSMachPort port]
+//forMode:NSDefaultRunLoopMode];
 //! ```
 //!
 //! touchHLE has no Mach kernel, so there is no real Mach port to wrap.

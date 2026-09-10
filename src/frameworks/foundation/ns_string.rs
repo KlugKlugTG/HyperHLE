@@ -8,7 +8,8 @@
 //! The `NSString` class cluster, including `NSMutableString`.
 //!
 //! Resources:
-//! - Apple's [String Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/introStrings.html)
+//! - Apple's [String Programming
+//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Strings/introStrings.html)
 
 mod path_algorithms;
 
@@ -1051,8 +1052,10 @@ pub const CLASSES: ClassExports = objc_classes! {
     assert!(res);
 }
 
-// -[NSString getBytes:maxLength:usedLength:encoding:options:range:remainingRange:]
-// Apple: https://developer.apple.com/documentation/foundation/nsstring/1408564-getbytes
+//  -[NSString
+// getBytes:maxLength:usedLength:encoding:options:range:remainingRange:]
+//  Apple:
+// https://developer.apple.com/documentation/foundation/nsstring/1408564-getbytes
 //
 // Writes a representation of the receiver, encoded with `encoding`, into the
 // memory at `buffer` (at most `max_buffer_count` bytes). The substring covered
@@ -1068,7 +1071,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 //     slice based on `range` measured in UTF-16 code units. This matches what
 //     guest code actually relies on for the small subset of `range` values it
 //     ever passes (typically `{0, length}`).
-//   * The `options` mask is best-effort: bit 0 (`NSStringEncodingConversionAllowLossy`)
+//  * The `options` mask is best-effort: bit 0
+// (`NSStringEncodingConversionAllowLossy`)
 //     is accepted; bit 1 (`NSStringEncodingConversionExternalRepresentation`)
 //     is currently ignored.
 - (bool)getBytes:(MutVoidPtr)buffer
@@ -1280,6 +1284,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // Apple: Returns a new string formed from the receiver by either removing
 // characters from the end, or by appending as many occurrences as necessary
 // of a given pad string starting at a given index.
+//
 // https://developer.apple.com/documentation/foundation/nsstring/1416085-stringbypaddingtolength
 - (id)stringByPaddingToLength:(NSUInteger)new_length
                    withString:(id)pad_string
@@ -1358,8 +1363,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)stringByAppendingString:(id)other {
-    // ЧЕСТНЫЙ ФИКС: Вместо жесткого assert, который убивает эмулятор,
-    // эмулируем обработку исключения NSInvalidArgumentException.
+    // ЧЕСТНЫЙ ФИКС: Вместо жесткого assert,
+    // который убивает эмулятор,
     if other == nil {
         log!("Warning: [NSString stringByAppendingString:nil] called. This would throw NSInvalidArgumentException on iOS. Returning original string to prevent crash.");
         return this;
@@ -2819,7 +2824,8 @@ pub fn fastest_encoding(env: &mut Environment, string: id) -> NSStringEncoding {
 
 /// Returns the smallest encoding that can losslessly represent `string`.
 ///
-/// This mirrors `CFStringGetSmallestEncoding` and `-[NSString smallestEncoding]`:
+///  This mirrors `CFStringGetSmallestEncoding` and `-[NSString
+/// smallestEncoding]`:
 /// pure-ASCII content reports `NSASCIIStringEncoding`, otherwise we report
 /// `NSUTF8StringEncoding` because every Unicode scalar value fits in UTF-8.
 pub fn smallest_encoding(env: &mut Environment, string: id) -> NSStringEncoding {

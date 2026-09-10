@@ -25,6 +25,7 @@ static SYSCTL_VALUES: [((i32, i32), &str, SysInfoType); 38] = [
     // documented in `<sys/sysctl.h>`. iPhone 1/2G/3G are single-core, so
     // every counter reads back as 1 — matching what a real iOS 4 device
     // returns for these names (see Apple's
+    //
     // <https://developer.apple.com/library/archive/documentation/Darwin/Conceptual/KernelProgramming/sysctl/sysctl.html>).
     ((0,0), "hw.physicalcpu" , SysInfoType::Int32(1)),
     ((0,0), "hw.physicalcpu_max", SysInfoType::Int32(1)),
@@ -39,8 +40,8 @@ static SYSCTL_VALUES: [((i32, i32), &str, SysInfoType); 38] = [
     ((6,16), "hw.cpufrequency_max", SysInfoType::Int64(412000000)),
     ((6,14), "hw.busfrequency" , SysInfoType::Int64(103000000)),
 
-    // Честные параметры кэша для ARM1176JZF-S (iPhone 2G / 3G)
-    ((6,17), "hw.l1icachesize", SysInfoType::Int32(16384)),
+    // Честные параметры кэша для ARM1176JZF-S (iPhone 2G
+    // / 3G)
     ((6,18), "hw.l1dcachesize", SysInfoType::Int32(16384)),
     ((6,19), "hw.l2icachesize", SysInfoType::Int32(0)),
     ((6,20), "hw.l2cachesize", SysInfoType::Int32(0)),
@@ -193,11 +194,11 @@ fn sysctl(
                 }
                 _ => {}
             }
-            // Используем INT_MAP для поиска по числовым идентификаторам (name0,
-            // name1)
+            // Используем INT_MAP для поиска по
+            // числовым идентификаторам (name0,
             let Some((name_str, val)) = INT_MAP.get(&(name0, name1)) else {
-                // Убираем unimplemented!, чтобы избежать паники, просто
-                // логируем и возвращаем ошибку, как в sysctlbyname
+                // Убираем unimplemented!, чтобы избежать
+                // паники, просто
                 log!(
                     "sysctl(): unknown parameter [{}, {}], returning -1",
                     name0,
@@ -338,8 +339,8 @@ where
         // iOS truncates to the available buffer size rather than failing.
         match &val {
             SysInfoType::Int64(num) if oldlen >= guest_size_of::<i32>() => {
-                // Truncate to low 32 bits (little-endian) — matches real device
-                // behavior where the lower word is written.
+                // Truncate to low 32 bits (little-endian) — matches real
+                // device
                 let truncated = *num as i32;
                 log_dbg!(
                     "sysctl(byname) for '{name_str}': buffer {oldlen} < {len}, truncating Int64 to Int32 ({truncated})"

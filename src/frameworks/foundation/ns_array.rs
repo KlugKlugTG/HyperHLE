@@ -466,6 +466,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple's
+//
 // <https://developer.apple.com/documentation/foundation/nsarray/1415846-enumerateobjectsusingblock>:
 // iterates the receiver and, for each element, calls the supplied
 // `void (^)(id obj, NSUInteger idx, BOOL *stop)` block in order. The
@@ -478,6 +479,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple's
+//
 // <https://developer.apple.com/documentation/foundation/nsarray/1415349-enumerateobjectswithoptions>.
 // `NSEnumerationOptions` is a bitmask:
 //   NSEnumerationConcurrent = 1 << 0
@@ -921,6 +923,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // `objectAtIndex:`, including out-of-bounds behaviour. We delegate via
 // `msg![]` rather than reaching into the host object so that subclasses
 // (e.g. CFArray, KVO-aware mutable subclasses) get the right behaviour.
+//
 // <https://developer.apple.com/documentation/foundation/nsarray/1410519-objectatindexedsubscript>
 - (id)objectAtIndexedSubscript:(NSUInteger)index {
     msg![env; this objectAtIndex:index]
@@ -1182,7 +1185,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (void)sortUsingComparator:(NSComparator)cmptr` —
-// per Apple's [NSMutableArray Reference](https://developer.apple.com/documentation/foundation/nsmutablearray/1413612-sortusingcomparator):
+//  per Apple's [NSMutableArray
+// Reference](https://developer.apple.com/documentation/foundation/nsmutablearray/1413612-sortusingcomparator):
 // sorts the receiver in place using the supplied NSComparator block.
 // `NSComparator` is `^NSComparisonResult(id obj1, id obj2)`. An ObjC
 // block on 32-bit iOS is laid out as:
@@ -1386,6 +1390,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // warning rather than panicking the host so that broken guests don't crash
 // the whole emulator. Setting `nil` is treated like
 // `removeObjectAtIndex:`, mirroring real NSMutableArray semantics.
+//
 // <https://developer.apple.com/documentation/foundation/nsmutablearray/1416687-setobject>
 - (())setObject:(id)obj atIndexedSubscript:(NSUInteger)index {
     let len = env.objc.borrow::<ArrayHostObject>(this).array.len() as NSUInteger;
@@ -1451,7 +1456,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSArray *)sortedArrayUsingComparator:(NSComparator)cmptr` —
-// per Apple's [NSArray Reference](https://developer.apple.com/documentation/foundation/nsarray/1411124-sortedarrayusingcomparator):
+//  per Apple's [NSArray
+// Reference](https://developer.apple.com/documentation/foundation/nsarray/1411124-sortedarrayusingcomparator):
 // returns a new sorted array using the given NSComparator block. As with the
 // other `sortedArray…` variants on NSMutableArray, this is inherited
 // behaviour from NSArray; because `_touchHLE_NSMutableArray` descends from

@@ -11,6 +11,7 @@ use crate::objc::{objc_classes, ClassExports};
 // `MPMediaPlaylist` property keys. Per Apple's "Playlist property keys"
 // documentation (`MPMediaPlaylist.h`), each of these is an `NSString *`
 // constant whose value is the documented Cocoa property name:
+//
 // https://developer.apple.com/documentation/mediaplayer/playlist-property-keys?language=objc
 pub const MPMediaPlaylistPropertyAuthorDisplayName: &str = "authorDisplayName";
 pub const MPMediaPlaylistPropertyName: &str = "name";

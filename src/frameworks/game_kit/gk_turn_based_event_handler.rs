@@ -15,7 +15,8 @@
 //!
 //! Apple reference:
 //! <https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandler>
-//! <https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandlerdelegate>
+//!
+//<https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandlerdelegate>
 //!
 //! Before this class existed in touchHLE, the `sharedTurnBasedEventHandler`
 //! call hit the generic "unimplemented class" path, which zero-fills r0/r1
@@ -69,6 +70,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // MARK: - Singleton accessor
 //
 // Apple reference:
+//
 // <https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandler/shared()>
 // "Your game never directly creates a GKTurnBasedEventHandler object.
 //  Instead, retrieve the shared instance using this class method."
@@ -118,11 +120,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 // "nothing pending" result a real signed-out device produces. No events
 // are ever delivered because touchHLE has no Game Center connectivity.
 //
+//
 // <https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandlerdelegate/handleinvitefromgamecenter(_:)>
 - (())handleInviteFromGameCenter:(id)_player_ids_to_invite {
     // No invites can arrive without Game Center connectivity.
 }
 
+//
 // <https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandlerdelegate/handleturnevent(for:didbecomeactive:)>
 - (())handleTurnEventForMatch:(id)_match
                 didBecomeActive:(bool)_did_become_active {
@@ -136,6 +140,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // No turn events are ever delivered.
 }
 
+//
 // <https://developer.apple.com/documentation/gamekit/gkturnbasedeventhandlerdelegate/handlematchended(_:)>
 - (())handleMatchEnded:(id)_match {
     // No matches exist, so none can end.

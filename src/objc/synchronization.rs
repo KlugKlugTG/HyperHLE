@@ -11,15 +11,19 @@
 //! `objc_sync_exit` functions.
 //!
 //! Resources:
-//! - [Section about `@synchronized` in *The Objective-C Programming Language*](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjectiveC/Chapters/ocThreading.html#//apple_ref/doc/uid/TP30001163-CH19-SW1)
-//! - [Source code for `objc_sync_enter/exit`](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/Accessors.subproj/objc-accessors.mm.auto.html), otherwise undocumented.
+//! - [Section about `@synchronized` in *The Objective-C Programming
+//Language*](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjectiveC/Chapters/ocThreading.html#//apple_ref/doc/uid/TP30001163-CH19-SW1)
+//! - [Source code for
+//`objc_sync_enter/exit`](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/Accessors.subproj/objc-accessors.mm.auto.html),
+//otherwise undocumented.
 use crate::{Environment, MutexType};
 
 use super::id;
 
 /// Backing function of @synchronized block entry.
 /// This function is entirely undocumented, with
-/// [source code provided](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/objc-sync.h.auto.html).
+///  [source code
+/// provided](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/objc-sync.h.auto.html).
 pub(super) fn objc_sync_enter(env: &mut Environment, obj: id) -> i32 {
     if let Some(mutex_id) = env.objc.sync_mutexes.get(&obj) {
         log_dbg!(
@@ -45,7 +49,8 @@ pub(super) fn objc_sync_enter(env: &mut Environment, obj: id) -> i32 {
 
 /// Backing function of @synchronized block exit.
 /// This function is entirely undocumented, with
-/// [source code provided](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/objc-sync.h.auto.html).
+///  [source code
+/// provided](https://opensource.apple.com/source/objc4/objc4-551.1/runtime/objc-sync.h.auto.html).
 pub(super) fn objc_sync_exit(env: &mut Environment, obj: id) -> i32 {
     match env.objc.sync_mutexes.get(&obj).cloned() {
         Some(mutex_id) => {

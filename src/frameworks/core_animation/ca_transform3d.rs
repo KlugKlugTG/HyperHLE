@@ -11,7 +11,8 @@
 //! convention.
 //!
 //! The C API surface mirrors Apple's `<QuartzCore/CATransform3D.h>`. See:
-//! - [CATransform3D Reference](https://developer.apple.com/documentation/quartzcore/catransform3d)
+//! - [CATransform3D
+//Reference](https://developer.apple.com/documentation/quartzcore/catransform3d)
 
 use crate::abi::{impl_GuestRet_for_large_struct, GuestArg};
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant};

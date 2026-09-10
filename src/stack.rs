@@ -133,7 +133,8 @@ pub fn prep_stack_for_start(
 
     if pass_args_in_registers {
         // The on-stack layout, from `sp` upwards, is exactly `string_ptrs` in
-        // order: `[argc][argv[0]…argv[argc-1]][NULL][envp…][NULL][apple…][NULL]`.
+        //  order:
+        //
         // dyld passes `main` these as `main(argc, argv, envp, apple)`, where
         // `argv`/`envp`/`apple` are pointers to the respective sub-arrays.
         let argv_ptr = sp + 4; // skip argc

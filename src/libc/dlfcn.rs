@@ -5,18 +5,18 @@
  */
 
 //! `dlfcn.h` (`dlopen()` and friends)
-//! Реализация подсистемы динамического связывания POSIX для HLE-эмуляции.
-//! Код спроектирован с учетом устойчивости к некорректному доступу к памяти со
+//! Реализация подсистемы динамического
+//связывания POSIX для HLE-эмуляции.
 //! стороны гостевого приложения.
 
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::mem::{ConstPtr, MutVoidPtr, Ptr};
 use crate::Environment;
 
-/// Псевдо-дескриптор для доступа к глобальной области видимости символов (main
-//executable).
-/// В операционных системах семейства Darwin/iOS RTLD_DEFAULT традиционно равен
-//(void*)-2.
+/// Псевдо-дескриптор для доступа к
+//глобальной области видимости символов (main
+/// В операционных системах семейства Darwin/iOS
+//RTLD_DEFAULT традиционно равен
 const RTLD_DEFAULT: MutVoidPtr = Ptr::from_bits(-2 as _);
 const RTLD_NEXT: MutVoidPtr = Ptr::from_bits(-1 as _);
 const RTLD_SELF: MutVoidPtr = Ptr::from_bits(-3 as _);
@@ -32,8 +32,8 @@ fn is_global_scope_handle(handle: MutVoidPtr) -> bool {
         || handle == RTLD_MAIN_ONLY
 }
 
-/// Проверяет, является ли запрашиваемая библиотека известной эмулятору
-//(присутствует в статическом списке DYLIB_LIST).
+/// Проверяет, является ли запрашиваемая
+//библиотека известной эмулятору
 fn is_known_library(path: &str) -> bool {
     crate::dyld::DYLIB_LIST
         .iter()
@@ -41,25 +41,25 @@ fn is_known_library(path: &str) -> bool {
 }
 
 /// Реализация функции `dlopen` стандарта POSIX.
-/// Загружает динамическую библиотеку в адресное пространство процесса (или
-//симулирует этот процесс в HLE).
-/// Возвращает дескриптор загруженной библиотеки или NULL в случае отсутствия
-//файла или ошибки чтения.
+/// Загружает динамическую библиотеку в
+//адресное пространство процесса (или
+/// Возвращает дескриптор загруженной
+//библиотеки или NULL в случае отсутствия
 fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
-    // В соответствии со стандартом POSIX, вызов dlopen(NULL) возвращает
-    // дескриптор главной программы.
-    // Эмулятор предоставляет доступ к глобальным символам через специальный
-    // дескриптор RTLD_DEFAULT.
+    // В соответствии со стандартом POSIX, вызов
+    // dlopen(NULL) возвращает
+    // Эмулятор предоставляет доступ к
+    // глобальным символам через специальный
     if path.is_null() {
         return RTLD_DEFAULT;
     }
 
-    // БЕЗОПАСНОСТЬ: Осуществляем защищенное чтение строки пути из
-    // неконтролируемой гостевой памяти.
-    // Если указатель недействителен (Out-Of-Bounds) или строка не является
-    // корректной UTF-8 последовательностью,
-    // мы прерываем операцию загрузки и возвращаем NULL, не допуская паники
-    // эмулятора (Denial of Service).
+    // БЕЗОПАСНОСТЬ: Осуществляем защищенное
+    // чтение строки пути из
+    // Если указатель недействителен (Out-Of-Bounds)
+    // или строка не является
+    // мы прерываем операцию загрузки и
+    // возвращаем NULL, не допуская паники
     let path_str = match env.mem.cstr_at_utf8(path) {
         Ok(s) => s,
         Err(e) => {
@@ -71,12 +71,12 @@ fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
         }
     };
 
-    // Если библиотека не известна системе эмуляции (например,
-    // кросс-платформенный фреймворк пытается
-    // загрузить специфичный для другой платформы плагин), мы мягко отклоняем
-    // запрос, возвращая NULL.
-    // Данное поведение ожидается гостевым приложением для "мягкой деградации"
-    // (graceful degradation).
+    // Если библиотека не известна системе
+    // эмуляции (например,
+    // загрузить специфичный для другой
+    // платформы плагин), мы мягко отклоняем
+    // Данное поведение ожидается гостевым
+    // приложением для "мягкой деградации"
     if !is_known_library(path_str) {
         log!(
             "Warning: dlopen() returning NULL for requested but unknown library: {}",
@@ -85,23 +85,23 @@ fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
         return Ptr::null();
     }
 
-    // Временная архитектура: использование указателя на строку пути в памяти
-    // гостя как непрозрачного дескриптора.
-    // TODO: Разработать защищенную систему управления дескрипторами (Handle
-    // Allocator Table) на стороне хоста,
-    // чтобы предотвратить уязвимости Use-After-Free, когда приложение
-    // освобождает строку пути после вызова dlopen.
+    // Временная архитектура: использование
+    // указателя на строку пути в памяти
+    // TODO: Разработать защищенную систему
+    // управления дескрипторами (Handle
+    // чтобы предотвратить уязвимости
+    // Use-After-Free, когда приложение
     path.cast_mut().cast()
 }
 
 /// Реализация функции `dlsym` стандарта POSIX.
-/// Выполняет поиск адреса экспортированного символа (функции или переменной) в
-//загруженном модуле.
-fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> MutVoidPtr {
-    // БЕЗОПАСНОСТЬ: Валидация переданного дескриптора.
-    // Специальные дескрипторы (RTLD_DEFAULT, RTLD_NEXT, RTLD_SELF,
-    // RTLD_MAIN_ONLY, а также NULL) означают глобальный поиск символа.
-    if !is_global_scope_handle(handle) {
+/// Выполняет поиск адреса
+//экспортированного символа (функции или
+//переменной) в
+    // БЕЗОПАСНОСТЬ: Валидация переданного
+    // дескриптора.
+    // RTLD_MAIN_ONLY, а также NULL) означают глобальный
+    // поиск символа.
         let handle_path_ptr: ConstPtr<u8> = handle.cast().cast_const();
         let handle_str = match env.mem.cstr_at_utf8(handle_path_ptr) {
             Ok(s) => s,
@@ -111,8 +111,8 @@ fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> Mut
             }
         };
 
-        // Если дескриптор указывает на строку, не являющуюся известной
-        // библиотекой, запрос отклоняется.
+        // Если дескриптор указывает на строку,
+        // не являющуюся известной
         if !is_known_library(handle_str) {
             log!(
                 "Warning: dlsym() returning NULL due to an unknown library handle: {}",
@@ -122,14 +122,14 @@ fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> Mut
         }
     }
 
-    // БЕЗОПАСНОСТЬ: Защита от передачи NULL в качестве имени искомого символа.
-    if symbol.is_null() {
+    // БЕЗОПАСНОСТЬ: Защита от передачи NULL в
+    // качестве имени искомого символа.
         log!("Warning: dlsym() called with a NULL symbol pointer");
         return Ptr::null();
     }
 
-    // БЕЗОПАСНОСТЬ: Чтение строкового имени символа из гостевой памяти.
-    let symbol_str = match env.mem.cstr_at_utf8(symbol) {
+    // БЕЗОПАСНОСТЬ: Чтение строкового имени
+    // символа из гостевой памяти.
         Ok(s) => s,
         Err(_) => {
             log!("Warning: dlsym() returning NULL due to invalid symbol string pointer in guest memory");
@@ -137,14 +137,14 @@ fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> Mut
         }
     };
 
-    // В бинарном формате Mach-O (платформы Apple) C-символы компилируются с
-    // префиксом подчеркивания.
+    // В бинарном формате Mach-O (платформы Apple)
+    // C-символы компилируются с
     let symbol_formatted = format!("_{}", symbol_str);
 
-    // Попытка разрешить адрес через подсистему динамического загрузчика
-    // эмулятора (dyld).
-    // Функция create_proc_address безопасно вернет Err, если функция-заглушка
-    // еще не реализована в эмуляторе.
+    // Попытка разрешить адрес через
+    // подсистему динамического загрузчика
+    // Функция create_proc_address безопасно вернет Err,
+    // если функция-заглушка
     match env
         .dyld
         .create_proc_address(&mut env.mem, &mut env.cpu, &symbol_formatted)
@@ -170,8 +170,8 @@ fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> Mut
 }
 
 /// Реализация функции `dlclose` стандарта POSIX.
-/// В HLE архитектуре выступает в роли заглушки, но строго соблюдает семантику
-//возврата кодов ошибок.
+/// В HLE архитектуре выступает в роли
+//заглушки, но строго соблюдает семантику
 fn dlclose(env: &mut Environment, handle: MutVoidPtr) -> i32 {
     if is_global_scope_handle(handle) {
         return 0; // Операция успешна
@@ -179,8 +179,8 @@ fn dlclose(env: &mut Environment, handle: MutVoidPtr) -> i32 {
 
     let handle_path_ptr: ConstPtr<u8> = handle.cast().cast_const();
 
-    // БЕЗОПАСНОСТЬ: Проверяем валидность переданного дескриптора перед
-    // возвратом кода статуса.
+    // БЕЗОПАСНОСТЬ: Проверяем валидность
+    // переданного дескриптора перед
     match env.mem.cstr_at_utf8(handle_path_ptr) {
         Ok(handle_str) => {
             if !is_known_library(handle_str) {
@@ -199,8 +199,8 @@ fn dlclose(env: &mut Environment, handle: MutVoidPtr) -> i32 {
     }
 }
 
-/// Реализация функции `dlerror` стандарта POSIX (man 3 dlerror на Darwin).
-///
+/// Реализация функции `dlerror` стандарта POSIX (man
+//3 dlerror на Darwin).
 /// Apple: "If no errors have occurred since initialization or since
 /// `dlerror()` was last called, `dlerror()` returns NULL." Because our
 /// `dlopen` / `dlsym` / `dlclose` never publish a per-thread error message
@@ -214,8 +214,8 @@ fn dlerror(_env: &mut Environment) -> ConstPtr<u8> {
     Ptr::null()
 }
 
-// Экспорт C-функций в глобальное адресное пространство гостевого процесса.
-pub const FUNCTIONS: FunctionExports = &[
+// Экспорт C-функций в глобальное адресное
+// пространство гостевого процесса.
     export_c_func!(dlopen(_, _)),
     export_c_func!(dlsym(_, _)),
     export_c_func!(dlclose(_)),

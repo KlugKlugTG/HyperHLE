@@ -89,7 +89,8 @@ fn main() {
 
         if os.eq_ignore_ascii_case("linux") {
             // Make Linux release builds actually include normal desktop audio.
-            // Without these, OpenAL Soft can silently build with only sndio/oss/null/wave,
+            //  Without these, OpenAL Soft can silently build with only
+            // sndio/oss/null/wave,
             // which makes Pulse/ALSA impossible to use at runtime.
             build.define("ALSOFT_BACKEND_PULSEAUDIO", "ON");
             build.define("ALSOFT_BACKEND_ALSA", "ON");

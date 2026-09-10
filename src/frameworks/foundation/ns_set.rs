@@ -101,6 +101,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // Apple: "Creates and returns a set containing a specified number of objects
 // from a given C array of objects."
+//
 // https://developer.apple.com/documentation/foundation/nsset/1574811-setwithobjects
 + (id)setWithObjects:(ConstPtr<id>)objects count:(NSUInteger)count {
     let new: id = msg_class![env; _touchHLE_NSSet alloc];
@@ -215,6 +216,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // Apple: "Sends a message specified by a given selector to each object in
 // the set." (NSSet makeObjectsPerformSelector:). The order in which the
 // objects receive the message is not defined.
+//
 // https://developer.apple.com/documentation/foundation/nsset/makeobjectsperformselector:
 - (())makeObjectsPerformSelector:(SEL)sel {
     // Snapshot the members up front via -allObjects so that the selector
@@ -231,6 +233,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // Apple: "Sends a message specified by a given selector to each object in
 // the set." (NSSet makeObjectsPerformSelector:withObject:). The object
 // argument is passed with each message; the iteration order is undefined.
+//
 // https://developer.apple.com/documentation/foundation/nsset/makeobjectsperformselector:withobject:
 - (())makeObjectsPerformSelector:(SEL)sel withObject:(id)arg {
     let objects: id = msg![env; this allObjects];
@@ -668,6 +671,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // Apple: "Adds to the receiving set each object contained in a given array
 // that is not already a member." (NSMutableSet addObjectsFromArray:).
+//
 // https://developer.apple.com/documentation/foundation/nsmutableset/1408015-addobjectsfromarray
 //
 // We tolerate `nil` (real Foundation crashes, but every other touchHLE

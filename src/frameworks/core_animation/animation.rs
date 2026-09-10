@@ -9,13 +9,17 @@
 //! exact match.
 //! References:
 //! - Core Animation Programming Guide
-//!   <https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/Introduction/Introduction.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/Introduction/Introduction.html>
 //! - List of Animatable properties
-//!   <https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/AnimatableProperties/AnimatableProperties.html#//apple_ref/doc/uid/TP40004514-CH11-SW2>
+//!
+//<https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/AnimatableProperties/AnimatableProperties.html#//apple_ref/doc/uid/TP40004514-CH11-SW2>
 //! - Animation timing behavior, layers' local time, autoreverses, etc.
-//!   <https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/AdvancedAnimationTricks/AdvancedAnimationTricks.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/CoreAnimation_guide/AdvancedAnimationTricks/AdvancedAnimationTricks.html>
 //! - Algorithm for choosing interpolation values
-//!   <https://developer.apple.com/documentation/quartzcore/cabasicanimation?language=objc>
+//!
+//<https://developer.apple.com/documentation/quartzcore/cabasicanimation?language=objc>
 use std::ops::Sub;
 
 use crate::frameworks::core_animation::ca_animation::{
@@ -99,7 +103,8 @@ impl State {
             // `greatestFiniteMagnitude`, i.e. f32::MAX) makes the animation
             // repeat forever. A positive infinity is the most common value
             // games use, so it must be treated as "forever" rather than being
-            // rejected as invalid (which would clamp it to a single play-through
+            //  rejected as invalid (which would clamp it to a single
+            // play-through
             // and stop looping animations after one cycle).
             let effective_repeat_count =
                 if repeat_count == f32::INFINITY || repeat_count == f32::MAX {
@@ -107,7 +112,8 @@ impl State {
                 } else if repeat_count.is_finite() && repeat_count > 0.0 {
                     repeat_count
                 } else {
-                    // 0 means "no explicit repeat" (play once); a negative or NaN
+                    //  0 means "no explicit repeat" (play once); a negative or
+                    // NaN
                     // value is undefined per the docs, so also fall back to one
                     // play-through instead of crashing the host.
                     if repeat_count.is_nan() || repeat_count < 0.0 {
@@ -360,7 +366,8 @@ where
             let by_value = current - from_value;
             (from_value.to_owned(), by_value)
         } else {
-            // No current value to derive `by` from — treat as a no-op animation.
+            //  No current value to derive `by` from — treat as a no-op
+            // animation.
             (from_value.to_owned(), from_value - from_value)
         }
     } else if let Some(to_value) = to_value {

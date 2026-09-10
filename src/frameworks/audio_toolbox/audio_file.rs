@@ -46,8 +46,8 @@ pub fn register_audio_file(env: &mut Environment, host_object: AudioFileHostObje
 
 pub enum AudioFileHostObject {
     Real(audio::AudioFile),
-    // 2-секундная заглушка, спасающая эмулятор от OOM (Out Of Memory)
-    // если парсер не осилил файл.
+    // 2-секундная заглушка, спасающая
+    // эмулятор от OOM (Out Of Memory)
     Dummy {
         format: AudioStreamBasicDescription,
         byte_count: u64,
@@ -89,8 +89,8 @@ const kAudioFileSuccess: OSStatus = 0;
 const kAudioFileUnspecifiedError: OSStatus = fourcc(b"wht?") as _;
 const kAudioFileUnsupportedFileTypeError: OSStatus = fourcc(b"typ?") as _;
 const kAudioFileUnsupportedDataFormatError: OSStatus = fourcc(b"fmt?") as _;
-// pub: используется в audio_queue.rs и других модулях
-pub const kAudioFileUnsupportedPropertyError: OSStatus = fourcc(b"pty?") as _;
+// pub: используется в audio_queue.rs и других
+// модулях
 pub const kAudioFileBadPropertySizeError: OSStatus = fourcc(b"!siz") as _;
 const kAudioFilePermissionsError: OSStatus = fourcc(b"prm?") as _;
 const kAudioFileNotOptimizedError: OSStatus = fourcc(b"optm") as _;
@@ -1092,10 +1092,10 @@ pub fn AudioFileGetProperty(
                 // kAudioFilePropertyPacketTableInfo
                 // Возвращает AudioFilePacketTableInfo:
                 //   mNumberValidFrames = packet_count * frames_per_packet
-                //   mPrimingFrames     = 0  (нет данных об encoder delay)
-                //   mRemainderFrames   = 0  (нет данных о хвостовом паддинге)
-                // Сумма трёх полей == total frames, что соответствует
-                // требованию Apple: sum == total frames in all packets.
+                // mPrimingFrames     = 0  (нет данных об encoder
+                // delay)
+                // Сумма трёх полей == total frames, что
+                // соответствует
                 kAudioFilePropertyPacketTableInfo => {
                     let AudioDescription {
                         frames_per_packet, ..
@@ -1151,7 +1151,8 @@ pub fn AudioFileGetProperty(
                         / format.sample_rate;
                     env.mem.write(out_property_data.cast(), duration);
                 }
-                // Для Dummy: все фреймы считаются валидными, padding = 0.
+                // Для Dummy: все фреймы считаются
+                // валидными, padding = 0.
                 kAudioFilePropertyPacketTableInfo => {
                     let valid_frames =
                         (*packet_count as i64).saturating_mul(format.frames_per_packet as i64);
@@ -1570,6 +1571,7 @@ pub fn AudioFileRemoveUserData(
 // =========================================================================
 
 // --- Audio File Global Info Properties (AudioFile.h) ---
+//
 // https://developer.apple.com/documentation/audiotoolbox/audio_file_global_info_properties
 const kAudioFileGlobalInfo_ReadableTypes: AudioFilePropertyID = fourcc(b"afrf");
 const kAudioFileGlobalInfo_WritableTypes: AudioFilePropertyID = fourcc(b"afwf");
@@ -1798,7 +1800,8 @@ pub fn AudioFormatGetProperty(
 // MARK: - Exports
 // =========================================================================
 
-// Число _ = число параметров функции минус 1 (env не считается)
+// Число _ = число параметров функции минус 1
+// (env не считается)
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(AudioFileCreateWithURL(_, _, _, _, _)),
     export_c_func!(AudioFileInitializeWithCallbacks(_, _, _, _, _, _, _, _, _)),

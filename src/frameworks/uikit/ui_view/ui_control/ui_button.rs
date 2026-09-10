@@ -515,7 +515,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())setTitleShadowOffset:(CGSize)_offset {
-    // Per Apple docs this is a deprecated visual property (UIButton.titleShadowOffset).
+    //  Per Apple docs this is a deprecated visual property
+    // (UIButton.titleShadowOffset).
     // We accept and ignore it since touchHLE does not render title shadows.
 }
 

@@ -98,6 +98,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (())setCharactersToBeSkipped:(id)set { // NSCharacterSet *
     // Per Apple's NSScanner documentation:
+    //
     // https://developer.apple.com/documentation/foundation/nsscanner/1413024-characterstobeskipped
     // "Characters to be skipped are skipped prior to the scan."
     // Ownership: the scanner retains the new set and releases the old one

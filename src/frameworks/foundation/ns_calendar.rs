@@ -105,6 +105,7 @@ pub const CONSTANTS: ConstantExports = &[
     // of each constant is the same canonical CFCalendar identifier as
     // its iOS 4–era counterpart (and is what `CFCalendarCreateWithIdentifier`
     // accepts), so apps mixing the new and old names compare equal.
+    //
     // <https://developer.apple.com/documentation/foundation/nscalendaridentifier>
     // -----------------------------------------------------------------
     (
@@ -328,7 +329,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 //                            toDate:(NSDate *)endDate
 //                           options:(NSCalendarOptions)opts;`
 //
-// Per Apple's [NSCalendar Reference](https://developer.apple.com/documentation/foundation/nscalendar/1415086-components):
+//  Per Apple's [NSCalendar
+// Reference](https://developer.apple.com/documentation/foundation/nscalendar/1415086-components):
 // "Returns the difference between two dates expressed as date components."
 // Returns an NSDateComponents object whose fields represent the
 // calendrical difference start→end for each requested unit.
@@ -494,7 +496,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 //                              toDate:(NSDate *)date
 //                             options:(NSCalendarOptions)opts;`
 //
-// Per Apple's [NSCalendar Reference](https://developer.apple.com/documentation/foundation/nscalendar/1413879-datebyaddingcomponents):
+//  Per Apple's [NSCalendar
+// Reference](https://developer.apple.com/documentation/foundation/nscalendar/1413879-datebyaddingcomponents):
 // "Returns a new NSDate object representing the absolute time
 // calculated by adding given components to a given date. […]
 // **Returns `nil` if a date could not be calculated.**"

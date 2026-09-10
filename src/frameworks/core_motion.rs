@@ -554,6 +554,7 @@ const CLASSES: ClassExports = objc_classes! {
 }
 
 // `-[CMMotionManager isMagnetometerActive]` — per
+//
 // <https://developer.apple.com/documentation/coremotion/cmmotionmanager/1616080-magnetometeractive>.
 // touchHLE never enables the magnetometer (we report `isMagnetometerAvailable`
 // as `NO`), so this always returns `NO`. Apple's documentation requires

@@ -23,7 +23,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
 
-// Тот самый метод инициализации из твоего лога
+// Тот самый метод инициализации из твоего
+// лога
 + (id)sessionForApplication:(id)_app_key getSessionProxy:(bool)_proxy delegate:(id)delegate {
     log!("FBSession sessionForApplication:getSessionProxy:delegate: stubbed");
 
@@ -32,11 +33,11 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     env.objc.borrow_mut::<FBSessionHostObject>(session).delegate = delegate;
 
-    // Сразу же имитируем неудачный логин, чтобы игра не ждала ответа от
-    // серверов FB
+    // Сразу же имитируем неудачный логин,
+    // чтобы игра не ждала ответа от
     if delegate != nil {
-        // В старом Facebook Connect SDK для iOS ошибка логина обычно
-        // обрабатывалась этим методом
+        // В старом Facebook Connect SDK для iOS ошибка
+        // логина обычно
         let sel = env.objc.register_host_selector(
             "sessionDidNotLogin:".to_string(),
             &mut env.mem
@@ -69,7 +70,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (bool)resume {
     log!("FBSession resume: stubbed");
-    // Возвращаем false, сообщая игре, что активной сессии нет
+    // Возвращаем false, сообщая игре, что
+    // активной сессии нет
     false
 }
 

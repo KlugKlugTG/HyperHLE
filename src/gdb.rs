@@ -7,7 +7,8 @@
 //! the client would be something like GDB or LLDB.
 //!
 //! Useful resources:
-//! - [Debugging with GDB, Appendix E: GDB Remote Serial Protocol](https://sourceware.org/gdb/onlinedocs/gdb/Remote-Protocol.html)
+//! - [Debugging with GDB, Appendix E: GDB Remote Serial
+//Protocol](https://sourceware.org/gdb/onlinedocs/gdb/Remote-Protocol.html)
 //! - The GDB source code:
 //!   - `include/gdb/signals.def` for the meanings of signal numbers
 //!   - `gdb/arch/arm.h` for ARMv6 register numbers
@@ -227,7 +228,8 @@ impl GdbServer {
                         // GDB expects 8 bytes for these (handled below)
                         None // special case
                     } else if num == 58 {
-                        // FPSCR: report as zero (no exceptions, round-to-nearest)
+                        //  FPSCR: report as zero (no exceptions,
+                        // round-to-nearest)
                         Some(0u32)
                     } else if (16..=24).contains(&num) {
                         // Legacy FPA registers: report zero
@@ -265,7 +267,8 @@ impl GdbServer {
                         self.send_packet("OK");
                     } else if (26..=57).contains(&num) || num == 58 || (16..=24).contains(&num) {
                         // VFP / FPA registers: accept the write silently
-                        // (we can't actually set them without dynarmic exposure)
+                        //  (we can't actually set them without dynarmic
+                        // exposure)
                         self.send_packet("OK");
                     } else {
                         // Error 0

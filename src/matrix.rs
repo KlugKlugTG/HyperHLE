@@ -98,6 +98,7 @@ impl Matrix<2> {
         if det == 0.0 {
             return None;
         }
+        //
         // https://en.wikipedia.org/wiki/Invertible_matrix#Inversion_of_2_%C3%97_2_matrices
         let &Matrix([[a, c], [b, d]]) = self;
         Some(Matrix([
@@ -131,6 +132,7 @@ impl Matrix<3> {
         if det == 0.0 {
             return None;
         }
+        //
         // https://en.wikipedia.org/wiki/Invertible_matrix#Inversion_of_3_%C3%97_3_matrices
         let &Matrix([[a, d, g], [b, e, h], [c, f, i]]) = self;
         let a_ = e * i - f * h;

@@ -238,8 +238,8 @@ pub fn recomposite_if_necessary(env: &mut Environment, force: bool) -> Option<In
                 0,
             );
 
-            // ХАК: Убраны вызовы assert_eq!, которые убивали приложение
-            // при ошибках GL (типа GL_OUT_OF_MEMORY = 1285)
+            // ХАК: Убраны вызовы assert_eq!, которые
+            // убивали приложение
             let _ = gles.GetError(); // Просто сбрасываем флаг текущей ошибки, чтобы он не висел
             let _ = gles.CheckFramebufferStatusOES(gles11::FRAMEBUFFER_OES); // Проверяем, но не крашимся
         }

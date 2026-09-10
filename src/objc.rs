@@ -6,7 +6,8 @@
  */
 //! Objective-C runtime.
 //!
-//! Apple's [Programming with Objective-C](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html)
+//! Apple's [Programming with
+//Objective-C](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ProgrammingWithObjectiveC/Introduction/Introduction.html)
 //! is a useful introduction to the language from a user's perspective.
 //! There are further resources in the child modules of this module, but they
 //! are more implementation-specific.
@@ -83,7 +84,8 @@ use properties::{property_getAttributes, property_getName};
 use selectors::{sel_getName, sel_getUid, sel_isEqual, sel_registerName};
 use synchronization::{objc_sync_enter, objc_sync_exit};
 
-/// Публичная обёртка над `messages::objc_msgSend` (которая `pub(super)`),
+/// Публичная обёртка над `messages::objc_msgSend`
+//(которая `pub(super)`),
 /// экспортируемая внутри крейта.
 pub(crate) fn objc_msgSend(env: &mut Environment, receiver: id, selector: SEL) {
     messages::objc_msgSend(env, receiver, selector)
@@ -140,7 +142,9 @@ pub struct ObjC {
     /// Set of classes that have already had `+initialize` sent to them
     /// (or were determined not to need it). Used to implement Apple's lazy
     /// `+initialize` dispatch contract:
-    /// <https://developer.apple.com/documentation/objectivec/nsobject/1418639-initialize>
+    ///
+    ///
+    //<https://developer.apple.com/documentation/objectivec/nsobject/1418639-initialize>
     pub(super) initialized_classes: HashSet<Class>,
 
     /// ARC weak-reference side table.
@@ -171,7 +175,9 @@ pub struct ObjC {
     /// responsible for ensuring the value outlives the association.
     ///
     /// References:
-    /// - <https://developer.apple.com/documentation/objectivec/1418509-objc_setassociatedobject>
+    ///  -
+    ///
+    //<https://developer.apple.com/documentation/objectivec/1418509-objc_setassociatedobject>
     /// - Apple `objc-references.mm` (open-source `objc4`).
     pub(crate) associated_objects: HashMap<(id, crate::mem::GuestUSize), (id, bool)>,
 
@@ -233,9 +239,9 @@ impl ObjC {
     }
 }
 
-// ──────────────────────────────────────────────────────────────────
+// ------------------------------
 // Associated objects  (<objc/runtime.h>)
-// ──────────────────────────────────────────────────────────────────
+// ------------------------------
 
 /// Policy constants for `objc_setAssociatedObject`.
 /// Source: Apple `<objc/runtime.h>`, `objc_AssociationPolicy` enum.
@@ -252,7 +258,9 @@ const OBJC_ASSOCIATION_COPY: ObjcAssociationPolicy = 0o1403;
 ///                                 objc_AssociationPolicy policy)`
 ///
 /// Sets an associated value for a key on an object.
-/// <https://developer.apple.com/documentation/objectivec/1418509-objc_setassociatedobject>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418509-objc_setassociatedobject>
 fn objc_setAssociatedObject(
     env: &mut Environment,
     object: id,
@@ -274,7 +282,8 @@ fn objc_setAssociatedObject(
         }
     }
 
-    // A nil value means "remove the association" — we already removed it above.
+    // A nil value means "remove the association" — we already removed it
+    // above.
     if value.is_null() {
         return;
     }
@@ -303,7 +312,9 @@ fn objc_setAssociatedObject(
 /// `id objc_getAssociatedObject(id object, const void *key)`
 ///
 /// Returns the value associated with a given object for a given key.
-/// <https://developer.apple.com/documentation/objectivec/1418625-objc_getassociatedobject>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418625-objc_getassociatedobject>
 fn objc_getAssociatedObject(
     env: &mut Environment,
     object: id,
@@ -322,7 +333,9 @@ fn objc_getAssociatedObject(
 /// `void objc_removeAssociatedObjects(id object)`
 ///
 /// Removes all associations for a given object.
-/// <https://developer.apple.com/documentation/objectivec/1418718-objc_removeassociatedobjects>
+///
+///
+//<https://developer.apple.com/documentation/objectivec/1418718-objc_removeassociatedobjects>
 fn objc_removeAssociatedObjects(env: &mut Environment, object: id) {
     if object.is_null() {
         return;
@@ -459,7 +472,8 @@ const FUNCTIONS: FunctionExports = &[
         __objc_deallocOnMainThreadHelper(_)
     ),
     // Associated objects — available since iOS 3.1 / Mac OS X 10.6.
-    // Reference: <https://developer.apple.com/documentation/objectivec/1418509-objc_setassociatedobject>
+    //  Reference:
+    // <https://developer.apple.com/documentation/objectivec/1418509-objc_setassociatedobject>
     export_c_func!(objc_setAssociatedObject(_, _, _, _)),
     export_c_func!(objc_getAssociatedObject(_, _)),
     export_c_func!(objc_removeAssociatedObjects(_)),

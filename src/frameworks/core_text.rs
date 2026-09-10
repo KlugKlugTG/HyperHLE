@@ -28,8 +28,10 @@
 //! we mirror the spelling Apple's public headers document.
 //!
 //! References:
-//! - <https://developer.apple.com/documentation/coretext/font_descriptor_attribute_keys>
-//! - <https://developer.apple.com/documentation/coretext/core_text_string_attributes>
+//! -
+//<https://developer.apple.com/documentation/coretext/font_descriptor_attribute_keys>
+//! -
+//<https://developer.apple.com/documentation/coretext/core_text_string_attributes>
 //! - `CTFontDescriptor.h`, `CTFont.h`, `CTFontTraits.h`,
 //!   `CTStringAttributes.h` (Apple SDK).
 
@@ -573,7 +575,8 @@ fn CTLineDraw(env: &mut Environment, line: CTLineRef, context: id) {
 /// which matches CoreText for the simple Latin/Cyrillic text these apps lay
 /// out), so callers that size buffers off this count get a usable value.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509609-ctlinegetglyphcount>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509609-ctlinegetglyphcount>
 fn CTLineGetGlyphCount(env: &mut Environment, line: CTLineRef) -> i32 {
     if line.is_null() {
         return 0;
@@ -595,7 +598,8 @@ fn CTLineGetGlyphCount(env: &mut Environment, line: CTLineRef) -> i32 {
 /// the same way). Returning a real (empty-safe) `CFArray` rather than NULL
 /// prevents callers from dereferencing a NULL array.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509596-ctlinegetglyphruns>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509596-ctlinegetglyphruns>
 fn CTLineGetGlyphRuns(env: &mut Environment, line: CTLineRef) -> id {
     if line.is_null() {
         return nil;
@@ -606,7 +610,8 @@ fn CTLineGetGlyphRuns(env: &mut Environment, line: CTLineRef) -> id {
     autorelease(env, immutable)
 }
 
-/// `bool CTFontGetGlyphsForCharacters(CTFontRef font, const UniChar characters[],
+///  `bool CTFontGetGlyphsForCharacters(CTFontRef font, const UniChar
+/// characters[],
 ///     CGGlyph glyphs[], CFIndex count)`
 ///
 /// Provides basic Unicode-to-glyph mapping for a font, writing one `CGGlyph`
@@ -614,7 +619,8 @@ fn CTLineGetGlyphRuns(env: &mut Environment, line: CTLineRef) -> id {
 /// every character mapped to a non-zero (non-`.notdef`) glyph, exactly as
 /// Apple documents.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/ctfontgetglyphsforcharacters(_:_:_:_:)>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/ctfontgetglyphsforcharacters(_:_:_:_:)>
 fn CTFontGetGlyphsForCharacters(
     env: &mut Environment,
     font: CTFontRef,
@@ -641,14 +647,16 @@ fn CTFontGetGlyphsForCharacters(
     all_mapped
 }
 
-/// `CGFontRef CTFontCopyGraphicsFont(CTFontRef font, CTFontDescriptorRef *attributes)`
+///  `CGFontRef CTFontCopyGraphicsFont(CTFontRef font, CTFontDescriptorRef
+/// *attributes)`
 ///
 /// Returns a `CGFont` for the given `CTFont`. We bridge through the backing
 /// `UIFont` and create a `CGFont` from its name, so subsequent CGFont glyph
 /// queries operate on the same typeface. The caller owns the returned font
 /// (the "Copy" rule), so it is returned retained.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509342-ctfontcopygraphicsfont>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509342-ctfontcopygraphicsfont>
 fn CTFontCopyGraphicsFont(
     env: &mut Environment,
     font: CTFontRef,
@@ -676,13 +684,15 @@ fn CTFontCopyGraphicsFont(
     cg_font
 }
 
-/// `CTFramesetterRef CTFramesetterCreateWithAttributedString(CFAttributedStringRef string)`
+///  `CTFramesetterRef
+/// CTFramesetterCreateWithAttributedString(CFAttributedStringRef string)`
 ///
 /// Creates a framesetter that manages laying the attributed string into
 /// frames. We retain the attributed string and wrap it in a host object so
 /// frame creation and size suggestion can re-derive the text and font.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509611-ctframesettercreatewithattribute>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509611-ctframesettercreatewithattribute>
 fn CTFramesetterCreateWithAttributedString(
     env: &mut Environment,
     string: CFAttributedStringRef,
@@ -694,8 +704,9 @@ fn CTFramesetterCreateWithAttributedString(
     alloc_framesetter(env, string)
 }
 
-/// `CGSize CTFramesetterSuggestFrameSizeWithConstraints(CTFramesetterRef framesetter,
-///     CFRange stringRange, CFDictionaryRef frameAttributes, CGSize constraints,
+///  `CGSize CTFramesetterSuggestFrameSizeWithConstraints(CTFramesetterRef
+/// framesetter,
+// CFRange stringRange, CFDictionaryRef frameAttributes, CGSize constraints,
 ///     CFRange *fitRange)`
 ///
 /// Determines the frame size needed for a string range. We measure the text
@@ -704,7 +715,8 @@ fn CTFramesetterCreateWithAttributedString(
 /// range as the whole string. This produces correct sizing for the
 /// single-/multi-line labels the apps in the corpus lay out.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/ctframesettersuggestframesizewithconstraints(_:_:_:_:_:)>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/ctframesettersuggestframesizewithconstraints(_:_:_:_:_:)>
 fn CTFramesetterSuggestFrameSizeWithConstraints(
     env: &mut Environment,
     framesetter: CTFramesetterRef,
@@ -777,7 +789,8 @@ fn CTFramesetterSuggestFrameSizeWithConstraints(
 /// supplied path's bounding region. touchHLE represents the laid-out frame as
 /// a single `CTLine` over the whole text; `CTFrameGetLines` then returns it.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509702-ctframesettercreateframe>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509702-ctframesettercreateframe>
 fn CTFramesetterCreateFrame(
     env: &mut Environment,
     framesetter: CTFramesetterRef,
@@ -817,7 +830,8 @@ fn CTFramesetterCreateFrame(
 /// Returns the array of `CTLine`s that make up the frame. touchHLE lays the
 /// frame out as a single line, so this returns a one-element array.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509601-ctframegetlines>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509601-ctframegetlines>
 fn CTFrameGetLines(env: &mut Environment, frame: CTFrameRef) -> id {
     if frame.is_null() {
         return nil;
@@ -831,12 +845,14 @@ fn CTFrameGetLines(env: &mut Environment, frame: CTFrameRef) -> id {
     autorelease(env, immutable)
 }
 
-/// `void CTFrameGetLineOrigins(CTFrameRef frame, CFRange range, CGPoint origins[])`
+///  `void CTFrameGetLineOrigins(CTFrameRef frame, CFRange range, CGPoint
+/// origins[])`
 ///
 /// Writes the origin of each line into `origins`. Our frame is a single line
 /// whose origin sits at the top-left of the frame's coordinate space.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509559-ctframegetlineorigins>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509559-ctframegetlineorigins>
 fn CTFrameGetLineOrigins(
     env: &mut Environment,
     frame: CTFrameRef,
@@ -860,7 +876,8 @@ fn CTFrameGetLineOrigins(
 
 /// `CFRange CTFrameGetStringRange(CTFrameRef frame)`
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509593-ctframegetstringrange>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509593-ctframegetstringrange>
 fn CTFrameGetStringRange(env: &mut Environment, frame: CTFrameRef) -> CFRange {
     if frame.is_null() {
         return CFRange {
@@ -876,7 +893,8 @@ fn CTFrameGetStringRange(env: &mut Environment, frame: CTFrameRef) -> CFRange {
 /// We lay the entire string into the (single-line) frame, so the visible
 /// range equals the full string range.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509563-ctframegetvisiblestringrange>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509563-ctframegetvisiblestringrange>
 fn CTFrameGetVisibleStringRange(env: &mut Environment, frame: CTFrameRef) -> CFRange {
     if frame.is_null() {
         return CFRange {
@@ -892,7 +910,8 @@ fn CTFrameGetVisibleStringRange(env: &mut Environment, frame: CTFrameRef) -> CFR
 /// Draws the frame's lines into the context. We draw our single line at the
 /// origin, matching `CTLineDraw`.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509601-ctframedraw>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509601-ctframedraw>
 fn CTFrameDraw(env: &mut Environment, frame: CTFrameRef, context: id) {
     if frame.is_null() || context.is_null() {
         return;
@@ -911,7 +930,8 @@ fn CTFrameDraw(env: &mut Environment, frame: CTFrameRef, context: id) {
 /// size in a real `_touchHLE_CTFont` host object so subsequent metric queries
 /// (`CTFontGetAscent`/`Descent`/`Leading`/`Size`) and line drawing work.
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1509694-ctfontcreatewithgraphicsfont>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1509694-ctfontcreatewithgraphicsfont>
 fn CTFontCreateWithGraphicsFont(
     env: &mut Environment,
     graphics_font: id, // CGFontRef
@@ -932,7 +952,8 @@ fn CTFontCreateWithGraphicsFont(
 
 /// `bool CTFontManagerRegisterGraphicsFont(CGFontRef font, CFErrorRef *error)`
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1499468-ctfontmanagerregistergraphicsfon>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1499468-ctfontmanagerregistergraphicsfon>
 fn CTFontManagerRegisterGraphicsFont(
     env: &mut Environment,
     font: ConstVoidPtr,             // CGFontRef
@@ -953,7 +974,8 @@ pub type CTParagraphStyleRef = crate::objc::id;
 /// `CTParagraphStyleRef CTParagraphStyleCreate(
 ///     const CTParagraphStyleSetting *settings, size_t settingCount)`
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1524171-ctparagraphstylecreate>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1524171-ctparagraphstylecreate>
 fn CTParagraphStyleCreate(
     env: &mut Environment,
     _settings: ConstVoidPtr,
@@ -964,7 +986,8 @@ fn CTParagraphStyleCreate(
 
 /// `CTParagraphStyleRef CTParagraphStyleCreateCopy(CTParagraphStyleRef)`
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1525098-ctparagraphstylecreatecopy>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1525098-ctparagraphstylecreatecopy>
 fn CTParagraphStyleCreateCopy(
     env: &mut Environment,
     paragraph_style: CTParagraphStyleRef,
@@ -976,10 +999,12 @@ fn CTParagraphStyleCreateCopy(
     paragraph_style
 }
 
-/// `bool CTParagraphStyleGetValueForSpecifier(CTParagraphStyleRef, CTParagraphStyleSpecifier,
+///  `bool CTParagraphStyleGetValueForSpecifier(CTParagraphStyleRef,
+/// CTParagraphStyleSpecifier,
 ///     size_t valueBufferSize, void *valueBuffer)`
 ///
-/// Reference: <https://developer.apple.com/documentation/coretext/1525353-ctparagraphstylegetvalueforspeci>
+///  Reference:
+/// <https://developer.apple.com/documentation/coretext/1525353-ctparagraphstylegetvalueforspeci>
 fn CTParagraphStyleGetValueForSpecifier(
     env: &mut Environment,
     _paragraph_style: CTParagraphStyleRef,

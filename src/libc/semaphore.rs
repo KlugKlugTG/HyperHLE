@@ -104,7 +104,8 @@ pub fn sem_open(
         // semaphore twice (e.g. from multiple threads) got `SEM_FAILED`
         // (0xffffffff) and then spun forever calling `sem_wait`/`sem_post` on
         // the bogus handle.
-        // Reference: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/sem_open.2.html
+        //  Reference:
+        // https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man2/sem_open.2.html
         if (oflag & O_EXCL) != 0 {
             set_errno(env, EEXIST);
             return SEM_FAILED;
@@ -115,7 +116,8 @@ pub fn sem_open(
         existing_host_sem_rc
     } else {
         if (oflag & O_CREAT) == 0 {
-            // `O_CREAT` not set and the named semaphore does not exist: `ENOENT`.
+            //  `O_CREAT` not set and the named semaphore does not exist:
+            // `ENOENT`.
             set_errno(env, ENOENT);
             return SEM_FAILED;
         }

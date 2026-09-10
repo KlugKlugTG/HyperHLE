@@ -290,16 +290,20 @@ impl Environment {
         "Applying PotatoGold compatibility profile: disable present rotation, remap touch location to landscape, fake network success, and use silent OpenAL fallback."
     );
 
-            // SAFETY: Environment::new runs during startup before guest worker threads
-            // are created. These env vars are read by compatibility shims inside this
+            //  SAFETY: Environment::new runs during startup before guest
+            // worker threads
+            //  are created. These env vars are read by compatibility shims
+            // inside this
             // same process.
             unsafe {
                 std::env::set_var("TOUCHHLE_DISABLE_PRESENT_ROTATION", "1");
                 std::env::set_var("TOUCHHLE_TOUCH_LOCATION_PORTRAIT_TO_LANDSCAPE", "1");
                 std::env::set_var("TOUCHHLE_FAKE_NETWORK_SUCCESS", "1");
 
-                // PotatoGold's audio path was crashing on some Linux setups unless
-                // OpenAL Soft used the null backend. This keeps the app playable even
+                //  PotatoGold's audio path was crashing on some Linux setups
+                // unless
+                //  OpenAL Soft used the null backend. This keeps the app
+                // playable even
                 // if sound is silent.
             }
         }
@@ -349,7 +353,6 @@ impl Environment {
                     // From testing, it seems to correspond to left.
                     "UIInterfaceOrientationLandscape" => window::DeviceOrientation::LandscapeLeft,
 
-                    // ДОБАВЛЯЕМ СЮДА ПРИВЯЗКУ К ОБЫЧНОМУ ПОРТРЕТУ:
                     "UIInterfaceOrientationPortraitUpsideDown" => {
                         window::DeviceOrientation::Portrait
                     }
@@ -367,7 +370,8 @@ impl Environment {
         }
 
         let device_family_override = options.device_family;
-        // `--device-family=auto`: when the user hasn't pinned a specific family,
+        //  `--device-family=auto`: when the user hasn't pinned a specific
+        // family,
         // probe the host display and pick the closest-matching emulated device.
         // This is treated exactly like an explicit override below, so it still
         // respects what the app bundle actually supports.
@@ -531,9 +535,11 @@ impl Environment {
                 let dylib_slide = match name {
                     "libstdc++.6.dylib" | "libstdc++.6.0.9.dylib" => 0x3748a000,
 
-                    // ДОБАВИТЬ ЭТО: Честный базовый адрес для libc++ (iOS 5.0+)
+                    // ДОБАВИТЬ ЭТО: Честный базовый
+                    // адрес для libc++ (iOS 5.0+)
                     "libc++.1.dylib" => 0x38000000,
-                    // На случай, если игра также потянет за собой libc++abi
+                    // На случай, если игра потянет
+                    // за собой libc++abi
                     "libc++abi.dylib" => 0x38100000,
                     "libiconv.2.dylib" => 0x32000000,
 
@@ -608,7 +614,8 @@ impl Environment {
         });
 
         // XaView BypassStackOverflow: guest code runs on this coroutine stack.
-        // The 1MB corosensei default is too small for deeply-nested guest -> host
+        //  The 1MB corosensei default is too small for deeply-nested guest ->
+        // host
         // -> JNI calls on Android (ART's CheckJNI aborts with a pending
         // StackOverflowError -> SIGABRT). Give it the same 16MB as SDLThread.
         let main_thread_init_stack = DefaultStack::new(16 * 1024 * 1024)
@@ -619,19 +626,24 @@ impl Environment {
                 let res = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
                     env.with_yielder(yielder, move |env| {
                         echo!("CPU emulation begins now.");
-                        // Some apps use the stack inside the static initializer.
+                        //  Some apps use the stack inside the static
+                        // initializer.
                         // While properly behaving apps should be fine, some app
                         // will try to poke the top of the stack, so we'll give
                         // it some room.
                         env.cpu.regs_mut()[Cpu::SP] = 0xFFFFF000;
 
                         // Call `+load` method on classes where it's defined.
-                        // TODO: `+load` methods from our image should take priority
+                        //  TODO: `+load` methods from our image should take
+                        // priority
                         // over frameworks ones.
-                        // TODO: a category `+load` method should be called after
+                        //  TODO: a category `+load` method should be called
+                        // after
                         // the class's own +load method.
-                        // Note: `+load` is sent without triggering `+initialize`,
-                        // matching the runtime's guarantee that `+load` runs first.
+                        //  Note: `+load` is sent without triggering
+                        // `+initialize`,
+                        //  matching the runtime's guarantee that `+load` runs
+                        // first.
                         let mut to_be_loaded = Vec::new();
                         let mut processed = HashSet::new();
                         let load_sel: objc::SEL = env
@@ -750,7 +762,8 @@ impl Environment {
                             );
                         }
 
-                        // Manually call here, since running call_from_host pushes
+                        //  Manually call here, since running call_from_host
+                        // pushes
                         // a stack frame and disrupts abi for _start.
                         env.cpu
                             .branch_with_link(entry_point_addr, env.dyld.thread_exit_routine());
@@ -1790,7 +1803,8 @@ impl Environment {
                 // The generic decoder did not match on-device, but Android
                 // repeatedly reports UDF at these exact Thumb-2 sites while
                 // desktop runs through them. Force the known constant-load
-                // results and advance PC like the desktop path effectively does.
+                //  results and advance PC like the desktop path effectively
+                // does.
                 if cfg!(target_os = "android") && (self.cpu.cpsr() & cpu::Cpu::CPSR_THUMB) != 0 {
                     match pc {
                         // 0x9ec2: MOVW r0, #0xa136
@@ -2033,8 +2047,8 @@ impl Environment {
 
                 if count >= BYPASS_LIMIT {
                     // The same (PC, LR) pair has trapped BYPASS_LIMIT times.
-                    // Faking a return to LR clearly does not help — the caller
-                    // keeps re-entering the faulting site (usually a framework
+                    // Faking a return to LR clearly does not help — the
+                    // caller
                     // stub that returned bogus data the guest re-calls into).
                     // Rather than killing the whole emulator, degrade
                     // gracefully: skip past the faulting instruction (treat
@@ -2207,14 +2221,21 @@ impl Environment {
 
                             // Important: do NOT Continue here.
                             //
-                            // The thread-exit routine is an SVC followed by a trap/undefined
-                            // instruction. If we continue guest execution after handling the SVC,
-                            // PC falls through into that trap and loops forever:
-                            //   UndefinedInstruction at 0x3000a014 with LR=0x3000a010
+                            //  The thread-exit routine is an SVC followed by a
+                            // trap/undefined
+                            //  instruction. If we continue guest execution
+                            // after handling the SVC,
+                            //  PC falls through into that trap and loops
+                            // forever:
+                            //  UndefinedInstruction at 0x3000a014 with
+                            // LR=0x3000a010
                             //
-                            // Returning to host lets the coroutine that called into guest code
-                            // finish normally. The secondary-thread coroutine will then store the
-                            // return value and mark the thread inactive in the existing normal path.
+                            //  Returning to host lets the coroutine that
+                            // called into guest code
+                            //  finish normally. The secondary-thread coroutine
+                            // will then store the
+                            //  return value and mark the thread inactive in
+                            // the existing normal path.
                             ThreadNextAction::ReturnToHost
                         }
                     }
@@ -2293,7 +2314,8 @@ impl Environment {
                     .starts_with("com.gameloft.asphalt8")
                 {
                     let pc = self.cpu.regs()[Cpu::PC];
-                    // BypassAsphaltDRM: deep stack unwind past the license check
+                    //  BypassAsphaltDRM: deep stack unwind past the license
+                    // check
                     if pc == 0x00600ac4 {
                         log!(
                             "WARNING: Bypassing Asphalt DRM via deep stack unwind at {:#010x}!",
@@ -2524,7 +2546,8 @@ impl Environment {
                     ThreadBlock::Semaphore(sem) => {
                         // The semaphore a thread is waiting on may have been
                         // destroyed (e.g. sem_destroy / sem_close) while the
-                        // thread was still blocked. Rather than panicking, treat
+                        //  thread was still blocked. Rather than panicking,
+                        // treat
                         // a now-unknown semaphore as "the wait can no longer be
                         // satisfied here" and wake the thread so it can return
                         // from sem_wait (which fails with EINVAL) instead of
@@ -2588,20 +2611,21 @@ impl Environment {
                                 assert!(!host_cond.timed_out.contains(&thread_id));
                                 host_cond.timed_out.insert(thread_id);
 
-                                // FIX 1: Если тред уже был в очереди waking
-                                // (ему отправили
-                                // сигнал, но он ещё не успел захватить
-                                // мьютекс),
-                                // удаляем его оттуда вместо паники.
+                                // FIX 1: Если тред уже был в
+                                // очереди waking
+                                // сигнал, но он ещё не
+                                // успел захватить
+                                // удаляем его оттуда
+                                // вместо паники.
                                 host_cond.waking.retain(|&t| t != thread_id);
                                 host_cond.waiting.retain(|&t| t != thread_id);
 
-                                // FIX 2: Если мьютекс всё ещё занят другим
-                                // тредом при
-                                // таймауте, не паникуем, а переводим тред в
-                                // ожидание
-                                // мьютекса (как в настоящем
-                                // pthread_cond_timedwait).
+                                // FIX 2: Если мьютекс всё ещё
+                                // занят другим
+                                // таймауте, не паникуем, а
+                                // переводим тред в
+                                // мьютекса (как в
+                                // настоящем
                                 if self.mutex_state.mutex_is_locked(mutex) {
                                     log_dbg!(
                                         "Thread {} timed out on cond var {:?} but mutex is locked, blocking on mutex.",
@@ -2615,13 +2639,13 @@ impl Environment {
                                     return thread_id;
                                 }
                             } else {
-                                // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ ДЕДЛОКА ---
-                                // Если таймаут еще не вышел, вычисляем остаток
+                                // --- ГЛАВНОЕ ИСПРАВЛЕНИЕ
+                                // ДЕДЛОКА ---
                                 // времени
-                                // и добавляем его в next_awakening
-                                // планировщика!
-                                // Теперь эмулятор не упадет, а честно уснет до
-                                // этого момента.
+                                // и добавляем его в
+                                // next_awakening
+                                // Теперь эмулятор не
+                                // упадет, а честно уснет до
                                 let remaining = deadline - time;
                                 let awakening = Instant::now() + remaining;
                                 next_awakening = match next_awakening {

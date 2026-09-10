@@ -40,7 +40,8 @@ pub struct SystemSoundData {
     al_buffer: ALuint,
 }
 
-// Комбинируем логику из форка (фоллбэк) и оригинала (реальное воспроизведение)
+// Комбинируем логику из форка (фоллбэк) и
+// оригинала (реальное воспроизведение)
 pub enum SoundEntry {
     Real(SystemSoundData),
     Dummy, // Используется, если парсер не смог открыть файл (из форка)
@@ -105,14 +106,11 @@ fn AudioServicesGetProperty(
     _io_property_data_size: MutPtr<u32>,
     _out_property_data: MutVoidPtr,
 ) -> OSStatus {
-    // Crash Bandicoot Nitro Kart 3D пытается использовать это свойство.
     if in_property_id == 0xfff {
         return kAudioServicesUnsupportedPropertyError;
     }
-
-    // В форке используется мягкий подход без паники
-    log!(
-        "AudioServicesGetProperty: property {} is unimplemented",
+    // Мягкий подход из форка, без паники
+    log!("AudioServicesGetProperty: property {} is unimplemented",
         debug_fourcc(in_property_id)
     );
     kAudioServicesUnsupportedPropertyError
@@ -151,7 +149,8 @@ fn AudioServicesCreateSystemSoundID(
 
     let audio_file_result = audio::AudioFile::open_for_reading(&path, &env.fs);
 
-    // Подход из форка + декодирование из оригинала
+    // Подход из форка + декодирование из
+    // оригинала
     let sound_entry = match audio_file_result {
         Ok(mut audio_file) => {
             let mut data = vec![0; audio_file.byte_count().try_into().unwrap()];
@@ -326,6 +325,7 @@ fn AudioServicesAddSystemSoundCompletion(
     in_client_data: MutVoidPtr,
 ) -> OSStatus {
     // Per Apple docs:
+    //
     // https://developer.apple.com/documentation/audiotoolbox/audioservicesaddsystemsoundcompletion(_:_:_:_:_:)
     //
     // "Registers a callback function to be invoked when the specified

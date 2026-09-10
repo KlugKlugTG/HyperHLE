@@ -62,7 +62,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     false
 }
 
-// `+ (SLComposeViewController *)composeViewControllerForServiceType:(NSString *)serviceType`
+//  `+ (SLComposeViewController *)composeViewControllerForServiceType:(NSString
+// *)serviceType`
 // — Apple's docs explicitly note this returns `nil` when the service is
 // unavailable. Since `+isAvailableForServiceType:` always reports `NO`,
 // this returns `nil` too.

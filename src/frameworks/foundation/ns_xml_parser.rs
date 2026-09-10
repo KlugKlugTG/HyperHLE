@@ -102,7 +102,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     log_dbg!("Parsing XML data ({} bytes)...", length);
     let bytes: &[u8] = env.mem.bytes_at_mut(bytes.cast().cast_mut(), length);
 
-    // ── Phase 1: Collect events with lenient parsing ──────────────────
+    // ── Phase 1: Collect events with lenient parsing
+    // ──────────────────
     let mut reader = Reader::from_reader(bytes);
 
     // KEY FIX: Disable strict end-tag matching. Many iOS game XML files
@@ -167,7 +168,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         had_error
     );
 
-    // ── Phase 2: Deliver events to delegate ───────────────────────────
+    // ── Phase 2: Deliver events to delegate
+    // ------------------------------
     let delegate = env.objc.borrow::<NSXMLParserHostObject>(this).delegate;
 
     let sel_did_start: SEL = env.objc.register_host_selector(
@@ -292,7 +294,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         }
     }
 
-    // ── Phase 3: Finalize ─────────────────────────────────────────────
+    // ── Phase 3: Finalize
+    // ------------------------------
     let sel_did_end: SEL = env.objc.register_host_selector(
         "parserDidEndDocument:".to_string(),
         &mut env.mem,

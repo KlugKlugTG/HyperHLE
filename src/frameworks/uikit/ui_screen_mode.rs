@@ -57,8 +57,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)description {
     let host = env.objc.borrow::<UIScreenModeHostObject>(this);
 
-    // Копируем значения из упакованной структуры в локальные переменные,
-    // чтобы макрос format! не пытался взять невыровненную ссылку.
+    // Копируем значения из упакованной
+    // структуры в локальные переменные,
     let width = host.size.width;
     let height = host.size.height;
     let pixel_aspect_ratio = host.pixel_aspect_ratio;

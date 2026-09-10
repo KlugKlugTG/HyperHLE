@@ -115,7 +115,8 @@ impl AudioStreamBasicDescription {
                 }
             }
             AudioFormat::Mpeg4Aac => {
-                // AAC: сжатый формат, bytes_per_frame не имеет смысла
+                // AAC: сжатый формат, bytes_per_frame не
+                // имеет смысла
                 AudioStreamBasicDescription {
                     sample_rate,
                     format_id: kAudioFormatMPEG4AAC,
@@ -166,6 +167,7 @@ pub const kAudioFormatAppleIMA4: AudioFormatID = fourcc(b"ima4");
 pub const kAudioFormatMPEG4AAC: AudioFormatID = fourcc(b"aac ");
 /// MPEG-1 / MPEG-2 Layer III audio. Apple's `<CoreAudio/CoreAudioTypes.h>`
 /// defines `kAudioFormatMPEGLayer3` as FourCC `'.mp3'`
+///
 /// (<https://developer.apple.com/documentation/coreaudiotypes/kaudioformatmpeglayer3>).
 pub const kAudioFormatMPEGLayer3: AudioFormatID = fourcc(b".mp3");
 

@@ -137,7 +137,8 @@ fn CFNetworkCopySystemProxySettings(env: &mut Environment) -> CFDictionaryRef {
     )
 }
 
-/// `CFArrayRef CFNetworkCopyProxiesForURL(CFURLRef url, CFDictionaryRef proxySettings)`
+///  `CFArrayRef CFNetworkCopyProxiesForURL(CFURLRef url, CFDictionaryRef
+/// proxySettings)`
 ///
 /// Apple documentation: returns an array of dictionaries, each describing a
 /// proxy that should be tried (in order) for the supplied URL. When no proxy
@@ -176,15 +177,16 @@ pub const FUNCTIONS: FunctionExports = &[
 // in `__nl_symbol_ptr` even when the actual networking code is never reached
 // (e.g. Authenticate-Anything boilerplate baked into Game Center / Mono / ARC
 // runtimes), so missing them prints a `Warning: unhandled non-lazy symbol …`
-// and zero-fills the slot — which then later trips up `CFEqual` / NSDictionary
-// keying with `0x0`. Exporting them as plain unique NSStrings is enough to
+// and zero-fills the slot — which then later trips up `CFEqual` /
+// NSDictionary
 // silence the warnings and keep the dictionary keys distinct.
 //
 // Values are the documented CFString contents from the Apple SDK headers.
 // Where the runtime doesn't observe the literal value (purely sentinel CFTypes)
 // we still pick the conventional spelling for readability.
 pub const CONSTANTS: ConstantExports = &[
-    // NSURLAuthenticationChallenge / NSURLProtectionSpace authentication-method names.
+    //  NSURLAuthenticationChallenge / NSURLProtectionSpace
+    // authentication-method names.
     (
         "_NSURLAuthenticationMethodDefault",
         HostConstant::NSString("NSURLAuthenticationMethodDefault"),
@@ -451,13 +453,15 @@ pub const CONSTANTS: ConstantExports = &[
         "_kCFStreamErrorDomainMach",
         HostConstant::NSString("kCFStreamErrorDomainMach"),
     ),
-    // kCFStreamErrorDomainNetDB is an integer constant (value 12 per Apple CFNetwork headers).
+    //  kCFStreamErrorDomainNetDB is an integer constant (value 12 per Apple
+    // CFNetwork headers).
     (
         "_kCFStreamErrorDomainNetDB",
         HostConstant::Custom(|env| env.mem.alloc_and_write(12i32).cast().cast_const()),
     ),
     // -----------------------------------------------------------------
     // CFNetwork proxy-settings dictionary keys, per
+    //
     // <https://developer.apple.com/documentation/cfnetwork/kcfnetworkproxieshttpenable>.
     // -----------------------------------------------------------------
     (

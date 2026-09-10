@@ -29,8 +29,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (bool)synchronize {
-    // Используем локальное хранилище вместо iCloud
-    let defaults: id = msg_class![env; NSUserDefaults standardUserDefaults];
+    // Используем локальное хранилище вместо
+    // iCloud
     msg![env; defaults synchronize]
 }
 
@@ -51,6 +51,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     }
     // Mirror NSUserDefaults: return the object only if it's actually an
     // NSString (per
+    //
     // <https://developer.apple.com/documentation/foundation/nsubiquitouskeyvaluestore/1413946-stringforkey>).
     let ns_string_class = env.objc.get_known_class("NSString", &mut env.mem);
     if msg![env; obj isKindOfClass:ns_string_class] {
@@ -132,12 +133,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple's
+//
 // <https://developer.apple.com/documentation/foundation/nsubiquitouskeyvaluestore/1413577-dictionaryrepresentation>:
 // "Returns a dictionary containing all of the key-value pairs in the
 //  ubiquitous key-value store object." We back the store with
 // `NSUserDefaults` (since we have no real iCloud), so the documented
 // behaviour is to forward to `-[NSUserDefaults dictionaryRepresentation]`,
 // which itself is documented at
+//
 // <https://developer.apple.com/documentation/foundation/nsuserdefaults/1415919-dictionaryrepresentation>.
 - (id)dictionaryRepresentation {
     let defaults: id = msg_class![env; NSUserDefaults standardUserDefaults];

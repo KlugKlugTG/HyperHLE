@@ -267,8 +267,10 @@ impl IpaFileRef {
                 Ok(mut file) => {
                     let modified = file.last_modified();
                     // This is not the cleanest way!
-                    // TODO: just use `time` or `chrono` crates for time conversions
-                    // (this also entails a lot of refactoring in [crate::libc:time])
+                    //  TODO: just use `time` or `chrono` crates for time
+                    // conversions
+                    //  (this also entails a lot of refactoring in
+                    // [crate::libc:time])
                     let tm = tm::from(
                         modified.year(),
                         modified.month(),

@@ -284,7 +284,8 @@ fn link_cxxabi_typeinfo(
 ///   <entry>:   cmp r0, r1        ; beg == end ?
 ///              ...
 ///              bne  <dispatch>    ; fall through == "empty string" block
-///   <empty>:   ldr r0, [pc, ...]  ; r0 = &_S_empty_rep_storage   <-- retarget here
+// <empty>:   ldr r0, [pc, ...]  ; r0 = &_S_empty_rep_storage   <-- retarget
+// here
 ///              ...
 ///   <dispatch>:cmp r0, #0         ; beg == NULL ?
 ///              bne <normal-copy>
@@ -902,7 +903,8 @@ impl Dyld {
                 fn_ptr.cast().cast_const()
             } else if name == "_objc_msgSendSuper" || name == "_objc_msgSendSuper_stret" {
                 // `objc_msgSendSuper` (the non-`2` variant) takes a pointer to
-                // an `objc_super` struct where the `class` field points directly
+                //  an `objc_super` struct where the `class` field points
+                // directly
                 // to the *superclass* to start method lookup from (unlike
                 // `objc_msgSendSuper2` where it's the *current* class and the
                 // runtime dereferences to the super).
@@ -1145,8 +1147,8 @@ impl Dyld {
             }
 
             if symbol == "dyld_stub_binder" || symbol == "_dyld_stub_binder" {
-                // Используем наш паникующий хэндлер, который вы
-                // зарегистрировали в create_proc_address_no_inval
+                // Используем наш паникующий
+                // хэндлер, который вы
                 let trampoline_ptr = self
                     .create_proc_address_no_inval(mem, symbol)
                     .unwrap()
@@ -1698,10 +1700,10 @@ impl Dyld {
         mem: &mut Mem,
         symbol: &str,
     ) -> Result<GuestFunction, ()> {
-        // Нативно обрабатываем рудимент ленивой загрузки Apple:
+        // Нативная обработка рудимента ленивой
+        // загрузки Apple: берём статическое имя,
+        // а не параметр symbol.
         if symbol == "dyld_stub_binder" || symbol == "_dyld_stub_binder" {
-            // Используем "dyld_stub_binder" (это &'static str), а не переменную
-            // symbol
             let symbol_name = "dyld_stub_binder";
             if let Some(&cached_fn) = self.non_lazy_host_functions.get(symbol_name) {
                 return Ok(cached_fn);

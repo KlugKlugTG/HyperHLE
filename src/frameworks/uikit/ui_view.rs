@@ -8,7 +8,8 @@
 //! `UIView`.
 //!
 //! Useful resources:
-//! - Apple's [View Programming Guide for iOS](https://developer.apple.com/library/archive/documentation/WindowsViews/Conceptual/ViewPG_iPhoneOS/Introduction/Introduction.html)
+//! - Apple's [View Programming Guide for
+//iOS](https://developer.apple.com/library/archive/documentation/WindowsViews/Conceptual/ViewPG_iPhoneOS/Introduction/Introduction.html)
 
 pub mod ui_alert_view;
 pub mod ui_collection_view;
@@ -112,6 +113,7 @@ pub(crate) struct UIViewHostObject {
     // ----- UIAccessibility informal protocol (NSObject category in real
     // iOS, but in practice only meaningful for views). All properties
     // default per Apple's documented behaviour for plain `UIView`:
+    //
     // <https://developer.apple.com/documentation/objectivec/nsobject/uiaccessibility>
     /// `BOOL isAccessibilityElement` — default `NO` for plain UIView.
     is_accessibility_element: bool,
@@ -124,10 +126,11 @@ pub(crate) struct UIViewHostObject {
     accessibility_hint: id,
     /// `NSString *accessibilityValue` — retained; default `nil`.
     accessibility_value: id,
-    /// `NSString *accessibilityIdentifier` (from UIAccessibilityIdentification).
+    ///  `NSString *accessibilityIdentifier` (from
+    /// UIAccessibilityIdentification).
     accessibility_identifier: id,
-    /// `NSString *accessibilityLanguage` — BCP-47 language tag; default `nil`.
-    accessibility_language: id,
+    /// `NSString *accessibilityLanguage` — BCP-47 language tag; default
+    //`nil`.
     /// `BOOL accessibilityElementsHidden` (iOS 5+); default `NO`.
     accessibility_elements_hidden: bool,
     /// `BOOL accessibilityViewIsModal` (iOS 5+); default `NO`.
@@ -245,7 +248,8 @@ fn touchhle_cocos_landscape_rect(env: &Environment) -> CGRect {
         })
         .unwrap_or_else(|| {
             match env.bundle.bundle_identifier() {
-                // Existing known iPad-ish Cocos clones keep using their old safe size.
+                //  Existing known iPad-ish Cocos clones keep using their old
+                // safe size.
                 "com.apprisetec9.minionjump" | "com.risinghighapps.kingdomprincepro" => {
                     (1024.0, 768.0)
                 }
@@ -354,8 +358,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // configured `setAnimationDidStopSelector:` on the configured
 // `setAnimationDelegate:` once the would-be animation finishes, otherwise
 // games that drive their state machine off animation completion callbacks
-// (very common — e.g. fade-in/fade-out transitions, splash → menu hand-offs)
-// hang forever waiting for the callback. We therefore record the parameters
+// (very common — e.g. fade-in/fade-out transitions, splash → menu
+// hand-offs)
 // of each block and schedule a one-shot NSTimer at `commitAnimations` that
 // fires the callback after `delay + duration` seconds.
 
@@ -908,6 +912,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // `setIsAccessibilityElement:` / `setAccessibilityTraits:` on its
 // `UnityView` at start-up. We back the state on `UIViewHostObject`
 // and follow Apple's documented "retain (copy)" / "assign" semantics:
+//
 // <https://developer.apple.com/documentation/objectivec/nsobject/uiaccessibility>
 
 - (bool)isAccessibilityElement {
@@ -1054,8 +1059,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (())layoutSubviews {
     // Apple docs: "The default implementation uses any constraints you have
     // set to determine the size and position of any subviews." For legacy
-    // autoresizing mask-based layout (iOS ≤ 5 era), the default implementation
-    // adjusts subviews based on their autoresizingMask relative to changes
+    // autoresizing mask-based layout (iOS ≤ 5 era), the default
+    // implementation
     // in the receiver's bounds.
     //
     // Autoresizing mask bits:
@@ -1446,6 +1451,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     // UIAccessibility informal protocol: properties are documented as
     // "copy" / "retain" — release them on teardown to match
+    //
     // <https://developer.apple.com/documentation/objectivec/nsobject/uiaccessibility>.
     release(env, accessibility_label);
     release(env, accessibility_hint);
@@ -1901,7 +1907,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 // additional arguments come after.
 //
 // References:
-// - Apple [Block Implementation Specification](https://clang.llvm.org/docs/Block-ABI-Apple.html)
+//  - Apple [Block Implementation
+// Specification](https://clang.llvm.org/docs/Block-ABI-Apple.html)
 
 const BLOCK_INVOKE_OFFSET: u32 = 12;
 

@@ -34,7 +34,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 @implementation GKAchievement: NSObject
 
-// MARK: - Class methods (must come before instance methods in objc_classes! macro)
+//  MARK: - Class methods (must come before instance methods in objc_classes!
+// macro)
 
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::new(GKAchievementHostObject {
@@ -45,7 +46,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, host_object, &mut env.mem)
 }
 
-// + (void)loadAchievementsWithCompletionHandler:(void (^)(NSArray *, NSError *))handler
+//  + (void)loadAchievementsWithCompletionHandler:(void (^)(NSArray *, NSError
+// *))handler
 + (())loadAchievementsWithCompletionHandler:(id)_handler {
     log!("GKAchievement loadAchievementsWithCompletionHandler: stubbed (returning empty)");
 }
@@ -110,7 +112,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     nil
 }
 
-// - (void)reportAchievementWithCompletionHandler:(void (^)(NSError *))completionHandler
+//  - (void)reportAchievementWithCompletionHandler:(void (^)(NSError
+// *))completionHandler
 - (())reportAchievementWithCompletionHandler:(id)_handler {
     let ident = env.objc.borrow::<GKAchievementHostObject>(this).identifier;
     let pct = env.objc.borrow::<GKAchievementHostObject>(this).percent_complete;

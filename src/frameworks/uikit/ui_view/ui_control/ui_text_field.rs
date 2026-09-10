@@ -141,8 +141,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     let text_label: id = msg_class![env; UILabel new];
 
-    // ВЫНЕСЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ИЗБЕЖАНИЯ ОШИБОК КОМПИЛЯЦИИ E0283
-    let clear_color: id = msg_class![env; UIColor clearColor];
+    // ВЫНЕСЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ИЗБЕЖАНИЯ
+    // ОШИБОК КОМПИЛЯЦИИ E0283
     let _: () = msg![env; text_label setBackgroundColor:clear_color];
 
     let _: () = msg![env; text_label setTextAlignment:UITextAlignmentLeft];
@@ -160,8 +160,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     let text_label: id = msg_class![env; UILabel new];
 
-    // ВЫНЕСЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ИЗБЕЖАНИЯ ОШИБОК КОМПИЛЯЦИИ E0283
-    let clear_color: id = msg_class![env; UIColor clearColor];
+    // ВЫНЕСЕННАЯ ПЕРЕМЕННАЯ ДЛЯ ИЗБЕЖАНИЯ
+    // ОШИБОК КОМПИЛЯЦИИ E0283
     let _: () = msg![env; text_label setBackgroundColor:clear_color];
 
     env.objc.borrow_mut::<UITextFieldHostObject>(this).text_label = text_label;

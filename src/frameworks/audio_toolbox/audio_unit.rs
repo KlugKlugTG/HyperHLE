@@ -59,8 +59,8 @@ pub struct AudioBuffer {
     pub data: MutVoidPtr,
 }
 
-/// `AudioUnitConnection` — используется для kAudioUnitProperty_MakeConnection.
-#[repr(C, packed)]
+/// `AudioUnitConnection` — используется для
+//kAudioUnitProperty_MakeConnection.
 #[derive(Copy, Clone)]
 struct AudioUnitConnection {
     source_audio_unit: AudioUnit,
@@ -180,7 +180,8 @@ fn AudioUnitSetProperty(
     );
     let mut update_al_distance = None;
 
-    // Ограничиваем область видимости заимствования
+    // Ограничиваем область видимости
+    // заимствования
     {
         let Some(host_object) = audio_components::State::get(&mut env.framework_state)
             .audio_component_instances
@@ -197,8 +198,8 @@ fn AudioUnitSetProperty(
                 let bus = host_object.mixer_buses.entry(in_element).or_default();
                 bus.distance_params = params;
 
-                // Сохраняем значения для OpenAL, чтобы применить их после
-                // завершения borrow
+                // Сохраняем значения для OpenAL, чтобы
+                // применить их после
                 if let Some(source) = bus.al_source {
                     update_al_distance = Some((source, params));
                 }
@@ -292,8 +293,8 @@ fn AudioUnitSetProperty(
                     }
                     kAudioUnitScope_Input => {
                         host_object.input_stream_format = Some(stream_format);
-                        // Для 3D Mixer: формат шины N задаётся
-                        // scope=Input, element=N.
+                        // Для 3D Mixer: формат шины N
+                        // задаётся
                         let bus = host_object.mixer_buses.entry(in_element).or_default();
                         bus.stream_format = Some(stream_format);
                     }
@@ -328,7 +329,8 @@ fn AudioUnitSetProperty(
                 );
             }
             kAudioOutputUnitProperty_EnableIO => {
-                // Ввод/Вывод включен по умолчанию. Игнорируем.
+                // Ввод/Вывод включен по умолчанию.
+                // Игнорируем.
                 let enabled: u32 = env.mem.read::<u32, false>(in_data.cast());
                 log_dbg!(
                     "AudioUnitSetProperty(EnableIO) \
@@ -402,8 +404,8 @@ fn AudioUnitSetProperty(
 // MARK: - Получение свойств AudioUnit
 // =========================================================================
 
-/// Вспомогательная функция: безопасная запись значения в гостевую память.
-/// Если указатель нулевой — запись пропускается (API допускает NULL).
+/// Вспомогательная функция: безопасная
+//запись значения в гостевую память.
 fn write_if_nonnull<T: crate::mem::SafeWrite>(env: &mut Environment, ptr: MutPtr<T>, value: T) {
     if !ptr.is_null() {
         env.mem.write(ptr, value);
@@ -440,10 +442,11 @@ fn AudioUnitGetProperty(
             write_if_nonnull(env, io_data_size, guest_size_of::<u32>());
         }
         kAudioUnitProperty_StreamFormat => {
-            // Для scope=Input сначала смотрим per-bus формат
-            // (element=N соответствует шине N у MultiChannelMixer/3DMixer),
+            // Для scope=Input сначала смотрим per-bus
+            // формат
             // затем input_stream_format, затем global_stream_format.
-            // Для любых других scope — аналогично, но без bus-lookup.
+            // Для любых других scope — аналогично,
+            // но без bus-lookup.
             let fmt = match in_scope {
                 kAudioUnitScope_Input => host_object
                     .mixer_buses
@@ -456,8 +459,8 @@ fn AudioUnitGetProperty(
                     .unwrap_or(host_object.global_stream_format),
                 _ => host_object.global_stream_format,
             };
-            // out_data может быть NULL — в таком случае игра просто
-            // запрашивает размер (см. документацию AudioUnitGetProperty).
+            // out_data может быть NULL — в таком случае
+            // игра просто
             write_if_nonnull(env, out_data.cast(), fmt);
             write_if_nonnull(
                 env,
@@ -471,8 +474,9 @@ fn AudioUnitGetProperty(
             write_if_nonnull(env, io_data_size, guest_size_of::<f64>());
         }
         kAudioUnitProperty_ElementCount => {
-            // Возвращаем количество шин микшера или 1 как дефолт.
+            // Возвращаем количество шин микшера
             let count = if !host_object.mixer_buses.is_empty() {
+            // или 1 как дефолт.
                 host_object.mixer_buses.len() as u32
             } else {
                 1u32
@@ -486,8 +490,8 @@ fn AudioUnitGetProperty(
             write_if_nonnull(env, io_data_size, guest_size_of::<u32>());
         }
         kAudioUnitProperty_Latency => {
-            // Возвращаем нулевую задержку как заглушку.
-            write_if_nonnull(env, out_data.cast(), 0.0f64);
+            // Возвращаем нулевую задержку как
+            // заглушку.
             write_if_nonnull(env, io_data_size, guest_size_of::<f64>());
         }
         kAudioUnitProperty_LastRenderError => {
@@ -497,8 +501,8 @@ fn AudioUnitGetProperty(
         kAudioUnitProperty_ShouldAllocateBuffer
         | kAudioUnitProperty_InPlaceProcessing
         | kAudioUnitProperty_BypassEffect => {
-            // Булевые свойства — возвращаем 1 (да/включено) как заглушку.
-            write_if_nonnull(env, out_data.cast(), 1u32);
+            // Булевые свойства — возвращаем 1
+            // (да/включено) как заглушку.
             write_if_nonnull(env, io_data_size, guest_size_of::<u32>());
         }
         kAudioOutputUnitProperty_HasIO => {
@@ -515,8 +519,8 @@ fn AudioUnitGetProperty(
                 in_scope,
                 in_element
             );
-            // Записываем размер 0, чтобы гость не читал мусор.
-            write_if_nonnull(env, io_data_size, 0u32);
+            // Записываем размер 0, чтобы гость не
+            // читал мусор.
             return -1;
         }
     }
@@ -560,8 +564,8 @@ fn AudioUnitGetPropertyInfo(
 }
 
 // =========================================================================
-// MARK: - Получение/установка параметров (Parameters)
-// =========================================================================
+// MARK: - Получение/установка параметров
+// (Parameters)
 
 fn AudioUnitSetParameter(
     env: &mut Environment,
@@ -583,7 +587,8 @@ fn AudioUnitSetParameter(
     );
     let mut update_al_pos = None;
 
-    // Ограничиваем область видимости заимствования
+    // Ограничиваем область видимости
+    // заимствования
     {
         let Some(host_object) = audio_components::State::get(&mut env.framework_state)
             .audio_component_instances
@@ -691,14 +696,15 @@ fn AudioOutputUnitStart(env: &mut Environment, ci: AudioUnit) -> OSStatus {
     0
 }
 
-/// Подготовить AudioUnit к работе в run-loop'e: завести OpenAL-источник для
-/// прямого render-callback'а (если он есть) и/или для каждой input-шины
+/// Подготовить AudioUnit к работе в run-loop'e:
+//завести OpenAL-источник для
 /// 3D-Mixer'а (если callback'и заданы через
 /// `AUGraphSetNodeInputCallback`).
-/// Используется как из `AudioOutputUnitStart`, так и из `AUGraphStart`.
+/// Используется как из `AudioOutputUnitStart`, так и из
+//`AUGraphStart`.
 pub fn setup_audio_unit_for_render(env: &mut Environment, ci: AudioUnit) {
-    // Сначала собираем номера шин, у которых есть callback, но ещё нет
-    // OpenAL-источника, чтобы обойтись без двойного `&mut`.
+    // Сначала собираем номера шин, у которых
+    // есть callback, но ещё нет
     let bus_ids_needing_source: Vec<u32> = {
         let state = audio_components::State::get(&mut env.framework_state);
         let Some(obj) = state.audio_component_instances.get(&ci) else {
@@ -882,11 +888,12 @@ fn AudioUnitComplexRender(
     0
 }
 
-/// Per-bus рендеринг для 3D Mixer / любого юнита, в котором через
-/// `AUGraphSetNodeInputCallback` (или эквивалент) задан input render
-/// callback на отдельные шины. Для каждой такой шины вызывает гостевой
-/// callback, получает PCM и складывает его в свой OpenAL-источник.
-/// OpenAL Soft сам микширует все источники вместе.
+/// Per-bus рендеринг для 3D Mixer / любого юнита, в
+//котором через
+/// callback на отдельные шины. Для каждой такой
+//шины вызывает гостевой
+/// OpenAL Soft сам микширует все источники
+//вместе.
 fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
     use crate::frameworks::core_audio_types::{
         kAudioFormatFlagIsPacked, kAudioFormatFlagIsSignedInteger, kAudioFormatLinearPCM,
@@ -913,8 +920,8 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
         if obj.mixer_buses.is_empty() {
             return;
         }
-        // Дефолтный формат шины 3D Mixer, если игра его явно не задавала:
-        // 16-bit signed integer LE PCM, моно, текущая частота железа.
+        // Дефолтный формат шины 3D Mixer, если игра
+        // его явно не задавала:
         let default_format = AudioStreamBasicDescription {
             sample_rate: if hardware_sr > 0.0 {
                 hardware_sr
@@ -953,10 +960,10 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
 
     let now = Instant::now();
     for (bus_id, callback, al_source, last_render_time, fmt) in plan {
-        // Ограничиваем глубину очереди OpenAL, чтобы буферы не накапливались
-        // быстрее, чем воспроизводятся. Если этого не делать, при длительной
-        // игре источник набирает всё больше необработанных буферов, звук
-        // отстаёт по времени и начинает «скрипеть». Поведение зеркалит
+        // Ограничиваем глубину очереди OpenAL,
+        // чтобы буферы не накапливались
+        // игре источник набирает всё больше
+        // необработанных буферов, звук
         // `handle_audio_queue` в audio_queue.rs.
         let mut queued = 0;
         let mut processed = 0;
@@ -972,8 +979,8 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
             }
         }
         if queued.saturating_sub(processed) > 1 {
-            // Источник ещё не успел проиграть то, что уже в очереди.
-            // Сливаем отыгранные буферы и пропускаем рендер на этот тик.
+            // Источник ещё не успел проиграть то,
+            // что уже в очереди.
             let mut drained: Vec<ALuint> = Vec::new();
             {
                 let context = env
@@ -1031,8 +1038,8 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
             }
         }
 
-        // Готовим AudioBufferList<1> и вызываем гостевой callback.
-        let action_flags = env.mem.alloc_and_write(0u32);
+        // Готовим AudioBufferList<1> и вызываем
+        // гостевой callback.
         let buffer_data = env.mem.alloc(buffer_size);
         let abl = env.mem.alloc_and_write(AudioBufferList::<1> {
             number_buffers: 1,
@@ -1090,8 +1097,8 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
                 }
             }
         } else {
-            // Если callback ничего не записал — освобождаем оставшиеся
-            // буферы, чтобы они не утекли.
+            // Если callback ничего не записал —
+            // освобождаем оставшиеся
             if !free_buffers.is_empty() {
                 let context = env
                     .framework_state
@@ -1122,12 +1129,13 @@ fn render_audio_unit_buses(env: &mut Environment, audio_unit: AudioUnit) {
 
 pub fn render_audio_unit(env: &mut Environment, audio_unit: AudioUnit) {
     if env.bundle.bundle_identifier().starts_with("com.ea.simcity") {
-        // Применяем хак специфичный для SimCity: пропускаем рендеринг
-        return;
+        // Применяем хак специфичный для SimCity:
+        // пропускаем рендеринг
     }
+        return;
 
-    // Прокачиваем все input-шины (3D Mixer / AUGraph): каждой шине свой
-    // OpenAL-источник.
+    // Прокачиваем все input-шины (3D Mixer / AUGraph):
+    // каждой шине свой
     render_audio_unit_buses(env, audio_unit);
 
     let (
@@ -1210,10 +1218,11 @@ pub fn render_audio_unit(env: &mut Environment, audio_unit: AudioUnit) {
         return;
     };
     let Some(callback) = callback else {
-        // Без unit-level callback'а просто молча выходим: бус-рендер уже
-        // сделан, а 3D Mixer / RemoteIO без своего собственного callback'а
-        // — это нормальный кейс при работе через AUGraph.
+        // Без unit-level callback'а просто молча выходим:
+        // бус-рендер уже
         if let Some(obj) = env
+        // — это нормальный кейс при работе
+        // через AUGraph.
             .framework_state
             .audio_toolbox
             .audio_components
@@ -1306,8 +1315,9 @@ pub fn render_audio_unit(env: &mut Environment, audio_unit: AudioUnit) {
 
     let action_flags = env.mem.alloc_and_write(0u32);
 
-    // Восстанавливаем логику из оригинала: Resident Evil 4 ожидает 2 буфера
+    // Восстанавливаем логику из оригинала:
     let (audio_buffer_list, buffer1_data, buffer2_data): (
+    // Resident Evil 4 ожидает 2 буфера
         MutVoidPtr,
         MutVoidPtr,
         Option<MutVoidPtr>,

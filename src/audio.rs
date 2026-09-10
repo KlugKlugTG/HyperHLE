@@ -141,17 +141,22 @@ impl AudioFile {
 
     // Extracted parse_inner to fix E0599 and removed duplicate read_from_vec
     fn parse_inner(bytes: Vec<u8>) -> Result<AudioFileInner, AudioFileOpenError> {
-        // Only accept WAV files that the rest of the pipeline (`audio_description`
+        //  Only accept WAV files that the rest of the pipeline
+        // (`audio_description`
         // and the integer-sample `read_bytes` branch) can losslessly serve.
         // touchHLE's downstream WAVE consumers (Audio Queue / OpenAL decode in
-        // `audio_toolbox::audio_queue::decode_buffer`) emit 8-bit or 16-bit LPCM
+        //  `audio_toolbox::audio_queue::decode_buffer`) emit 8-bit or 16-bit
+        // LPCM
         // only, so anything else (24-bit Int, 32-bit Int, 32-bit Float per
         // Microsoft WAVE / IEEE-Float specification — see Apple's Core Audio
         // Format spec which mirrors the same bit depths,
+        //
         // https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html)
-        // must be transcoded. Symphonia handles those WAVE variants natively and
+        //  must be transcoded. Symphonia handles those WAVE variants natively
+        // and
         // produces 16-bit interleaved PCM, which is what the
-        // `AudioFileInner::Symphonia` branch expects. This replaces the previous
+        //  `AudioFileInner::Symphonia` branch expects. This replaces the
+        // previous
         // `assert!(matches!(bits_per_sample, 8 | 16))` panic that took down the
         // host whenever a guest opened, e.g., a 32-bit float WAV soundtrack
         // (`blocksPremium/game loop v3.wav` from log+2).
@@ -192,7 +197,8 @@ impl AudioFile {
         //    mean "extends to the end of the file") and wraps each packet
         //    in an ADTS header so `audio_queue::decode_buffer` can decode
         //    the resulting stream. See the CAF spec, "The Audio Data Chunk":
-        //    https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html
+        //
+        // https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html
         //
         // 2. For uncompressed LPCM and IMA4 ADPCM CAF files — which is what
         //    PvZ (`com.popcap.PvZ`) and most other iOS games ship for short
@@ -221,7 +227,8 @@ impl AudioFile {
         // Attempt to decode WAV files with µ-law (WAVE_FORMAT_MULAW=7) or
         // A-law (WAVE_FORMAT_ALAW=6) encoding, which Symphonia's RIFF demuxer
         // does not support. These are common in older iPhone OS games.
-        // WAV header layout (RIFF): bytes 20-21 = wFormatTag (little-endian u16).
+        //  WAV header layout (RIFF): bytes 20-21 = wFormatTag (little-endian
+        // u16).
         // Reference: Microsoft WAVE PCM soundfile format specification.
         if bytes.len() >= 22 && &bytes[0..4] == b"RIFF" && &bytes[8..12] == b"WAVE" {
             let format_tag = u16::from_le_bytes([bytes[20], bytes[21]]);
@@ -234,8 +241,8 @@ impl AudioFile {
 
         // Sun/NeXT ".au" (a.k.a. ".snd") audio files. Symphonia has no demuxer
         // for this format, so guest apps that ship `.au` sound effects (e.g.
-        // "Digga", which loads `audio/stone.au`, `audio/step.au`, …) would get
-        // silent/dummy sounds. The header magic is the ASCII ".snd"
+        // "Digga", which loads `audio/stone.au`, `audio/step.au`, …) would
+        // get
         // (0x2E534E44) big-endian word. See the format description in Sun's
         // audio interfaces and the widely mirrored `au.h`:
         // <https://en.wikipedia.org/wiki/Au_file_format>.
@@ -624,8 +631,10 @@ fn parse_adts_aac(bytes: Vec<u8>) -> Result<AacPackets, ()> {
 /// are common in older iPhone OS game sound assets.
 ///
 /// WAV header parsing follows the Microsoft WAVE specification:
+///
 /// <https://docs.microsoft.com/en-us/windows/win32/xaudio2/resource-interchange-file-format--riff->
 /// and Apple's iPhone OS audio format documentation:
+///
 /// <https://developer.apple.com/library/archive/documentation/MusicAudio/Reference/CAFSpec/CAF_chunks/CAF_chunks.html>
 fn decode_wav_companded(
     bytes: &[u8],
@@ -837,7 +846,8 @@ fn decode_au_to_pcm(bytes: &[u8]) -> Result<symphonia_formats::SymphoniaDecodedT
 /// This mirrors `caf_decoder::ulaw_to_linear` but is a standalone copy so
 /// the WAV decoder does not depend on the CAF module's private API.
 ///
-/// Reference: ITU-T Rec. G.711 (11/88); Sun Microsystems g711.c (public domain).
+///  Reference: ITU-T Rec. G.711 (11/88); Sun Microsystems g711.c (public
+/// domain).
 fn ulaw_to_linear_wav(u_val: u8) -> i16 {
     let u_val = !u_val;
     let segment = ((u_val & 0x70) >> 4) as i32;

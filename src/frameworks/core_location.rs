@@ -432,7 +432,8 @@ const CLASSES: ClassExports = objc_classes! {
 }
 
 // Apple's full initializer:
-// - (id)initWithCoordinate:altitude:horizontalAccuracy:verticalAccuracy:timestamp:
+//  -
+//
 // where coordinate is a CLLocationCoordinate2D struct.
 - (id)initWithCoordinate:(CLLocationCoordinate2D)coord
                altitude:(CLLocationDistance)alt

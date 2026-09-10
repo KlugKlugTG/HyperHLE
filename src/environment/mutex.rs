@@ -214,8 +214,8 @@ impl Environment {
         let Some((locking_thread, lock_count)) = mutex.locked else {
             match mutex.type_ {
                 MutexType::PTHREAD_MUTEX_NORMAL => {
-                    // Убираем panic!, так как реальные iOS-игры часто пытаются
-                    // разблокировать уже разблокированные мьютексы.
+                    // Убираем panic!, так как реальные
+                    // iOS-игры часто пытаются
                     log_dbg!(
                         "Warning: Attempted to unlock non-error-checking mutex #{mutex_id} for thread {current_thread}, already unlocked! Ignoring and returning EPERM.",
                     );

@@ -339,10 +339,10 @@ pub const CLASSES: ClassExports = objc_classes! {
         return true;
     }
 
-    // Check if other is an NSDate. Выносим вызов msg_class! в отдельную
-    // переменную,
-    // чтобы избежать ошибки парсинга макроса msg!.
-    let nsdate_class: id = msg_class![env; NSDate class];
+    // Check if other is an NSDate. Выносим вызов msg_class! в
+    // отдельную
+    // чтобы избежать ошибки парсинга макроса
+    // msg!.
     let is_kind_of_class: bool = msg![env; other isKindOfClass:nsdate_class];
 
     if !is_kind_of_class {

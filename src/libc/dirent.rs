@@ -238,7 +238,8 @@ fn rewinddir(env: &mut Environment, dirp: MutPtr<DIR>) {
         return;
     }
 
-    // Проверяем, что директория действительно открыта и отслеживается эмулятором
+    // Проверяем, что директория
+    // действительно открыта и отслеживается
     if !env.libc_state.dirent.open_dirs.contains_key(&dirp) {
         log!(
             "Warning: rewinddir called with invalid or already closed dirp: {:?}",
@@ -253,8 +254,8 @@ fn rewinddir(env: &mut Environment, dirp: MutPtr<DIR>) {
     // Сбрасываем курсор на начало
     dir.idx = 0;
 
-    // Записываем обновленную структуру обратно в память гостя
-    env.mem.write(dirp, dir);
+    // Записываем обновленную структуру
+    // обратно в память гостя
 
     log_dbg!("rewinddir({:?}) - stream reset to beginning", dirp);
 }

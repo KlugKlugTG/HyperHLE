@@ -10,7 +10,8 @@
 //! library and instructs Cargo to link it.  All major libxml2 sub-modules are
 //! enabled (parser, tree, xmlreader, xmlwriter, xpath, xpointer, xinclude,
 //! schemas, Relax-NG, schematron, catalog, c14n, html, etc.); only the optional
-//! third-party dependencies (iconv, icu, lzma, zlib, http, ftp, modules, python)
+//! third-party dependencies (iconv, icu, lzma, zlib, http, ftp, modules,
+//python)
 //! are disabled so the build remains hermetic.
 use std::env;
 use std::path::{Path, PathBuf};
@@ -118,7 +119,8 @@ fn main() {
 
     // The library file is named differently on different platforms:
     //   Linux/macOS/Android: libxml2.a (link name "xml2")
-    //   Windows MSVC: libxml2s.lib for static builds (CMake adds the trailing s)
+    //  Windows MSVC: libxml2s.lib for static builds (CMake adds the trailing
+    // s)
     if cfg!(feature = "static") && os.eq_ignore_ascii_case("windows") {
         link_lib("libxml2s");
     } else if os.eq_ignore_ascii_case("windows") {
@@ -129,18 +131,21 @@ fn main() {
 
     // libxml2's threads code uses pthreads on Unix-likes.
     // On Android, pthread is part of libc (bionic), so there is no separate
-    // libpthread to link against — emitting `-lpthread` causes a link failure.
+    // libpthread to link against — emitting `-lpthread` causes a link
+    // failure.
     if !os.eq_ignore_ascii_case("windows") && !os.eq_ignore_ascii_case("android") {
         println!("cargo:rustc-link-lib=dylib=pthread");
     }
     if os.eq_ignore_ascii_case("linux") || os.eq_ignore_ascii_case("android") {
         // libxml2 uses ftime/clock_gettime on Linux which can need -lm/-lrt
-        // (rt is folded into libc on modern glibc but Android sometimes needs it).
+        //  (rt is folded into libc on modern glibc but Android sometimes needs
+        // it).
         println!("cargo:rustc-link-lib=dylib=m");
     }
     if os.eq_ignore_ascii_case("windows") {
         // Required by xmlIO on Windows for ws2_32 (socket fallbacks even when
-        // HTTP/FTP are disabled, because of the public xmlNanoHTTP* declarations).
+        //  HTTP/FTP are disabled, because of the public xmlNanoHTTP*
+        // declarations).
         println!("cargo:rustc-link-lib=dylib=ws2_32");
     }
 

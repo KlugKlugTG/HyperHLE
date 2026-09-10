@@ -193,8 +193,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     // status)
     // We call it by sending it the __FuncPtr invoke message with the status.
     let status: ATTrackingManagerAuthorizationStatus = ATTrackingManagerAuthorizationStatusDenied;
-    // Invoke the block — blocks respond to `invoke` in touchHLE's block model.
-    let sel = env.objc.lookup_selector("invokeWithUnsignedInt:").unwrap();
+    // Invoke the block — blocks respond to `invoke` in touchHLE's block
+    // model.
     let responds: bool = msg![env; completion_handler respondsToSelector:sel];
     if responds {
         let _: () = msg![env; completion_handler invokeWithUnsignedInt:status];

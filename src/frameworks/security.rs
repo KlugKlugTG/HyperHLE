@@ -889,6 +889,7 @@ pub const CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // SecItemImport / SecItemExport input keys, per
+    //
     // <https://developer.apple.com/documentation/security/secitemimport_secitemexport>.
     // -----------------------------------------------------------------
     (
@@ -907,6 +908,7 @@ pub const CONSTANTS: ConstantExports = &[
     // `kSecAttrAccessControl` — value is a SecAccessControl that
     // qualifies `kSecAttrAccessible`. Apps thread it as an opaque
     // dictionary key, so we expose the constant by name.
+    //
     // <https://developer.apple.com/documentation/security/ksecattraccesscontrol>
     // -----------------------------------------------------------------
     (
@@ -915,6 +917,7 @@ pub const CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // `kSecAttrSynchronizableAny` — wildcard query value (iOS 7.0+).
+    //
     // <https://developer.apple.com/documentation/security/ksecattrsynchronizableany>
     // -----------------------------------------------------------------
     (
@@ -923,6 +926,7 @@ pub const CONSTANTS: ConstantExports = &[
     ),
     // -----------------------------------------------------------------
     // `kSecSharedPassword` — kSecSharedPassword key for AutoFill APIs.
+    //
     // <https://developer.apple.com/documentation/security/secaddsharedwebcredential>
     // -----------------------------------------------------------------
     ("_kSecSharedPassword", HostConstant::NSString("spwd")),
@@ -931,6 +935,7 @@ pub const CONSTANTS: ConstantExports = &[
     // `<Security/SecItem.h>`. The four-character strings are the
     // canonical CSSM authentication-type tags used by SecKeychain on
     // both macOS and iOS, so dictionary lookups round-trip correctly.
+    //
     // <https://developer.apple.com/documentation/security/ksecattrauthenticationtype>
     // -----------------------------------------------------------------
     (

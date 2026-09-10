@@ -646,7 +646,8 @@ pub fn sqlite3_column_double(_env: &mut Environment, stmt_handle: u32, col: i32)
 
 // ---------- sqlite3_column_text ----------
 // Returns a pointer to a static/leaked string in guest memory.
-// This is a simplification - real SQLite returns pointer valid until next step/finalize.
+//  This is a simplification - real SQLite returns pointer valid until next
+// step/finalize.
 pub fn sqlite3_column_text(env: &mut Environment, stmt_handle: u32, col: i32) -> u32 {
     let text = {
         let stmts = SQLITE_STATEMENTS.lock().unwrap();

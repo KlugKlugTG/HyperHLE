@@ -64,8 +64,8 @@ pub fn pthread_cond_init(
     cond: MutPtr<pthread_cond_t>,
     attr: ConstPtr<pthread_condattr_t>,
 ) -> i32 {
-    // Игнорируем атрибуты, используем дефолтные значения
-    // MCPE передаёт ненулевой attr, но нам он не нужен
+    // Игнорируем атрибуты, используем
+    // дефолтные значения
     let _ = attr;
 
     let opaque = pthread_cond_t {
@@ -76,10 +76,10 @@ pub fn pthread_cond_init(
 
     // ЧЕСТНЫЙ ФИКС: Убираем жесткий
     // assert!(!State::get(env).condition_variables.contains_key(&cond));
-    // Если игра (например, Minecraft PE) переиспользует память без вызова
-    // pthread_cond_destroy,
-    // мы не крашим эмулятор, а просто логируем предупреждение и штатно заменяем
-    // объект,
+    // Если игра (например, Minecraft PE)
+    // переиспользует память без вызова
+    // мы не крашим эмулятор, а просто логируем
+    // предупреждение и штатно заменяем
     // как это сделала бы настоящая iOS.
     if State::get(env).condition_variables.contains_key(&cond) {
         log_dbg!(
@@ -137,10 +137,10 @@ pub fn pthread_cond_timedwait(
     }
 
     let res = pthread_mutex_unlock(env, mutex);
-    // ЧЕСТНЫЙ ФИКС: Если мьютекс не был заблокирован этим потоком (возвращен
-    // EPERM = 1),
-    // мы не паникуем, а возвращаем ошибку обратно в игру, как делает реальная
-    // ОС.
+    // ЧЕСТНЫЙ ФИКС: Если мьютекс не был
+    // заблокирован этим потоком (возвращен
+    // мы не паникуем, а возвращаем ошибку
+    // обратно в игру, как делает реальная
     if res != 0 {
         log_dbg!("Warning: pthread_cond_timedwait called with unlocked/invalid mutex, returning error {}", res);
         return res;
@@ -193,8 +193,8 @@ pub fn pthread_cond_wait(
         return e;
     }
     let res = pthread_mutex_unlock(env, mutex);
-    // ЧЕСТНЫЙ ФИКС: Аналогичная обработка для обычного wait без таймаута
-    if res != 0 {
+    // ЧЕСТНЫЙ ФИКС: Аналогичная обработка для
+    // обычного wait без таймаута
         log_dbg!(
             "Warning: pthread_cond_wait called with unlocked/invalid mutex, returning error {}",
             res
@@ -342,8 +342,8 @@ pub fn pthread_condattr_setpshared(
     0
 }
 
-/// pthread_condattr_getpshared — get process-shared attribute (always private).
-pub fn pthread_condattr_getpshared(
+/// pthread_condattr_getpshared — get process-shared attribute (always
+//private).
     env: &mut Environment,
     _attr: ConstPtr<pthread_condattr_t>,
     pshared: MutPtr<i32>,
@@ -364,8 +364,8 @@ pub fn pthread_condattr_setclock(
     0
 }
 
-/// pthread_condattr_getclock — get clock attribute (always CLOCK_REALTIME = 0).
-pub fn pthread_condattr_getclock(
+/// pthread_condattr_getclock — get clock attribute (always CLOCK_REALTIME =
+//0).
     env: &mut Environment,
     _attr: ConstPtr<pthread_condattr_t>,
     clock_id: MutPtr<i32>,

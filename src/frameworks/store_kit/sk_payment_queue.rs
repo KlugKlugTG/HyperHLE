@@ -63,8 +63,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 + (bool)canMakePayments {
-    // Claim payments are not available — safest stub for a non-App-Store build.
-    false
+    // Claim payments are not available — safest stub for a non-App-Store
+    // build.
 }
 
 // MARK: - Init
@@ -127,8 +127,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let observer = host_obj.observer;
 
     if observer != nil {
-        // Вызываем метод делегата, сообщая, что "восстановление" успешно
-        // завершено
+        // Вызываем метод делегата, сообщая, что
+        // "восстановление" успешно
         let _: () = msg![env; observer paymentQueueRestoreCompletedTransactionsFinished:this];
     }
 }

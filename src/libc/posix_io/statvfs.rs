@@ -56,10 +56,10 @@ fn statvfs(env: &mut Environment, path: ConstPtr<u8>, buf: MutPtr<statvfs>) -> i
         f_favail: statfs.f_ffree.try_into().unwrap_or(u32::MAX), // TODO: Is this right?
         // From the manpage: "Not meaningful in this implementation"
         f_fsid: 0,
-        // ИСПРАВЛЕНИЕ: было `& ST_RDONLY & ST_NOSUID`, что всегда равно 0,
-        // т.к. ST_RDONLY(1) & ST_NOSUID(2) = 0 (нет общих битов).
-        // Нужно OR: маскируем флаги statfs, оставляя только биты ST_RDONLY
-        // и ST_NOSUID, определённые для statvfs.
+        // ИСПРАВЛЕНИЕ: было `& ST_RDONLY & ST_NOSUID`, что
+        // всегда равно 0,
+        // Нужно OR: маскируем флаги statfs, оставляя
+        // только биты ST_RDONLY
         f_flag: statfs.f_flags & (ST_RDONLY | ST_NOSUID),
         f_namemax: 255,
     };

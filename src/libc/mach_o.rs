@@ -12,8 +12,8 @@ use crate::mem::{ConstPtr, GuestUSize, MutPtr, Ptr, SafeRead};
 use crate::Environment;
 use std::collections::HashMap;
 
-// --- ДОБАВЛЯЕМ СТРУКТУРЫ И КОНСТАНТЫ ДЛЯ host_info ---
-const HOST_BASIC_INFO: i32 = 1;
+// --- ДОБАВЛЯЕМ СТРУКТУРЫ И КОНСТАНТЫ ДЛЯ
+// host_info ---
 
 #[repr(C)]
 #[derive(Copy, Clone, Default)]
@@ -53,8 +53,8 @@ fn host_info(
             info.cpu_type = 12;
             info.cpu_subtype = 9;
 
-            // 256MB RAM (безопасное значение для старых игр)
-            let mem_bytes = 256 * 1024 * 1024;
+            // 256MB RAM (безопасное значение для
+            // старых игр)
             info.memory_size = mem_bytes as u32;
             info.max_mem = mem_bytes as u64;
 
@@ -71,8 +71,8 @@ fn host_info(
             0 // KERN_SUCCESS
         }
         _ => {
-            // Если запрашивают другой flavor, просто рапортуем об успехе без
-            // паники
+            // Если запрашивают другой flavor, просто
+            // рапортуем об успехе без
             0
         }
     }
@@ -109,7 +109,8 @@ fn get_etext(env: &mut Environment) -> u32 {
 
 /// `uint32_t _dyld_image_count(void)` — returns the number of images
 /// (Mach-O binaries) currently loaded in the process address space.
-/// See: https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html
+///  See:
+/// https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html
 fn _dyld_image_count(env: &mut Environment) -> u32 {
     env.bins.len() as u32
 }
@@ -166,9 +167,11 @@ fn _dyld_get_image_vmaddr_slide(env: &mut Environment, image_index: u32) -> u32 
     0
 }
 
-/// `void _dyld_register_func_for_add_image(void (*func)(const struct mach_header *mh, intptr_t vmaddr_slide))`
+///  `void _dyld_register_func_for_add_image(void (*func)(const struct
+/// mach_header *mh, intptr_t vmaddr_slide))`
 ///
-/// Per Apple's [dyld(3) manpage](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html):
+///  Per Apple's [dyld(3)
+/// manpage](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html):
 ///
 /// > The `_dyld_register_func_for_add_image` function registers the
 /// > specified function to be called when a new image is added (a
@@ -204,9 +207,11 @@ fn _dyld_register_func_for_add_image(env: &mut Environment, func: GuestFunction)
     }
 }
 
-/// `void _dyld_register_func_for_remove_image(void (*func)(const struct mach_header *mh, intptr_t vmaddr_slide))`
+///  `void _dyld_register_func_for_remove_image(void (*func)(const struct
+/// mach_header *mh, intptr_t vmaddr_slide))`
 ///
-/// Per Apple's [dyld(3) manpage](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html):
+///  Per Apple's [dyld(3)
+/// manpage](https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/dyld.3.html):
 ///
 /// > Functions registered with `_dyld_register_func_for_remove_image()`
 /// > are called after any terminators in an image are run and before
@@ -672,7 +677,8 @@ const NX_ARCH_INFOS: &[NXArchInfoEntry] = &[
 
 #[derive(Default)]
 pub struct State {
-    /// Cache of `(cputype, cpusubtype)` → guest pointer to an `NXArchInfoGuest`.
+    ///  Cache of `(cputype, cpusubtype)` → guest pointer to an
+    /// `NXArchInfoGuest`.
     ///
     /// Each entry is allocated lazily and lives for the duration of the
     /// process so callers can safely hold onto the returned `const`
@@ -689,7 +695,8 @@ pub struct State {
     arch_info_list: Option<ConstPtr<NXArchInfoGuest>>,
 }
 
-/// Allocates a guest copy of `s` and caches the pointer in [`State::arch_strings`].
+///  Allocates a guest copy of `s` and caches the pointer in
+/// [`State::arch_strings`].
 fn intern_string(env: &mut Environment, s: &'static str) -> ConstPtr<u8> {
     if let Some(&cached) = env.libc_state.mach_o.arch_strings.get(s) {
         return cached;
@@ -758,7 +765,8 @@ fn find_arch_entry(cputype: i32, cpusubtype: i32) -> Option<&'static NXArchInfoE
     all_for_cputype
 }
 
-/// `const NXArchInfo *NXGetArchInfoFromCpuType(cpu_type_t cputype, cpu_subtype_t cpusubtype);`
+///  `const NXArchInfo *NXGetArchInfoFromCpuType(cpu_type_t cputype,
+/// cpu_subtype_t cpusubtype);`
 ///
 /// Returns a stable pointer to an `NXArchInfo` describing the given CPU.
 /// `cpusubtype == CPU_SUBTYPE_MULTIPLE (-1)` requests the architecture's

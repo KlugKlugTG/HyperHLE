@@ -560,8 +560,8 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
                 None
             }
         });
-        // SUPER HACK: Если окно отвергло касание, силой отправляем его в
-        // главное окно!
+        // SUPER HACK: Если окно отвергло касание,
+        // силой отправляем его в
         let Some((window, location_in_window)) = found_window.or_else(|| {
             windows.last().map(|&window| {
                 let lx = location.x;

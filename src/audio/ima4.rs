@@ -6,7 +6,8 @@
 //! Decoder for the Apple IMA4 ADPCM format (FourCC: `ima4`)
 //!
 //! Resources on IMA ADPCM in general:
-//! - MultimediaWiki's [IMA ADPCM](https://wiki.multimedia.cx/index.php?title=IMA_ADPCM) page
+//! - MultimediaWiki's [IMA
+//ADPCM](https://wiki.multimedia.cx/index.php?title=IMA_ADPCM) page
 //! - The IMA's _Recommended Practices for Enhancing Digital Audio Compatibility
 //!   in Multimedia Systems_, which includes a reference decoding algorithm in C
 //!   on pages 31 and 32.
@@ -14,8 +15,14 @@
 //!   - [Untouched scans](http://www.cs.columbia.edu/~hgs/audio/dvi/)
 //!
 //! Resources on Apple IMA4:
-//! - MultimediaWiki's [Apple QuickTime IMA ADPCM](https://wiki.multimedia.cx/index.php?title=Apple_QuickTime_IMA_ADPCM) page
-//! - Apple's [Technical Note TN1081: Understanding the Differences Between Apple and Windows IMA-ADPCM Compressed Sound Files](https://web.archive.org/web/20080705145411/http://developer.apple.com/technotes/tn/tn1081.html) (also available [here](https://developer.apple.com/library/archive/technotes/tn/tn1081.html))
+//! - MultimediaWiki's [Apple QuickTime IMA
+//ADPCM](https://wiki.multimedia.cx/index.php?title=Apple_QuickTime_IMA_ADPCM)
+//page
+//! - Apple's [Technical Note TN1081: Understanding the Differences Between
+//Apple and Windows IMA-ADPCM Compressed Sound
+//Files](https://web.archive.org/web/20080705145411/http://developer.apple.com/technotes/tn/tn1081.html)
+//(also available
+//[here](https://developer.apple.com/library/archive/technotes/tn/tn1081.html))
 //!
 //! The implementation here generally follows the naming from the IMA reference
 //! algorithm.

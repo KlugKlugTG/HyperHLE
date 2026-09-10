@@ -22,21 +22,25 @@ use crate::objc::{id, msg, nil, retain};
 use crate::Environment;
 
 pub const CONSTANTS: ConstantExports = &[
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrordomainposix>
     (
         "_kCFErrorDomainPOSIX",
         HostConstant::NSString("NSPOSIXErrorDomain"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrordomainosstatus>
     (
         "_kCFErrorDomainOSStatus",
         HostConstant::NSString("NSOSStatusErrorDomain"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrordomainmach>
     (
         "_kCFErrorDomainMach",
         HostConstant::NSString("NSMachErrorDomain"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrordomaincocoa>
     (
         "_kCFErrorDomainCocoa",
@@ -45,26 +49,31 @@ pub const CONSTANTS: ConstantExports = &[
     // Localized-description user-info keys. These match the NSError
     // string constants because CFError is toll-free bridged with
     // NSError.
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrorlocalizeddescriptionkey>
     (
         "_kCFErrorLocalizedDescriptionKey",
         HostConstant::NSString("NSLocalizedDescription"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrorlocalizedfailurereasonkey>
     (
         "_kCFErrorLocalizedFailureReasonKey",
         HostConstant::NSString("NSLocalizedFailureReason"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrorlocalizedrecoverysuggestionkey>
     (
         "_kCFErrorLocalizedRecoverySuggestionKey",
         HostConstant::NSString("NSLocalizedRecoverySuggestion"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrordescriptionkey>
     (
         "_kCFErrorDescriptionKey",
         HostConstant::NSString("NSDescription"),
     ),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrorunderlyingerrorkey>
     (
         "_kCFErrorUnderlyingErrorKey",
@@ -72,6 +81,7 @@ pub const CONSTANTS: ConstantExports = &[
     ),
     // <https://developer.apple.com/documentation/corefoundation/kcferrorurlkey>
     ("_kCFErrorURLKey", HostConstant::NSString("NSURL")),
+    //
     // <https://developer.apple.com/documentation/corefoundation/kcferrorfilepathkey>
     ("_kCFErrorFilePathKey", HostConstant::NSString("NSFilePath")),
 ];
@@ -83,7 +93,8 @@ pub const CONSTANTS: ConstantExports = &[
 /// The `Copy` naming means the caller owns the returned string (+1), so we
 /// retain it.
 ///
-/// Reference: <https://developer.apple.com/documentation/corefoundation/1494756-cferrorcopydescription>
+///  Reference:
+/// <https://developer.apple.com/documentation/corefoundation/1494756-cferrorcopydescription>
 fn CFErrorCopyDescription(env: &mut Environment, err: id /* CFErrorRef */) -> id /* CFStringRef */ {
     if err.is_null() {
         return nil;

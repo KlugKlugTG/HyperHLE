@@ -9,7 +9,8 @@
 //! - You can get a good intuitive grasp of how the format works just by staring
 //!   at a pretty-print of a simple nib file from something that can parse
 //!   plists, e.g. `plutil -p` or `println!("{:#?}", plist::Value::...);`.
-//! - Apple's [Archives and Serializations Programming Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving/Articles/archives.html)
+//! - Apple's [Archives and Serializations Programming
+//Guide](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Archiving/Articles/archives.html)
 
 use super::ns_error::{NSCocoaErrorDomain, NSPropertyListReadCorruptError};
 use super::ns_string::{from_rust_string, get_static_str, to_rust_string};
@@ -406,6 +407,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (void)finishDecoding`
+//
 // <https://developer.apple.com/documentation/foundation/nskeyedunarchiver/1418233-finishdecoding>
 //
 // Instructs the archiver to construct the final object graph.  Older apps
@@ -423,6 +425,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (void)setRequiresSecureCoding:(BOOL)flag`
+//
 // <https://developer.apple.com/documentation/foundation/nskeyedunarchiver/1413855-requiressecurecoding>
 //
 // Secure coding is a feature that prevents substitution attacks when

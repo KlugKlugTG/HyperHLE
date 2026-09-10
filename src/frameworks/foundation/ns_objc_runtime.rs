@@ -32,6 +32,7 @@ pub fn NSStringFromClass(env: &mut Environment, class: Class) -> id {
 /// Apple's `NSObjCRuntime.h` documents this as a Foundation wrapper
 /// around the Objective-C runtime call `protocol_getName(Protocol *)`
 /// that returns the protocol's name as an `NSString`.
+///
 /// <https://developer.apple.com/documentation/foundation/1395294-nsstringfromprotocol>
 ///
 /// touchHLE does not currently materialise real `Protocol *` instances
@@ -57,6 +58,7 @@ pub fn NSStringFromProtocol(env: &mut Environment, proto: id) -> id {
 ///
 /// Foundation wrapper around `objc_getProtocol` from the Objective-C
 /// runtime. Looks up a protocol by name.
+///
 /// <https://developer.apple.com/documentation/foundation/1395208-nsprotocolfromstring>
 pub fn NSProtocolFromString(env: &mut Environment, name: id) -> id {
     if name == nil {

@@ -26,12 +26,12 @@ const kAudioSessionNoErr: OSStatus = 0;
 type AudioSessionPropertyID = u32;
 
 // --- Fourcc-коды Apple из AudioToolbox/AudioSession.h ---
-// ВНИМАНИЕ: в предыдущей версии этого файла у двух свойств были НЕПРАВИЛЬНЫЕ
-// fourcc'и ('pbuf' и 'cbuf'). Реальные (из SDK) — 'iobd' и 'chbd'.
+// ВНИМАНИЕ: в предыдущей версии этого файла
+// у двух свойств были НЕПРАВИЛЬНЫЕ
 // Именно из-за этого в touchHLE_log.txt появлялось
 //   "TODO: AudioSessionSetProperty UNIMPLEMENTED 'iobd'"
-// и игра (RE VS. / biovsus и др.) не могла корректно настроить аудио-сессию.
-const kAudioSessionProperty_PreferredHardwareSampleRate: AudioSessionPropertyID = fourcc(b"hwsr");
+// и игра (RE VS. / biovsus и др.) не могла корректно
+// настроить аудио-сессию.
 const kAudioSessionProperty_PreferredHardwareIOBufferDuration: AudioSessionPropertyID =
     fourcc(b"iobd");
 const kAudioSessionProperty_AudioCategory: AudioSessionPropertyID = fourcc(b"acat");
@@ -58,8 +58,8 @@ const kAudioSessionProperty_OtherMixableAudioShouldDuck: AudioSessionPropertyID 
 const kAudioSessionCategory_AmbientSound: u32 = fourcc(b"ambi");
 const kAudioSessionCategory_SoloAmbientSound: u32 = fourcc(b"solo");
 
-/// Состояние аудио-сессии. Расширено полями, которые игры обычно читают/пишут,
-/// чтобы не возвращать им мусор и не ломать их внутреннюю логику.
+/// Состояние аудио-сессии. Расширено полями,
+//которые игры обычно читают/пишут,
 pub struct State {
     pub active: bool,
     pub property_listeners: Vec<(
@@ -85,17 +85,17 @@ impl Default for State {
         Self {
             active: false,
             property_listeners: Vec::new(),
-            // По умолчанию в iOS — SoloAmbientSound (звук игры заглушает
-            // Music.app,
-            // но сам слышен). 'ambi' подошла бы, только если игра хочет микс с
-            // музыкой.
+            // По умолчанию в iOS — SoloAmbientSound (звук
+            // игры заглушает
+            // но сам слышен). 'ambi' подошла бы,
+            // только если игра хочет микс с
             category: kAudioSessionCategory_SoloAmbientSound,
-            // Значения, ожидаемые большинством iOS-игр того периода
-            current_hardware_sample_rate: 44100.0,
+            // Значения, ожидаемые большинством
+            // iOS-игр того периода
             current_hardware_output_number_channels: 2,
             current_hardware_output_volume: 1.0,
-            // Реальный буфер на iPhone 3GS / Simulator — ~23 мс
-            current_hardware_io_buffer_duration: 0.023_220,
+            // Реальный буфер на iPhone 3GS / Simulator — ~23
+            // мс
             preferred_hardware_sample_rate: 44100.0,
             preferred_hardware_io_buffer_duration: 0.023_220,
             mix_with_others: 0,
@@ -346,8 +346,8 @@ pub fn AudioSessionSetProperty(
             session.preferred_hardware_io_buffer_duration = dur;
         }
         kAudioSessionProperty_OverrideAudioRoute => {
-            // Значение игнорируем (у нас один фиксированный маршрут), но не
-            // жалуемся.
+            // Значение игнорируем (у нас один
+            // фиксированный маршрут), но не
         }
         kAudioSessionProperty_AudioRoute
         | kAudioSessionProperty_OtherAudioIsPlaying

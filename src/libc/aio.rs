@@ -55,8 +55,8 @@ pub struct State {
 /// On the iOS armv7 ABI 64-bit scalars such as `off_t` are only 4-byte
 /// aligned, so `aio_offset` sits immediately after the leading `int` with no
 /// padding — hence `#[repr(C, packed)]`, matching how the rest of HyperHLE
-/// models guest structs (`flock`, `iovec`, …). The resulting field offsets are:
-/// `aio_fildes` 0, `aio_offset` 4, `aio_buf` 12, `aio_nbytes` 16,
+/// models guest structs (`flock`, `iovec`, …). The resulting field offsets
+//are:
 /// `aio_reqprio` 20, `aio_sigevent.sigev_notify` 24.
 #[repr(C, packed)]
 struct aiocb {
@@ -91,9 +91,10 @@ fn do_transfer(env: &mut Environment, aiocbp: ConstPtr<aiocb>, is_write: bool) -
     let buf = cb.aio_buf;
     let nbytes = cb.aio_nbytes;
 
-    // We complete the transfer synchronously, so SIGEV_NONE (the common case —
-    // the app polls with aio_error/aio_return) is handled perfectly. We do not
-    // yet deliver SIGEV_SIGNAL/SIGEV_THREAD completion notifications, though, so
+    // We complete the transfer synchronously, so SIGEV_NONE (the common case
+    // —
+    //  yet deliver SIGEV_SIGNAL/SIGEV_THREAD completion notifications, though,
+    // so
     // surface that as a warning rather than silently leaving an app waiting on
     // a callback that never fires.
     let sigev_notify = cb.sigev_notify;

@@ -40,8 +40,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 - (id)initWithActivityIndicatorStyle:(UIActivityIndicatorViewStyle)_style {
     // Вызываем базовый init
     let _: id = msg![env; this init];
-    // Устанавливаем стиль (пока просто заглушка, если нужно расширить)
-    let _: () = msg![env; this setActivityIndicatorViewStyle: _style];
+    // Устанавливаем стиль (пока просто
+    // заглушка, если нужно расширить)
     this
 }
 
@@ -56,8 +56,8 @@ pub const CLASSES: ClassExports = objc_classes! {
     let host = env.objc.borrow_mut::<UIActivityIndicatorViewHostObject>(this);
     host.animating = true;
 
-    // Если индикатор запускается, он должен стать видимым
-    let _: () = msg![env; this setHidden: false];
+    // Если индикатор запускается, он должен
+    // стать видимым
 
     log!("UIActivityIndicatorView: started animating [{:?}]", this);
 }
@@ -69,7 +69,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     log!("UIActivityIndicatorView: stopped animating [{:?}]", this);
 
-    // Если установлен флаг hidesWhenStopped, скрываем View
+    // Если установлен флаг hidesWhenStopped, скрываем
+    // View
     if hides {
         let _: () = msg![env; this setHidden: true];
     }

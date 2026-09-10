@@ -535,6 +535,7 @@ impl GLES for GLES3Native<'_> {
         // Apps built for iPhone OS overwhelmingly ship textures in PVRTC
         // (Apple's recommended compression format on PowerVR-based devices,
         // documented at
+        //
         // https://developer.apple.com/library/archive/documentation/3DDrawing/Conceptual/OpenGLES_ProgrammingGuide/TextureTool/TextureTool.html).
         // Most desktop OpenGL ES 2.0 drivers — including Mesa/llvmpipe used
         // for software rendering — do not implement
@@ -887,6 +888,7 @@ impl GLES for GLES3Native<'_> {
         // Delegate to the real OpenGL ES 2.0 driver — required for shaders
         // that contain `precision` qualifiers and for apps (e.g. Minecraft PE
         // 0.10.x) that probe the shader compiler before linking.
+        //
         // <https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glGetShaderPrecisionFormat.xml>
         gles30::GetShaderPrecisionFormat(shadertype, precisiontype, range, precision)
     }

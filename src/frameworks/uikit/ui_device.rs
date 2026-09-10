@@ -229,6 +229,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // no system-wide install database, so we derive a deterministic UUIDv5 from
 // the vendor prefix of the app's bundle identifier. Same vendor → same
 // UUID across launches; different vendors → different UUIDs.
+//
 // <https://developer.apple.com/documentation/uikit/uidevice/1620059-identifierforvendor>
 - (id)identifierForVendor { // NSUUID*
     if let Some(existing) =

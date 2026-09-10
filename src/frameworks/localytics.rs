@@ -20,8 +20,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 
     @implementation LocalyticsAmpSession: NSObject
 
-    // Именно здесь мы связываем Rust-структуру с Objective-C объектом
-    + (id)allocWithZone:(NSZonePtr)_zone {
+    // Именно здесь мы связываем Rust-структуру
+    // с Objective-C объектом
         let host_object = Box::new(LocalyticsAmpSessionHostObject {});
         env.objc.alloc_object(this, host_object, &mut env.mem)
     }
@@ -36,8 +36,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         this
     }
 
-    // Стандартные методы жизненного цикла Localytics
-    - (())startSession:(id)_app_key {
+    // Стандартные методы жизненного цикла
+    // Localytics
         log!("LocalyticsAmpSession startSession: started");
     }
 
@@ -70,8 +70,8 @@ pub const CLASSES: ClassExports = objc_classes! {
         log!("LocalyticsAmpSession tagScreen: recorded");
     }
 
-    // Класс-методы (некоторые версии SDK вызывают их напрямую у класса)
-    + (())startSession:(id)_app_key {
+    // Класс-методы (некоторые версии SDK
+    // вызывают их напрямую у класса)
         log!("LocalyticsAmpSession [class] startSession:");
     }
     

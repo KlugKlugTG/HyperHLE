@@ -6,8 +6,10 @@
 //! `NSMethodSignature`.
 //!
 //! Resources:
-//! - [Type encodings](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100)
-//! - [Method signatures](https://gcc.gnu.org/onlinedocs/gcc-4.9.0/gcc/Method-signatures.html)
+//! - [Type
+//encodings](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/ObjCRuntimeGuide/Articles/ocrtTypeEncodings.html#//apple_ref/doc/uid/TP40008048-CH100)
+//! - [Method
+//signatures](https://gcc.gnu.org/onlinedocs/gcc-4.9.0/gcc/Method-signatures.html)
 
 use crate::environment::Environment;
 use crate::frameworks::foundation::NSUInteger;

@@ -50,12 +50,12 @@ type clock_t = u64;
 const CLOCKS_PER_SEC: clock_t = 1000000;
 
 fn clock(env: &mut Environment) -> clock_t {
-    // ИСПРАВЛЕНИЕ: Возвращаем точное время в микросекундах (а не усекаем до
-    // секунд).
-    // Это критически важно для игр (Cocos2D и др.), которые считают дельту
-    // времени.
-    // Иначе delta time = 0.0, что ведет к делению на ноль -> NaN ->
-    // отрицательный sleep -> Crash.
+    // ИСПРАВЛЕНИЕ: Возвращаем точное время в
+    // микросекундах (а не усекаем до
+    // Это критически важно для игр (Cocos2D и др.),
+    // которые считают дельту
+    // Иначе delta time = 0.0, что ведет к делению на
+    // ноль -> NaN ->
     Instant::now().duration_since(env.startup_time).as_micros() as clock_t
 }
 
@@ -344,10 +344,11 @@ pub fn timestamp_to_calendar_date(timestamp: time_t) -> tm {
 }
 
 pub fn calendar_date_to_timestamp(tm: tm) -> time_t {
-    // ИСПРАВЛЕНИЕ: Нормализация месяца и года по стандарту POSIX.
-    // Если игра передает месяц 12 (или больше), мы конвертируем это в Январь следующего года.
-    // Если передает отрицательный месяц - откатываем год назад.
-    let mut y = tm.tm_year as i64 + 1900;
+    // ИСПРАВЛЕНИЕ: Нормализация месяца и года
+    // по стандарту POSIX.
+    // следующего года.
+    // Если передает отрицательный месяц -
+    // откатываем год назад.
     let mut m = tm.tm_mon as i64;
 
     y += m.div_euclid(12);
@@ -371,8 +372,8 @@ pub fn calendar_date_to_timestamp(tm: tm) -> time_t {
 
     seconds += days_in_months_cumul as i64 * 86400;
 
-    // Дни, часы, минуты и секунды можно не нормализовать сложной математикой —
-    // при конвертации в секунды они сами "перетекают" куда надо, так как
+    // Дни, часы, минуты и секунды можно не
+    // нормализовать сложной математикой —
     // умножаются на свои константы.
     seconds += (tm.tm_mday as i64 - 1) * 86400;
     seconds += tm.tm_hour as i64 * 3600;
@@ -474,8 +475,10 @@ fn mktime(env: &mut Environment, tm: MutPtr<tm>) -> time_t {
         // different mutability of `tm_zone` between Linux and macOS), so
         // zero-initialise the whole struct and then set only the portable
         // fields explicitly. `mktime` is documented (POSIX, Apple
+        //
         // <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/mktime.3.html>)
-        // to read only `tm_year`/`tm_mon`/`tm_mday`/`tm_hour`/`tm_min`/`tm_sec`/`tm_isdst`
+        //  to read only
+        // `tm_year`/`tm_mon`/`tm_mday`/`tm_hour`/`tm_min`/`tm_sec`/`tm_isdst`
         // and re-derive everything else, so leaving the platform-private
         // fields at zero is safe.
         let mut host_tm: ::libc::tm = unsafe { std::mem::zeroed() };
@@ -620,11 +623,11 @@ fn nanosleep(env: &mut Environment, rqtp: ConstPtr<timespec>, _rmtp: MutPtr<time
     set_errno(env, 0);
 
     let t = env.mem.read(rqtp);
-    // ИСПРАВЛЕНИЕ: Исключаем панику при отрицательном времени.
-    // Функция `try_into().unwrap()` скрашилась бы с `TryFromIntError` при
+    // ИСПРАВЛЕНИЕ: Исключаем панику при
+    // отрицательном времени.
     // отрицательных значениях от плохих игр.
-    // Защищаем Rust-составляющую, ограничивая минимальное время нулем.
-    let tv_sec = t.tv_sec.max(0) as u64;
+    // Защищаем Rust-составляющую, ограничивая
+    // минимальное время нулем.
     let tv_nsec = t.tv_nsec.max(0) as u64;
     log_dbg!("nanosleep {} {}", tv_sec, tv_nsec);
 
@@ -817,26 +820,26 @@ fn strftime(
             b'W' => {
                 let wday = time_val.tm_wday;
                 let yday = time_val.tm_yday;
-                // Для %W неделя начинается с понедельника.
-                // tm_wday: 0 = Вск, 1 = Пнд... Нам нужно 0 = Пнд... 6 = Вск
+                // Для %W неделя начинается с
+                // понедельника.
                 let wday_monday_based = (wday + 6) % 7;
 
-                // Честная формула вычисления номера недели (00-53)
-                let week = (yday - wday_monday_based + 7) / 7;
+                // Честная формула вычисления
+                // номера недели (00-53)
                 let formatted_week = format!("{:02}", week);
                 res.extend_from_slice(formatted_week.as_bytes());
             }
             b'U' => {
-                // Аналогично, но неделя начинается с воскресенья (%U)
-                let wday = time_val.tm_wday;
+                // Аналогично, но неделя начинается
+                // с воскресенья (%U)
                 let yday = time_val.tm_yday;
                 let week = (yday - wday + 7) / 7;
                 let formatted_week = format!("{:02}", week);
                 res.extend_from_slice(formatted_week.as_bytes());
             }
             b'w' => {
-                // Номер дня недели от 0 (Воскресенье) до 6 (Суббота)
-                let wday = time_val.tm_wday;
+                // Номер дня недели от 0
+                // (Воскресенье) до 6 (Суббота)
                 let formatted_wday = format!("{}", wday);
                 res.extend_from_slice(formatted_wday.as_bytes());
             }
@@ -882,13 +885,13 @@ fn strftime(
             b'Z' => {
                 let tz_ptr = time_val.tm_zone;
                 if tz_ptr.is_null() {
-                    // Эмулятор считает время от UNIX_EPOCH без смещения
-                    // (tm_gmtoff = 0),
-                    // поэтому мы легально находимся в зоне GMT.
-                    res.extend_from_slice(b"GMT");
+                    // Эмулятор считает время от
+                    // UNIX_EPOCH без смещения
+                    // поэтому мы легально находимся
+                    // в зоне GMT.
                 } else if let Ok(tz_str) = env.mem.cstr_at_utf8(tz_ptr) {
-                    // Если указатель есть — честно читаем зону из памяти гостя
-                    res.extend_from_slice(tz_str.as_bytes());
+                    // Если указатель есть — честно
+                    // читаем зону из памяти гостя
                 } else {
                     res.extend_from_slice(b"GMT");
                 }
@@ -1004,8 +1007,8 @@ fn ctime(env: &mut Environment, timep: ConstPtr<time_t>) -> MutPtr<u8> {
 
 fn difftime(_env: &mut Environment, time1: time_t, time0: time_t) -> f64 {
     // Возвращаем разницу в секундах.
-    // Приведение к f64 гарантирует, что мы отдаем честный double, как того ждет
-    // игра.
+    // Приведение к f64 гарантирует, что мы
+    // отдаем честный double, как того ждет
     (time1 as f64) - (time0 as f64)
 }
 

@@ -5,7 +5,8 @@
  */
 //! `keymgr.h` (KeyMgr).
 //!
-//! KeyMgr's only documentation seems to be in its [public source code](https://github.com/apple-opensource/keymgr).
+//! KeyMgr's only documentation seems to be in its [public source
+//code](https://github.com/apple-opensource/keymgr).
 
 use crate::dyld::{export_c_func, FunctionExports};
 use crate::mem::{MutPtr, MutVoidPtr, Ptr};

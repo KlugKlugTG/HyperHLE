@@ -28,7 +28,8 @@ pub struct Font {
     /// the `mono_regular()` / `from_file()` / etc. helpers always set
     /// this to `Some(...)`.
     font: Option<rusttype::Font<'static>>,
-    /// Raw font file bytes — needed for TrueType table access (CGFontCopyTableForTag).
+    ///  Raw font file bytes — needed for TrueType table access
+    /// (CGFontCopyTableForTag).
     raw_data: Option<Vec<u8>>,
 }
 
@@ -116,7 +117,8 @@ impl Font {
     pub fn units_per_em(&self) -> u16 {
         if let Some(data) = self.table_data(0x68656164 /* 'head' */) {
             if data.len() >= 20 {
-                // unitsPerEm is at offset 18 in the 'head' table (big-endian u16)
+                //  unitsPerEm is at offset 18 in the 'head' table (big-endian
+                // u16)
                 let upm = u16::from_be_bytes([data[18], data[19]]);
                 if upm > 0 {
                     return upm;
@@ -851,7 +853,8 @@ impl Font {
 // MARK: - TrueType/OpenType table parsing helpers
 // =============================================================================
 
-/// Parse the table directory from raw font file bytes and return all table tags.
+///  Parse the table directory from raw font file bytes and return all table
+/// tags.
 fn parse_table_tags_from_raw(data: &[u8]) -> Vec<u32> {
     if data.len() < 12 {
         return Vec::new();

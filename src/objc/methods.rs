@@ -6,7 +6,8 @@
 //! Handling of Objective-C methods.
 //!
 //! Resources:
-//! - [Apple's documentation of `class_addMethod`](https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc)
+//! - [Apple's documentation of
+//`class_addMethod`](https://developer.apple.com/documentation/objectivec/1418901-class_addmethod?language=objc)
 
 use super::{
     id, nil, objc_super, Class, ClassHostObject, MsgSendSignature, MsgSendSuperSignature, ObjC, SEL,
@@ -102,7 +103,8 @@ impl_HostIMP!(P1, P2, P3, P4, P5, P6);
 // --- Extended HostIMP/MsgSendSuperSignature for higher-arity selectors ---
 //
 // A handful of Apple selectors take 7+ message arguments, e.g.
-// -[NSString getBytes:maxLength:usedLength:encoding:options:range:remainingRange:].
+//  -[NSString
+// getBytes:maxLength:usedLength:encoding:options:range:remainingRange:].
 // The matching MsgSendSignature impls already live in messages.rs, so to
 // avoid trait-impl conflicts we only fill in the HostIMP and
 // MsgSendSuperSignature halves here.

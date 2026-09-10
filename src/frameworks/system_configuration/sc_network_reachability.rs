@@ -126,8 +126,8 @@ fn SCNetworkReachabilityGetFlags(
     _target: SCNetworkReachabilityRef,
     flags: MutPtr<SCNetworkReachabilityFlags>,
 ) -> bool {
-    // Принудительно говорим игре, что сеть доступна (Reachable)
-    env.mem.write(flags, kSCNetworkReachabilityFlagsReachable);
+    // Принудительно говорим игре, что сеть
+    // доступна (Reachable)
     true
 }
 

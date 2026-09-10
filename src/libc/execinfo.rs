@@ -13,7 +13,8 @@
 //! ```
 //!
 //! Reference:
-//! <https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/backtrace.3.html>
+//!
+//<https://developer.apple.com/library/archive/documentation/System/Conceptual/ManPages_iPhoneOS/man3/backtrace.3.html>
 //!
 //! On iOS, frame pointer is conventionally `r7` for both ARM and Thumb
 //! state (per the Apple "iPhone OS ABI Reference"). Each call frame

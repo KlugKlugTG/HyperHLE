@@ -267,9 +267,12 @@ fn patch_shader_for_native_es2(
     out
 }
 
-/// Replace `texture2DLodEXT(sampler, coord, lod)` with `texture2D(sampler, coord)`,
-/// `texture2DProjLodEXT(sampler, coord, lod)` with `texture2DProj(sampler, coord)`,
-/// and `textureCubeLodEXT(sampler, coord, lod)` with `textureCube(sampler, coord)`.
+///  Replace `texture2DLodEXT(sampler, coord, lod)` with `texture2D(sampler,
+/// coord)`,
+///  `texture2DProjLodEXT(sampler, coord, lod)` with `texture2DProj(sampler,
+/// coord)`,
+///  and `textureCubeLodEXT(sampler, coord, lod)` with `textureCube(sampler,
+/// coord)`.
 ///
 /// We parse the function call to find the matching parentheses and drop the
 /// last argument (the LOD bias).
@@ -284,7 +287,8 @@ fn replace_texture_lod_ext_calls(source: &str) -> String {
     let mut result = source.to_string();
     for &(old_name, new_name) in replacements {
         while let Some(start) = result.find(old_name) {
-            // Ensure this is a standalone identifier (not part of a bigger word)
+            //  Ensure this is a standalone identifier (not part of a bigger
+            // word)
             let before_ok = start == 0
                 || !result.as_bytes()[start - 1].is_ascii_alphanumeric()
                     && result.as_bytes()[start - 1] != b'_';
@@ -771,6 +775,7 @@ impl GLES for GLES2Native<'_> {
         // Apps built for iPhone OS overwhelmingly ship textures in PVRTC
         // (Apple's recommended compression format on PowerVR-based devices,
         // documented at
+        //
         // https://developer.apple.com/library/archive/documentation/3DDrawing/Conceptual/OpenGLES_ProgrammingGuide/TextureTool/TextureTool.html).
         // Most desktop OpenGL ES 2.0 drivers — including Mesa/llvmpipe used
         // for software rendering — do not implement
@@ -1279,6 +1284,7 @@ impl GLES for GLES2Native<'_> {
         // Delegate to the real OpenGL ES 2.0 driver — required for shaders
         // that contain `precision` qualifiers and for apps (e.g. Minecraft PE
         // 0.10.x) that probe the shader compiler before linking.
+        //
         // <https://registry.khronos.org/OpenGL-Refpages/es2.0/xhtml/glGetShaderPrecisionFormat.xml>
         gles2::GetShaderPrecisionFormat(shadertype, precisiontype, range, precision)
     }
@@ -1417,7 +1423,8 @@ impl GLES for GLES2Native<'_> {
         // data (e.g. the Supercell SC3D engine used by Brawl Stars) work
         // correctly on any host driver.
         //
-        // Reference: https://registry.khronos.org/OpenGL/extensions/OES/OES_vertex_half_float.txt
+        //  Reference:
+        // https://registry.khronos.org/OpenGL/extensions/OES/OES_vertex_half_float.txt
         const GL_HALF_FLOAT_OES: GLenum = 0x8D61;
         const GL_HALF_FLOAT: GLenum = 0x140B;
         let type_ = if type_ == GL_HALF_FLOAT_OES {
@@ -1496,7 +1503,8 @@ impl GLES for GLES2Native<'_> {
     // core query objects, so we forward to the driver's `*EXT` entry points.
     // These are the exact functions iPhone OS games (e.g. Rush Rally 2) call
     // through the `glGenQueriesEXT` family of symbols.
-    // Reference: https://registry.khronos.org/OpenGL/extensions/EXT/EXT_occlusion_query_boolean.txt
+    //  Reference:
+    // https://registry.khronos.org/OpenGL/extensions/EXT/EXT_occlusion_query_boolean.txt
     unsafe fn GenQueries(&mut self, n: GLsizei, ids: *mut GLuint) {
         if gles2::GenQueriesEXT::is_loaded() {
             gles2::GenQueriesEXT(n, ids)

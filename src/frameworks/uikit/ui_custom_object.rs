@@ -18,8 +18,8 @@
 //! string. This file provides that real implementation.
 //!
 //! The class itself does not have any state of its own — it behaves as a
-//! plain `NSObject` instance — but we still define `init` and `initWithCoder:`
-//! explicitly because some nibs decode a `UICustomObject` directly (without a
+//! plain `NSObject` instance — but we still define `init` and
+//`initWithCoder:`
 //! class swapper), in which case `initWithCoder:` must succeed and simply
 //! return `self` rather than walk through `NSCoder`-keyed properties that the
 //! coder does not contain.

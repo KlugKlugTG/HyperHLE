@@ -7,7 +7,9 @@
 //!
 //! Right now we do not implement port rights, but some early Unity
 //! based games would install an `exception handler` using below functions.
-//! (See [mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L171) from mono repo)
+//! (See
+//[mini-darwin.c](https://github.com/mono/mono/blob/62121afbb28f0b62f100ec9a942d10c5e0f4814f/mono/mini/mini-darwin.c#L171)
+//from mono repo)
 //!
 //! We emulate minimal port allocation so that callers get valid port
 //! names back and don't try to free garbage values later.

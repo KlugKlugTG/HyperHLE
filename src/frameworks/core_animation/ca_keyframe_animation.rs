@@ -163,8 +163,8 @@ pub const CLASSES: crate::objc::ClassExports = objc_classes! {
     }
 
     // CAAnimation + CAPropertyAnimation + CABasicAnimation properties
-    // (Повторяем базовые геттеры/сеттеры для CASpringAnimation)
-    - (f64)duration { env.objc.borrow::<CASpringAnimationHostObject>(this).duration }
+    // (Повторяем базовые геттеры/сеттеры для
+    // CASpringAnimation)
     - (())setDuration:(f64)val { env.objc.borrow_mut::<CASpringAnimationHostObject>(this).duration = val; }
 
     - (bool)isRemovedOnCompletion { env.objc.borrow::<CASpringAnimationHostObject>(this).removed_on_completion }

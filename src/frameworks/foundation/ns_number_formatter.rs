@@ -11,6 +11,7 @@ use crate::frameworks::foundation::NSUInteger;
 use crate::objc::{id, msg, nil, objc_classes, release, ClassExports, HostObject, NSZonePtr};
 
 /// Apple's NSNumberFormatter behavior modes.
+///
 /// <https://developer.apple.com/documentation/foundation/nsnumberformatterbehavior>
 ///
 /// * `NSNumberFormatterBehaviorDefault = 0`
@@ -59,23 +60,23 @@ struct NSNumberFormatterHostObject {
     // Per Apple's NSNumberFormatter documentation:
     // https://developer.apple.com/documentation/foundation/nsnumberformatter
     // -----------------------------------------------------------------------
-    /// `currencySymbol` — e.g. "$". Default nil means use the locale's symbol.
-    currency_symbol: id,
+    /// `currencySymbol` — e.g. "$". Default nil means use the locale's
+    //symbol.
     /// `currencyCode` — ISO 4217 code, e.g. "USD".
     currency_code: id,
     /// `internationalCurrencySymbol` — e.g. "USD".
     international_currency_symbol: id,
     /// `currencyDecimalSeparator` — decimal separator used in currency style.
     currency_decimal_separator: id,
-    /// `currencyGroupingSeparator` — grouping separator used in currency style.
-    currency_grouping_separator: id,
+    /// `currencyGroupingSeparator` — grouping separator used in currency
+    //style.
     // -----------------------------------------------------------------------
     // Decimal / sign symbols
     // -----------------------------------------------------------------------
     /// `decimalSeparator` — e.g. ".".
     decimal_separator: id,
-    /// `alwaysShowsDecimalSeparator` — if true, always show the decimal point.
-    always_shows_decimal_separator: bool,
+    /// `alwaysShowsDecimalSeparator` — if true, always show the decimal
+    //point.
     /// `notANumberSymbol` — symbol used for NaN.
     not_a_number_symbol: id,
     /// `plusSign` — the "+" sign character.
@@ -195,12 +196,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `+ (NSNumberFormatterBehavior)defaultFormatterBehavior`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1409014-defaultformatterbehavior>
 + (NSUInteger)defaultFormatterBehavior {
     DEFAULT_FORMATTER_BEHAVIOR.load(std::sync::atomic::Ordering::Relaxed) as NSUInteger
 }
 
 // `+ (void)setDefaultFormatterBehavior:(NSNumberFormatterBehavior)behavior`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1407959-setdefaultformatterbehavior>
 + (())setDefaultFormatterBehavior:(NSUInteger)behavior {
     DEFAULT_FORMATTER_BEHAVIOR.store(behavior as u32, std::sync::atomic::Ordering::Relaxed);
@@ -249,12 +252,14 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSNumberFormatterBehavior)formatterBehavior`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1411915-formatterbehavior>
 - (NSUInteger)formatterBehavior {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).formatter_behavior
 }
 
 // `- (void)setFormatterBehavior:(NSNumberFormatterBehavior)behavior`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1416550-setformatterbehavior>
 //
 // Apple defines three valid values: `NSNumberFormatterBehaviorDefault`
@@ -372,24 +377,28 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSString *)positiveFormat`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408157-positiveformat>
 - (id)positiveFormat {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).positive_format
 }
 
 // `- (void)setPositiveFormat:(NSString *)format`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408157-positiveformat>
 - (())setPositiveFormat:(id)format {
     env.objc.borrow_mut::<NSNumberFormatterHostObject>(this).positive_format = format;
 }
 
 // `- (NSString *)negativeFormat`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408953-negativeformat>
 - (id)negativeFormat {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).negative_format
 }
 
 // `- (void)setNegativeFormat:(NSString *)format`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408953-negativeformat>
 - (())setNegativeFormat:(id)format {
     env.objc.borrow_mut::<NSNumberFormatterHostObject>(this).negative_format = format;
@@ -400,6 +409,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSString *)positivePrefix`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1414464-positiveprefix>
 - (id)positivePrefix {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).positive_prefix
@@ -409,6 +419,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)positiveSuffix`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1413740-positivesuffix>
 - (id)positiveSuffix {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).positive_suffix
@@ -418,6 +429,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)negativePrefix`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1410408-negativeprefix>
 - (id)negativePrefix {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).negative_prefix
@@ -427,6 +439,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)negativeSuffix`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1413203-negativesuffix>
 - (id)negativeSuffix {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).negative_suffix
@@ -440,6 +453,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (BOOL)generatesDecimalNumbers`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1412019-generatesdecimalnumbers>
 - (bool)generatesDecimalNumbers {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).generates_decimal_numbers
@@ -450,10 +464,12 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 // =========================================================================
 // MARK: - Currency symbols
-// Per Apple: https://developer.apple.com/documentation/foundation/nsnumberformatter
+//  Per Apple:
+// https://developer.apple.com/documentation/foundation/nsnumberformatter
 // =========================================================================
 
 // `- (NSString *)currencySymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1407931-currencysymbol>
 - (id)currencySymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).currency_symbol
@@ -464,6 +480,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)currencyCode`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1416145-currencycode>
 - (id)currencyCode {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).currency_code
@@ -474,6 +491,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)internationalCurrencySymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1418485-internationalcurrencysymbol>
 - (id)internationalCurrencySymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).international_currency_symbol
@@ -483,6 +501,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)currencyDecimalSeparator`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1412167-currencydecimalseparator>
 - (id)currencyDecimalSeparator {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).currency_decimal_separator
@@ -492,6 +511,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)currencyGroupingSeparator`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1416533-currencygroupingseparator>
 - (id)currencyGroupingSeparator {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).currency_grouping_separator
@@ -505,6 +525,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSString *)decimalSeparator`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1411567-decimalseparator>
 - (id)decimalSeparator {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).decimal_separator
@@ -514,6 +535,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (BOOL)alwaysShowsDecimalSeparator`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1407941-alwaysshowsdecimalseparator>
 - (bool)alwaysShowsDecimalSeparator {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).always_shows_decimal_separator
@@ -523,6 +545,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)notANumberSymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1411229-notanumbersymbol>
 - (id)notANumberSymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).not_a_number_symbol
@@ -532,6 +555,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)plusSign`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1414467-plussign>
 - (id)plusSign {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).plus_sign
@@ -541,6 +565,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)minusSign`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1415845-minussign>
 - (id)minusSign {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).minus_sign
@@ -550,6 +575,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)paddingCharacter`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408530-paddingcharacter>
 - (id)paddingCharacter {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).padding_character
@@ -559,6 +585,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)percentSymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408168-percentsymbol>
 - (id)percentSymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).percent_symbol
@@ -568,6 +595,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)perMillSymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1418661-permillsymbol>
 - (id)perMillSymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).per_mill_symbol
@@ -577,6 +605,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)zeroSymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1414149-zerosymbol>
 - (id)zeroSymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).zero_symbol
@@ -586,6 +615,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSString *)nilSymbol`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1415353-nilsymbol>
 - (id)nilSymbol {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).nil_symbol
@@ -599,6 +629,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSUInteger)maximumIntegerDigits`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1415045-maximumintegerdigits>
 - (NSUInteger)maximumIntegerDigits {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).maximum_integer_digits
@@ -608,6 +639,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSUInteger)minimumIntegerDigits`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1417149-minimumintegerdigits>
 - (NSUInteger)minimumIntegerDigits {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).minimum_integer_digits
@@ -617,6 +649,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSUInteger)maximumSignificantDigits`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1415672-maximumsignificantdigits>
 - (NSUInteger)maximumSignificantDigits {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).maximum_significant_digits
@@ -626,6 +659,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSUInteger)minimumSignificantDigits`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1416365-minimumsignificantdigits>
 - (NSUInteger)minimumSignificantDigits {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).minimum_significant_digits
@@ -635,6 +669,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (BOOL)usesSignificantDigits`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408598-usessignificantdigits>
 - (bool)usesSignificantDigits {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).uses_significant_digits
@@ -648,6 +683,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSNumberFormatterRoundingMode)roundingMode`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1413368-roundingmode>
 - (NSUInteger)roundingMode {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).rounding_mode
@@ -657,6 +693,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSNumber *)roundingIncrement`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1412444-roundingincrement>
 - (id)roundingIncrement {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).rounding_increment
@@ -666,6 +703,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSNumber *)multiplier`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1410128-multiplier>
 - (id)multiplier {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).multiplier
@@ -679,6 +717,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSUInteger)groupingSize`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1416308-groupingsize>
 - (NSUInteger)groupingSize {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).grouping_size
@@ -688,6 +727,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (NSUInteger)secondaryGroupingSize`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1408618-secondarygroupingsize>
 - (NSUInteger)secondaryGroupingSize {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).secondary_grouping_size
@@ -701,6 +741,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (NSNumberFormatterPadPosition)paddingPosition`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1413029-paddingposition>
 - (NSUInteger)paddingPosition {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).padding_position
@@ -714,6 +755,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 // =========================================================================
 
 // `- (BOOL)isLenient`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1413563-islenient>
 - (bool)isLenient {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).is_lenient
@@ -723,6 +765,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 // `- (BOOL)isPartialStringValidationEnabled`
+//
 // <https://developer.apple.com/documentation/foundation/nsnumberformatter/1416914-ispartialstringvalidationenabled>
 - (bool)isPartialStringValidationEnabled {
     env.objc.borrow::<NSNumberFormatterHostObject>(this).partial_string_validation_enabled

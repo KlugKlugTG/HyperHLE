@@ -6,7 +6,8 @@
 //! `cxxabi.h` and the SjLj exception unwinder.
 //!
 //! Resources:
-//! - [Itanium C++ ABI specification](https://itanium-cxx-abi.github.io/cxx-abi/abi.html)
+//! - [Itanium C++ ABI
+//specification](https://itanium-cxx-abi.github.io/cxx-abi/abi.html)
 //! - [SjLj-style exception unwinding overview](https://gcc.gnu.org/wiki/SjLjEH)
 
 use crate::abi::{GuestFunction, FRAME_POINTER};

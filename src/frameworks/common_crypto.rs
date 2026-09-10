@@ -16,7 +16,8 @@ const kCCBufferTooSmall: i32 = -4301;
 const kCCAlignmentError: i32 = -4303;
 const kCCDecodeError: i32 = -4304;
 
-// Вспомогательные функции для чтения и записи u32 (Little Endian)
+// Вспомогательные функции для чтения и
+// записи u32 (Little Endian)
 fn read_u32_le(buf: &[u8], offset: usize) -> u32 {
     u32::from_le_bytes(buf[offset..offset + 4].try_into().unwrap())
 }
@@ -1687,6 +1688,7 @@ fn CC_SHA512_Final(env: &mut Environment, md: MutVoidPtr, c: MutVoidPtr) -> i32 
 // keep the real cipher state host-side in a table keyed by the handle bits.
 // This is a real implementation built on the same AES/DES/RC4 primitives
 // used by `CCCrypt`, not a stub.
+//
 // <https://github.com/Apple-FOSS-Mirror/CommonCrypto/blob/master/CommonCrypto/CommonCryptor.h>
 
 enum CryptorCipher {

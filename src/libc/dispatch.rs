@@ -106,6 +106,7 @@ pub struct State {
     /// Queue-specific values set via `dispatch_queue_set_specific`, keyed by
     /// `(queue handle bits, key pointer bits)` and storing the context
     /// pointer bits. See
+    ///
     /// <https://developer.apple.com/documentation/dispatch/1452828-dispatch_queue_set_specific>.
     queue_specifics: HashMap<(u32, u32), u32>,
     /// Stack of queue handles currently executing a block, so that
@@ -142,14 +143,16 @@ fn dispatch_once(
     }
 }
 
-/// `dispatch_once_f(dispatch_once_t *predicate, void *context, dispatch_function_t work)`
+///  `dispatch_once_f(dispatch_once_t *predicate, void *context,
+/// dispatch_function_t work)`
 ///
 /// The function-pointer variant of `dispatch_once`. Apple documents it
 /// in `<dispatch/once.h>` and uses it heavily inside the libdispatch
 /// "C interface" thunks emitted by clang for non-block once-init code.
 /// Semantics match `dispatch_once`: the `work` function is invoked at
 /// most once for each `predicate` address, with `context` passed as its
-/// single argument. <https://developer.apple.com/documentation/dispatch/1452833-dispatch_once_f>
+///  single argument.
+/// <https://developer.apple.com/documentation/dispatch/1452833-dispatch_once_f>
 fn dispatch_once_f(
     env: &mut Environment,
     predicate: MutPtr<dispatch_once_t>,
@@ -605,6 +608,7 @@ fn dispatch_get_context(_env: &mut Environment, _object: MutVoidPtr) -> MutVoidP
 /// "remove the value"). The `destructor` is the cleanup callback GCD would run
 /// when the value is replaced or the queue is destroyed; touchHLE does not own
 /// the guest's context allocation, so it is intentionally not invoked.
+///
 /// <https://developer.apple.com/documentation/dispatch/1452828-dispatch_queue_set_specific>
 fn dispatch_queue_set_specific(
     env: &mut Environment,
@@ -625,6 +629,7 @@ fn dispatch_queue_set_specific(
 /// `void *dispatch_queue_get_specific(dispatch_queue_t queue, const void *key)`
 ///
 /// Returns the value previously associated with `key` on `queue`, or NULL.
+///
 /// <https://developer.apple.com/documentation/dispatch/1453028-dispatch_queue_get_specific>
 fn dispatch_queue_get_specific(
     env: &mut Environment,
@@ -645,6 +650,7 @@ fn dispatch_queue_get_specific(
 /// (pushed/popped around `dispatch_sync`/`dispatch_async` block execution);
 /// when nothing is running we resolve against the main queue, matching the
 /// behaviour callers rely on for "am I on queue X?" re-entrancy checks.
+///
 /// <https://developer.apple.com/documentation/dispatch/1453099-dispatch_get_specific>
 fn dispatch_get_specific(env: &mut Environment, key: ConstVoidPtr) -> MutVoidPtr {
     let state = get_state(env);
