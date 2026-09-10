@@ -116,7 +116,7 @@ impl GLESContext for LoggingGLESContext {
 
     fn make_current<'gl_ctx, 'win: 'gl_ctx>(
         &'gl_ctx mut self,
-        window: &'win mut Window,
+        window: &'win mut crate::window::Window,
     ) -> Box<dyn GLES + 'gl_ctx> {
         let gles = self.inner.make_current(window);
         Box::new(LoggingGLES {

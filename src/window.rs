@@ -1538,6 +1538,9 @@ impl Window {
                     continue;
                 }
                 E::KeyDown {
+                    keycode: Some(sdl2::keyboard::Keycode::F11),
+                    ..
+                } => {
                     let new = !self.show_fps_counter.get();
                     self.set_show_fps_counter(new);
                     echo!("FPS counter {}", if new { "enabled" } else { "disabled" });
