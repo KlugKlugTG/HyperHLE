@@ -139,6 +139,10 @@ impl GLESContext for LoggingGLESContext {
 }
 
 impl<'a> GLES for LoggingGLES<'a> {
+    unsafe fn driver_description(&self) -> String {
+        self.inner.driver_description()
+    }
+
     unsafe fn GetError(&mut self) -> GLenum {
         let err = self.inner.GetError();
         if self.verbose {
