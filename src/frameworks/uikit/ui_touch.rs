@@ -595,6 +595,40 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             }
         }
 
+        // XaView "shield piercer" (A8 touch fix): when the touch lands on an
+        // invisible generic UIView/UIImageView overlay stacked above the game
+        // view, reroute it to the topmost custom interactive subview instead.
+        if view != nil {
+            let uiview_class = env.objc.get_known_class("UIView", &mut env.mem);
+            let is_generic: bool = msg![env; view isMemberOfClass:uiview_class];
+            let uiimageview_class = env.objc.get_known_class("UIImageView", &mut env.mem);
+            let is_image: bool = msg![env; view isKindOfClass:uiimageview_class];
+            if is_generic || is_image {
+                let subviews: id = msg![env; window subviews];
+                let count: NSUInteger = msg![env; subviews count];
+                for j in (0..count).rev() {
+                    let v: id = msg![env; subviews objectAtIndex:j];
+                    let v_is_generic: bool = msg![env; v isMemberOfClass:uiview_class];
+                    let v_is_image: bool = msg![env; v isKindOfClass:uiimageview_class];
+                    let v_hidden: bool = msg![env; v isHidden];
+                    let v_interactive: bool = msg![env; v isUserInteractionEnabled];
+                    if !v_is_generic && !v_is_image && !v_hidden && v_interactive {
+                        let overlay_class: crate::objc::Class = msg![env; view class];
+                        let target_class: crate::objc::Class = msg![env; v class];
+                        let overlay_name = env.objc.get_class_name(overlay_class).to_owned();
+                        let target_name = env.objc.get_class_name(target_class).to_owned();
+                        log!(
+                            "Shield piercer: rerouted touch from overlay {} to {}",
+                            overlay_name,
+                            target_name
+                        );
+                        view = v;
+                        break;
+                    }
+                }
+            }
+        }
+
         if view == nil {
             log_dbg!("SUPER HACK: hitTest failed, looking for Cocos/GL target before using window");
             let cocos_target = touchhle_find_cocos_touch_target(env, window);
