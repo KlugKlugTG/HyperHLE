@@ -255,6 +255,81 @@ impl<'a> GLES for LoggingGLES<'a> {
         self.inner.Flush();
     }
 
+    // --- Forwarding the rest of the methods to avoid panics ---
+
+    unsafe fn ClearColor(&mut self, r: GLclampf, g: GLclampf, b: GLclampf, a: GLclampf) {
+        self.inner.ClearColor(r, g, b, a);
+    }
+
+    unsafe fn BindBuffer(&mut self, target: GLenum, buffer: GLuint) {
+        self.inner.BindBuffer(target, buffer);
+    }
+
+    unsafe fn EnableClientState(&mut self, array: GLenum) {
+        self.inner.EnableClientState(array);
+    }
+
+    unsafe fn VertexPointer(&mut self, size: GLint, type_: GLenum, stride: GLsizei, pointer: *const GLvoid) {
+        self.inner.VertexPointer(size, type_, stride, pointer);
+    }
+
+    unsafe fn TexCoordPointer(&mut self, size: GLint, type_: GLenum, stride: GLsizei, pointer: *const GLvoid) {
+        self.inner.TexCoordPointer(size, type_, stride, pointer);
+    }
+
+    unsafe fn MatrixMode(&mut self, mode: GLenum) {
+        self.inner.MatrixMode(mode);
+    }
+
+    unsafe fn LoadMatrixf(&mut self, m: *const GLfloat) {
+        self.inner.LoadMatrixf(m);
+    }
+
+    unsafe fn Enable(&mut self, cap: GLenum) {
+        self.inner.Enable(cap);
+    }
+
+    unsafe fn LoadIdentity(&mut self) {
+        self.inner.LoadIdentity();
+    }
+
+    unsafe fn DisableClientState(&mut self, array: GLenum) {
+        self.inner.DisableClientState(array);
+    }
+
+    unsafe fn Disable(&mut self, cap: GLenum) {
+        self.inner.Disable(cap);
+    }
+
+    unsafe fn BlendFunc(&mut self, sfactor: GLenum, dfactor: GLenum) {
+        self.inner.BlendFunc(sfactor, dfactor);
+    }
+
+    unsafe fn Color4f(&mut self, r: GLfloat, g: GLfloat, b: GLfloat, a: GLfloat) {
+        self.inner.Color4f(r, g, b, a);
+    }
+
+    unsafe fn GenTextures(&mut self, n: GLsizei, textures: *mut GLuint) {
+        self.inner.GenTextures(n, textures);
+    }
+
+    unsafe fn TexParameteri(&mut self, target: GLenum, pname: GLenum, param: GLint) {
+        self.inner.TexParameteri(target, pname, param);
+    }
+
+    unsafe fn PushMatrix(&mut self) {
+        self.inner.PushMatrix();
+    }
+
+    unsafe fn PopMatrix(&mut self) {
+        self.inner.PopMatrix();
+    }
+
+    unsafe fn Orthof(&mut self, left: GLfloat, right: GLfloat, bottom: GLfloat, top: GLfloat, near: GLfloat, far: GLfloat) {
+        self.inner.Orthof(left, right, bottom, top, near, far);
+    }
+}
+
     // Forward other methods to inner
 }
 
