@@ -761,7 +761,7 @@ pub const CLASSES: ClassExports = objc_classes! {
                 renderbuffer,
             );
             unsafe {
-                present_renderbuffer(env, renderbuffer, drawable);
+                present_renderbuffer(env, renderbuffer, drawable, &env.options);
             }
         }
     } else {
@@ -1789,7 +1789,7 @@ unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, draw
     if gles.is_es2() {
         if gles.is_translator() {
             std::mem::drop(gles_boxed);
-            present_renderbuffer_readback(env, drawable);
+            present_renderbuffer_readback(env, renderbuffer, drawable);
         } else {
             present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at, &env.options);
             std::mem::drop(gles_boxed);

@@ -724,7 +724,7 @@ pub fn create_gles2_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
             match GLES2NativeContext::new(window) {
                 Ok(ctx) => {
                     log!("=> Success!");
-                    Box::new(ctx) as Box<dyn GLESContext>
+                    Some(Box::new(ctx) as Box<dyn GLESContext>)
                 }
                 Err(err) => {
                     log!("=> Failed: {}.", err);
@@ -795,7 +795,7 @@ pub fn create_gles3_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
             match GLES3NativeContext::new(window) {
                 Ok(ctx) => {
                     log!("=> Success!");
-                    Box::new(ctx) as Box<dyn GLESContext>
+                    Some(Box::new(ctx) as Box<dyn GLESContext>)
                 }
                 Err(err) => {
                     log!("=> Failed: {}.", err);
