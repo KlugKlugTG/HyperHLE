@@ -218,6 +218,7 @@ fn dlerror(_env: &mut Environment) -> ConstPtr<u8> {
 
 // Экспорт C-функций в глобальное адресное
 // пространство гостевого процесса.
+pub static FUNCTIONS: FunctionExports = &[
     export_c_func!(dlopen(_, _)),
     export_c_func!(dlsym(_, _)),
     export_c_func!(dlclose(_)),
