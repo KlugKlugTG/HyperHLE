@@ -1315,7 +1315,7 @@ fn glGetBufferPointervOES(
 /// apply this on the GLES1-on-GL2 emulation backend where the queries are
 /// supported.
 unsafe fn guard_client_vertex_arrays(gles: &mut dyn GLES, mem: &Mem) -> Vec<GLuint> {
-    if gles.is_native_es1() {
+    if !gles.is_gles1_on_gl2() {
         return Vec::new();
     }
 

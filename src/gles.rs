@@ -140,12 +140,14 @@ impl GLESContext for LoggingGLESContext {
 }
 
 impl<'a> GLES for LoggingGLES<'a> {
-    unsafe fn driver_description(&self) -> String {
-        self.inner.driver_description()
-    }
-
     fn is_native_es1(&self) -> bool {
         self.inner.is_native_es1()
+    }
+    fn is_gles1_on_gl2(&self) -> bool {
+        self.inner.is_gles1_on_gl2()
+    }
+    unsafe fn driver_description(&self) -> String {
+        self.inner.driver_description()
     }
 
     unsafe fn GetError(&mut self) -> GLenum {

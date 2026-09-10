@@ -106,6 +106,11 @@ pub trait GLES {
     fn is_native_es1(&self) -> bool {
         false
     }
+    /// True only on the GLES1-on-GL2 emulation backend, whose GL2 host context
+    /// supports the client vertex-array queries used by the guard.
+    fn is_gles1_on_gl2(&self) -> bool {
+        false
+    }
     // Generic state manipulation
     unsafe fn GetError(&mut self) -> GLenum {
         unimplemented!("GetError not implemented by this backend")
