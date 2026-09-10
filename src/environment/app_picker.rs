@@ -178,7 +178,6 @@ struct AppPickerDelegateHostObject {
     orientation_portrait_upside_down: bool,
     analog_stick_tilt_controls: Option<bool>,
     network: Option<bool>,
-    gles1_on_gles2: Option<bool>,
     show_fps: Option<bool>,
     trace_gl_errors: Option<bool>,
     verbose_gles: Option<bool>,
@@ -269,10 +268,6 @@ const CLASSES: ClassExports = objc_classes! {
 - (())analogStickTiltControls:(id)switch { // UISwitch*
     let switch_state: bool = msg![env; switch isOn];
     env.objc.borrow_mut::<AppPickerDelegateHostObject>(this).analog_stick_tilt_controls = Some(switch_state);
-}
-- (())gles1OnGLES2:(id)switch { // UISwitch*
-    let switch_state: bool = msg![env; switch isOn];
-    env.objc.borrow_mut::<AppPickerDelegateHostObject>(this).gles1_on_gles2 = Some(switch_state);
 }
 - (())network:(id)switch { // UISwitch*
     let switch_state: bool = msg![env; switch isOn];
@@ -604,7 +599,6 @@ fn app_picker_inner(
     let mut quick_options_orientation: Option<DeviceOrientation> = None;
     let mut quick_options_analog_stick_tilt_controls = true;
     let mut quick_options_network = false;
-    let mut quick_options_gles1_on_gles2 = false;
     let mut quick_options_show_fps = false;
     let mut quick_options_trace_gl_errors = false;
     let mut quick_options_verbose_gles = false;
@@ -886,8 +880,6 @@ fn app_picker_inner(
             quick_options_analog_stick_tilt_controls = enabled;
         } else if let Some(enabled) = std::mem::take(&mut host_obj.network) {
             quick_options_network = enabled;
-        } else if let Some(enabled) = std::mem::take(&mut host_obj.gles1_on_gles2) {
-            quick_options_gles1_on_gles2 = enabled;
         } else if let Some(enabled) = std::mem::take(&mut host_obj.show_fps) {
             quick_options_show_fps = enabled;
         } else if let Some(trace_gl_errors) = std::mem::take(&mut host_obj.trace_gl_errors) {
@@ -952,9 +944,6 @@ fn app_picker_inner(
     }
     if !quick_options_analog_stick_tilt_controls {
         option_args.push("--disable-analog-stick-tilt-controls".to_string());
-    }
-    if quick_options_gles1_on_gles2 {
-        option_args.push("--gles1=gles1_on_gles2".to_string());
     }
     if quick_options_network {
         option_args.push("--allow-network-access".to_string());
@@ -1732,8 +1721,6 @@ fn setup_quick_options(
         RowKind::Switch("verboseGLES:", false),
         RowKind::Label("Use analog sticks for tilt controls"),
         RowKind::Switch("analogStickTiltControls:", true),
-        RowKind::Label("Use GLES1 → GLES2 translator"),
-        RowKind::Switch("gles1OnGLES2:", false),
         // ---- (divider for stuff skipped below)
         RowKind::Label("Fullscreen (override)"),
         RowKind::Switch("fullscreen:", false),
