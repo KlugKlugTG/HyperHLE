@@ -531,7 +531,6 @@ impl<'a> GLES for LoggingGLES<'a> {
 }
 
     // Forward other methods to inner
-}
 
 // We need to implement the rest of the GLES trait for LoggingGLES.
 // Since there are many, we can use a macro or just implement the key ones.
