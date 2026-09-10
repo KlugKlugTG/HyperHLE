@@ -565,10 +565,22 @@ pub fn host_screen_size() -> Option<(u32, u32)> {
 ///   when the user enabled ANGLE Preferences).
 #[cfg(target_os = "android")]
 fn prefer_bundled_angle_driver() {
-    /// Candidate (EGL, GLESv2) soname pairs, most specific first.
-    const CANDIDATES: &[(&str, &str)] = &[
-        ("libEGL_angle.so", "libGLESv2_angle.so"),
-        ("libEGL_angle_in_apk.so", "libGLESv2_angle_in_apk.so"),
+    /// Candidate (EGL, GLESv1_CM, GLESv2) sonames, most specific first.
+    /// `libGLESv1_CM_angle.so` is what SDL should load for touchHLE's ES 1.1
+    /// contexts (this is how Google's own ANGLE-in-APK and the XaView fork
+    /// set it up); entry points for higher versions resolve through ANGLE's
+    /// `eglGetProcAddress` regardless.
+    const CANDIDATES: &[(&str, &str, &str)] = &[
+        (
+            "libEGL_angle.so",
+            "libGLESv1_CM_angle.so",
+            "libGLESv2_angle.so",
+        ),
+        (
+            "libEGL_angle_in_apk.so",
+            "libGLESv1_CM_angle_in_apk.so",
+            "libGLESv2_angle_in_apk.so",
+        ),
     ];
 
     /// Returns true if `name` can be dynamically loaded (i.e. it is present in
@@ -604,17 +616,38 @@ fn prefer_bundled_angle_driver() {
         return;
     }
 
-    for &(egl, gles) in CANDIDATES {
-        if can_load(egl) && can_load(gles) {
+    for &(egl, gles1, gles2) in CANDIDATES {
+        if !(can_load(egl) && can_load(gles2) && can_load(gles1)) {
+            log_dbg!(
+                "Bundled ANGLE candidate not fully loadable \
+                 (egl={} gles1={} gles2={}); trying next candidate.",
+                egl,
+                gles1,
+                gles2
+            );
+        }
+        if can_load(egl) && can_load(gles2) && can_load(gles1) {
             // Set before any SDL video init reads these variables; we are still
             // single-threaded during Window::new startup here.
             env::set_var("SDL_VIDEO_EGL_DRIVER", egl);
-            env::set_var("SDL_VIDEO_GL_DRIVER", gles);
+            env::set_var("SDL_VIDEO_GL_DRIVER", gles1);
+            // Match the ANGLE feature overrides used by the XaView fork's
+            // working Android build (tile-based rendering / async submits on
+            // Adreno's Vulkan driver).
+            env::set_var(
+                "ANGLE_FEATURE_OVERRIDES_ENABLED",
+                "enable_subpass_rendering,vulkan_async_command_buffers",
+            );
+            env::set_var(
+                "ANGLE_FEATURE_OVERRIDES_DISABLED",
+                "vulkan_synchronous_submit,flush_after_ending_render_pass",
+            );
             log!(
-                "Bundled ANGLE detected ({} / {}); preferring it over the \
+                "Bundled ANGLE detected ({} / {} / {}); preferring it over the \
                  system OpenGL ES driver to avoid Adreno black-screen issues.",
                 egl,
-                gles
+                gles1,
+                gles2
             );
             return;
         }
