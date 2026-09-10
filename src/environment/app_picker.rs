@@ -1728,6 +1728,7 @@ fn setup_quick_options(
         RowKind::Switch("showFPS:", false),
         RowKind::Label("Trace GL errors"),
         RowKind::Switch("traceGLErrors:", false),
+        RowKind::Label("Verbose GLES"),
         RowKind::Switch("verboseGLES:", false),
         RowKind::Label("Use analog sticks for tilt controls"),
         RowKind::Switch("analogStickTiltControls:", true),
