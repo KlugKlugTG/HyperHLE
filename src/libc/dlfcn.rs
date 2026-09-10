@@ -124,12 +124,14 @@ fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
 
     // БЕЗОПАСНОСТЬ: Защита от передачи NULL в
     // качестве имени искомого символа.
+    if symbol.is_null() {
         log!("Warning: dlsym() called with a NULL symbol pointer");
         return Ptr::null();
     }
 
     // БЕЗОПАСНОСТЬ: Чтение строкового имени
     // символа из гостевой памяти.
+    let symbol_str = match env.mem.cstr_at_utf8(symbol) {
         Ok(s) => s,
         Err(_) => {
             log!("Warning: dlsym() returning NULL due to invalid symbol string pointer in guest memory");
