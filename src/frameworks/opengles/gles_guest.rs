@@ -868,6 +868,12 @@ unsafe fn translate_pointer_or_offset_to_host(
 ) -> *const GLvoid {
     let mut buffer_binding = 0;
     gles.GetIntegerv(which_binding, &mut buffer_binding);
+    // Internal state query: strict native drivers (e.g. Adreno GLES-CM) raise
+    // GL_INVALID_ENUM or GL_INVALID_OPERATION for these binding queries even
+    // though the returned value is valid. Swallow the error so the guest's
+    // error queue is not polluted on every draw call (same rationale as
+    // clamp_fog_state_values).
+    let _ = gles.GetError();
     if buffer_binding != 0 {
         let offset = pointer_or_offset.to_bits();
         offset as usize as *const _
@@ -886,6 +892,12 @@ unsafe fn translate_pointer_or_offset_to_guest(
 ) -> ConstVoidPtr {
     let mut buffer_binding = 0;
     gles.GetIntegerv(which_binding, &mut buffer_binding);
+    // Internal state query: strict native drivers (e.g. Adreno GLES-CM) raise
+    // GL_INVALID_ENUM or GL_INVALID_OPERATION for these binding queries even
+    // though the returned value is valid. Swallow the error so the guest's
+    // error queue is not polluted on every draw call (same rationale as
+    // clamp_fog_state_values).
+    let _ = gles.GetError();
     if buffer_binding != 0 {
         let offset = pointer_or_offset as usize;
         Ptr::from_bits(u32::try_from(offset).unwrap())
