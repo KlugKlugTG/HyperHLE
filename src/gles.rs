@@ -766,10 +766,10 @@ pub fn create_gles2_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
             .expect("Couldn't create OpenGL ES 2.0 context")
         };
 
-        if options.verbose_gles {
+        if options.trace_gl_errors {
             Box::new(LoggingGLESContext {
                 inner: ctx,
-                verbose: options.verbose_gles,
+                verbose: options.trace_gl_errors,
             })
         } else {
             ctx
@@ -821,10 +821,10 @@ pub fn create_gles3_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
             .expect("Couldn't create OpenGL ES 3.0 context")
         };
 
-        if options.verbose_gles {
+        if options.trace_gl_errors {
             Box::new(LoggingGLESContext {
                 inner: ctx,
-                verbose: options.verbose_gles,
+                verbose: options.trace_gl_errors,
             })
         } else {
             ctx
