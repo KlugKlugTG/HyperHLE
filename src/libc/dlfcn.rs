@@ -95,13 +95,13 @@ fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
 }
 
 /// Реализация функции `dlsym` стандарта POSIX.
-/// Выполняет поиск адреса
-//экспортированного символа (функции или
-//переменной) в
-    // БЕЗОПАСНОСТЬ: Валидация переданного
-    // дескриптора.
-    // RTLD_MAIN_ONLY, а также NULL) означают глобальный
-    // поиск символа.
+/// Выполняет поиск адреса экспортированного символа (функции или
+/// переменной) в библиотеке, на которую указывает `handle`.
+fn dlsym(env: &mut Environment, handle: MutVoidPtr, symbol: ConstPtr<u8>) -> Ptr<()> {
+    // БЕЗОПАСНОСТЬ: Валидация переданного дескриптора.
+    // NULL, RTLD_DEFAULT, RTLD_NEXT, RTLD_SELF и
+    // RTLD_MAIN_ONLY означают глобальный поиск символа.
+    if !is_global_scope_handle(handle) {
         let handle_path_ptr: ConstPtr<u8> = handle.cast().cast_const();
         let handle_str = match env.mem.cstr_at_utf8(handle_path_ptr) {
             Ok(s) => s,
