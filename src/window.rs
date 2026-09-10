@@ -934,7 +934,7 @@ impl Window {
         if options.verbose_gles {
             gl_ins = Box::new(LoggingGLESContext {
                 inner: gl_ins,
-                options,
+                verbose: options.verbose_gles,
             });
         }
         let gl_driver_description = {
