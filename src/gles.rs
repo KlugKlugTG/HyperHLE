@@ -328,6 +328,206 @@ impl<'a> GLES for LoggingGLES<'a> {
     unsafe fn Orthof(&mut self, left: GLfloat, right: GLfloat, bottom: GLfloat, top: GLfloat, near: GLfloat, far: GLfloat) {
         self.inner.Orthof(left, right, bottom, top, near, far);
     }
+
+    unsafe fn IsEnabled(&mut self, cap: GLenum) -> GLboolean {
+        self.inner.IsEnabled(cap)
+    }
+
+    unsafe fn ClientActiveTexture(&mut self, texture: GLenum) {
+        self.inner.ClientActiveTexture(texture);
+    }
+
+    unsafe fn GetBooleanv(&mut self, pname: GLenum, params: *mut GLboolean) {
+        self.inner.GetBooleanv(pname, params);
+    }
+
+    unsafe fn GetFloatv(&mut self, pname: GLenum, params: *mut GLfloat) {
+        self.inner.GetFloatv(pname, params);
+    }
+
+    unsafe fn GetFixedv(&mut self, pname: GLenum, params: *mut GLfixed) {
+        self.inner.GetFixedv(pname, params);
+    }
+
+    unsafe fn GetTexEnviv(&mut self, target: GLenum, pname: GLenum, params: *mut GLint) {
+        self.inner.GetTexEnviv(target, pname, params);
+    }
+
+    unsafe fn GetTexEnvfv(&mut self, target: GLenum, pname: GLenum, params: *mut GLfloat) {
+        self.inner.GetTexEnvfv(target, pname, params);
+    }
+
+    unsafe fn GetTexEnvxv(&mut self, target: GLenum, pname: GLenum, params: *mut GLfixed) {
+        self.inner.GetTexEnvxv(target, pname, params);
+    }
+
+    unsafe fn GetTexParameteriv(&mut self, target: GLenum, pname: GLenum, params: *mut GLint) {
+        self.inner.GetTexParameteriv(target, pname, params);
+    }
+
+    unsafe fn GetTexParameterfv(&mut self, target: GLenum, pname: GLenum, params: *mut GLfloat) {
+        self.inner.GetTexParameterfv(target, pname, params);
+    }
+
+    unsafe fn GetTexParameterxv(&mut self, target: GLenum, pname: GLenum, params: *mut GLfixed) {
+        self.inner.GetTexParameterxv(target, pname, params);
+    }
+
+    unsafe fn GetClipPlanef(&mut self, plane: GLenum, equation: *mut GLfloat) {
+        self.inner.GetClipPlanef(plane, equation);
+    }
+
+    unsafe fn GetClipPlanex(&mut self, plane: GLenum, equation: *mut GLfixed) {
+        self.inner.GetClipPlanex(plane, equation);
+    }
+
+    unsafe fn GetLightfv(&mut self, light: GLenum, pname: GLenum, params: *mut GLfloat) {
+        self.inner.GetLightfv(light, pname, params);
+    }
+
+    unsafe fn GetLightxv(&mut self, light: GLenum, pname: GLenum, params: *mut GLfixed) {
+        self.inner.GetLightxv(light, pname, params);
+    }
+
+    unsafe fn GetMaterialfv(&mut self, face: GLenum, pname: GLenum, params: *mut GLfloat) {
+        self.inner.GetMaterialfv(face, pname, params);
+    }
+
+    unsafe fn GetMaterialxv(&mut self, face: GLenum, pname: GLenum, params: *mut GLfixed) {
+        self.inner.GetMaterialxv(face, pname, params);
+    }
+
+    unsafe fn GetPointerv(&mut self, pname: GLenum, params: *mut *const GLvoid) {
+        self.inner.GetPointerv(pname, params);
+    }
+
+    unsafe fn Hint(&mut self, target: GLenum, mode: GLenum) {
+        self.inner.Hint(target, mode);
+    }
+
+    unsafe fn GetString(&mut self, name: GLenum) -> *const GLubyte {
+        self.inner.GetString(name)
+    }
+
+    unsafe fn AlphaFunc(&mut self, func: GLenum, ref_: GLclampf) {
+        self.inner.AlphaFunc(func, ref_);
+    }
+
+    unsafe fn AlphaFuncx(&mut self, func: GLenum, ref_: GLclampx) {
+        self.inner.AlphaFuncx(func, ref_);
+    }
+
+    unsafe fn BlendEquationOES(&mut self, mode: GLenum) {
+        self.inner.BlendEquationOES(mode);
+    }
+
+    unsafe fn ColorMask(&mut self, red: GLboolean, green: GLboolean, blue: GLboolean, alpha: GLboolean) {
+        self.inner.ColorMask(red, green, blue, alpha);
+    }
+
+    unsafe fn ClipPlanef(&mut self, plane: GLenum, equation: *const GLfloat) {
+        self.inner.ClipPlanef(plane, equation);
+    }
+
+    unsafe fn ClipPlanex(&mut self, plane: GLenum, equation: *const GLfixed) {
+        self.inner.ClipPlanex(plane, equation);
+    }
+
+    unsafe fn CullFace(&mut self, mode: GLenum) {
+        self.inner.CullFace(mode);
+    }
+
+    unsafe fn DepthFunc(&mut self, func: GLenum) {
+        self.inner.DepthFunc(func);
+    }
+
+    unsafe fn DepthMask(&mut self, flag: GLboolean) {
+        self.inner.DepthMask(flag);
+    }
+
+    unsafe fn DepthRangef(&mut self, near: GLclampf, far: GLclampf) {
+        self.inner.DepthRangef(near, far);
+    }
+
+    unsafe fn DepthRangex(&mut self, near: GLclampx, far: GLclampx) {
+        self.inner.DepthRangex(near, far);
+    }
+
+    unsafe fn FrontFace(&mut self, mode: GLenum) {
+        self.inner.FrontFace(mode);
+    }
+
+    unsafe fn PolygonOffset(&mut self, factor: GLfloat, units: GLfloat) {
+        self.inner.PolygonOffset(factor, units);
+    }
+
+    unsafe fn PolygonOffsetx(&mut self, factor: GLfixed, units: GLfixed) {
+        self.inner.PolygonOffsetx(factor, units);
+    }
+
+    unsafe fn SampleCoverage(&mut self, value: GLclampf, invert: GLboolean) {
+        self.inner.SampleCoverage(value, invert);
+    }
+
+    unsafe fn SampleCoveragex(&mut self, value: GLclampx, invert: GLboolean) {
+        self.inner.SampleCoveragex(value, invert);
+    }
+
+    unsafe fn ShadeModel(&mut self, mode: GLenum) {
+        self.inner.ShadeModel(mode);
+    }
+
+    unsafe fn Scissor(&mut self, x: GLint, y: GLint, width: GLsizei, height: GLsizei) {
+        self.inner.Scissor(x, y, width, height);
+    }
+
+    unsafe fn LineWidth(&mut self, val: GLfloat) {
+        self.inner.LineWidth(val);
+    }
+
+    unsafe fn LineWidthx(&mut self, val: GLfixed) {
+        self.inner.LineWidthx(val);
+    }
+
+    unsafe fn StencilFunc(&mut self, func: GLenum, ref_: GLint, mask: GLuint) {
+        self.inner.StencilFunc(func, ref_, mask);
+    }
+
+    unsafe fn StencilOp(&mut self, sfail: GLenum, dpfail: GLenum, dppass: GLenum) {
+        self.inner.StencilOp(sfail, dpfail, dppass);
+    }
+
+    unsafe fn StencilMask(&mut self, mask: GLuint) {
+        self.inner.StencilMask(mask);
+    }
+
+    unsafe fn LogicOp(&mut self, opcode: GLenum) {
+        self.inner.LogicOp(opcode);
+    }
+
+    unsafe fn PointSize(&mut self, size: GLfloat) {
+        self.inner.PointSize(size);
+    }
+
+    unsafe fn PointSizex(&mut self, size: GLfixed) {
+        self.inner.PointSizex(size);
+    }
+
+    unsafe fn PointParameterf(&mut self, pname: GLenum, param: GLfloat) {
+        self.inner.PointParameterf(pname, param);
+    }
+
+    unsafe fn PointParameterx(&mut self, pname: GLenum, param: GLfixed) {
+        self.inner.PointParameterx(pname, param);
+    }
+
+    unsafe fn PointParameterfv(&mut self, pname: GLenum, params: *const GLfloat) {
+        self.inner.PointParameterfv(pname, params);
+    }
+
+    unsafe fn PointParameterxv(&mut self, pname: GLenum, params: *const GLfixed) {
+        self.inner.PointParameterxv(pname, params);
+    }
 }
 
     // Forward other methods to inner
