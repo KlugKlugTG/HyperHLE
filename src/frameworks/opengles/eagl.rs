@@ -752,7 +752,7 @@ pub const CLASSES: ClassExports = objc_classes! {
                 renderbuffer,
             );
             unsafe {
-                present_renderbuffer_readback(env, drawable);
+                present_renderbuffer_readback(env, renderbuffer, drawable);
             }
         } else {
             log_dbg!(
@@ -761,7 +761,7 @@ pub const CLASSES: ClassExports = objc_classes! {
                 renderbuffer,
             );
             unsafe {
-                present_renderbuffer(env, drawable);
+                present_renderbuffer(env, renderbuffer, drawable);
             }
         }
     } else {
@@ -854,7 +854,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 };
 
-unsafe fn present_renderbuffer_readback(env: &mut Environment, drawable: id) {
+unsafe fn present_renderbuffer_readback(env: &mut Environment, renderbuffer: GLuint, drawable: id) {
     let read_result = {
         let maybe_gles = super::sync_context(
             &mut env.framework_state.opengles,
@@ -863,7 +863,7 @@ unsafe fn present_renderbuffer_readback(env: &mut Environment, drawable: id) {
             env.current_thread,
         );
         match maybe_gles {
-            Some(mut gles) => Some(read_renderbuffer(gles.as_mut(), Vec::new())),
+            Some(mut gles) => Some(read_renderbuffer(gles.as_mut(), renderbuffer, Vec::new())),
             None => None,
         }
     };
@@ -1029,8 +1029,7 @@ unsafe fn get_renderbuffer_size(gles: &mut dyn GLES) -> (GLsizei, GLsizei) {
 /// The returned values are the [Vec], the width and height.
 ///
 /// The provided context must be current.
-unsafe fn read_renderbuffer(gles: &mut dyn GLES, mut pixel_buffer: Vec<u8>) -> (Vec<u8>, u32, u32) {
-    let renderbuffer: GLuint = get_int(gles, gles11::RENDERBUFFER_BINDING_OES) as _;
+unsafe fn read_renderbuffer(gles: &mut dyn GLES, renderbuffer: GLuint, mut pixel_buffer: Vec<u8>) -> (Vec<u8>, u32, u32) {
     let (width, height) = get_renderbuffer_size(gles);
     let width_u32: u32 = width.try_into().unwrap();
     let height_u32: u32 = height.try_into().unwrap();
@@ -1117,6 +1116,7 @@ unsafe fn read_renderbuffer(gles: &mut dyn GLES, mut pixel_buffer: Vec<u8>) -> (
 /// etc. are not part of ES 2.0 state and thus need no save/restore.
 unsafe fn present_renderbuffer_es2(
     gles: &mut dyn GLES,
+    renderbuffer: GLuint,
     viewport: (u32, u32, u32, u32),
     rotation_matrix: crate::matrix::Matrix<2>,
     virtual_cursor_visible_at: Option<(f32, f32, bool)>,
@@ -1161,8 +1161,7 @@ unsafe fn present_renderbuffer_es2(
 
     // Resolve renderbuffer → texture with a cached FBO + `glCopyTexImage2D`,
     // using the ES 2.0 entry points.
-    let mut renderbuffer: GLint = 0;
-    gles.GetIntegerv(gles2::RENDERBUFFER_BINDING, &mut renderbuffer);
+    let renderbuffer_int = renderbuffer as GLint;
     let (width, height) = {
         let mut w: GLint = 0;
         let mut h: GLint = 0;
@@ -1643,7 +1642,7 @@ unsafe fn ensure_present_objects(gles: &mut dyn GLES) -> PresentObjects {
 /// (which should be provided by the app) to a texture and presents it with
 /// [present_frame], trying to avoid noticeably modifying OpenGL ES state while
 /// doing so. The front and back buffers are then swapped.
-unsafe fn present_renderbuffer(env: &mut Environment, drawable: id) {
+unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, drawable: id) {
     // Capture this up front because the env borrow is moved into the GL
     // context machinery below.
     let trace_gl_errors = env.options.trace_gl_errors;
@@ -1773,7 +1772,7 @@ unsafe fn present_renderbuffer(env: &mut Environment, drawable: id) {
             std::mem::drop(gles_boxed);
             present_renderbuffer_readback(env, drawable);
         } else {
-            present_renderbuffer_es2(gles, viewport, rotation_matrix, virtual_cursor_visible_at);
+            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at);
             std::mem::drop(gles_boxed);
             env.window.as_mut().unwrap().swap_window();
         }
@@ -1786,7 +1785,6 @@ unsafe fn present_renderbuffer(env: &mut Environment, drawable: id) {
     // draw to the default framebuffer via a textured quad, which can be
     // rotated, scaled or letterboxed as appropriate.
 
-    let renderbuffer: GLuint = get_int(gles, gles11::RENDERBUFFER_BINDING_OES) as _;
     let (width, height) = get_renderbuffer_size(gles);
     {
         static SEEN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
