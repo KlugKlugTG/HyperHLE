@@ -2283,15 +2283,28 @@ impl Environment {
                     std::sync::atomic::Ordering::Relaxed,
                 );
 
-                // Asphalt 8 (com.gameloft.asphalt8) v1.1.0 compatibility hacks,
-                // ported from the touchHLE-XaView fork. The game deliberately
-                // calls abort() when its DRM/network checks fail, which looks
-                // like a silent emulator crash. These unwinds skip the checks.
-                if self
-                    .bundle
-                    .bundle_identifier()
-                    .starts_with("com.gameloft.asphalt8")
-                {
+                // Asphalt 8 compatibility hacks, ported from the
+                // touchHLE-XaView fork. The game deliberately calls abort()
+                // when its DRM/network checks fail, which looks like a silent
+                // emulator crash. These unwinds skip the checks.
+                //
+                // The real bundle ids are e.g. com.gameloft.android.ANMP.GloftA8HM
+                // (1.0.0) — match case-insensitively on the GloftA8/Asphalt8
+                // markers instead of a wrong literal prefix (the previous
+                // `starts_with("com.gameloft.asphalt8")` never matched, so the
+                // hooks silently never armed).
+                if ({
+                    let bundle_id = self.bundle.bundle_identifier().to_lowercase();
+                    bundle_id.contains("glofta8") || bundle_id.contains("asphalt8")
+                }) {
+                    use std::sync::atomic::{AtomicBool, Ordering};
+                    static ARMED: AtomicBool = AtomicBool::new(false);
+                    if !ARMED.swap(true, Ordering::Relaxed) {
+                        log!(
+                            "Asphalt 8 compatibility hacks armed for bundle id {:?}",
+                            self.bundle.bundle_identifier()
+                        );
+                    }
                     let pc = self.cpu.regs()[Cpu::PC];
                     // BypassAsphaltDRM: deep stack unwind past the license check
                     if pc == 0x00600ac4 {
