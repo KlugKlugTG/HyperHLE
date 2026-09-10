@@ -760,8 +760,9 @@ pub const CLASSES: ClassExports = objc_classes! {
                 drawable,
                 renderbuffer,
             );
+            let options = env.options.clone();
             unsafe {
-                present_renderbuffer(env, renderbuffer, drawable);
+                present_renderbuffer(env, renderbuffer, drawable, &options);
             }
         }
     } else {
@@ -1177,7 +1178,7 @@ unsafe fn present_renderbuffer_es2(
             .saturating_mul(height.max(0) as usize)
             .saturating_mul(4)
     ];
-    if options.verbose_gles {
+    if options.trace_gl_errors {
         log!("PRESENTATION: viewport={:?}, rotation={:?}", viewport, rotation_matrix);
     }
     if width > 0 && height > 0 && !pixels.is_empty() {
@@ -1233,7 +1234,7 @@ unsafe fn present_renderbuffer_es2(
 
     let present_objects = ensure_present_objects(gles);
     gles.BindFramebuffer(gles2::FRAMEBUFFER, present_objects.framebuffer);
-    if options.verbose_gles {
+    if options.trace_gl_errors {
         log!("PRESENTATION: binding framebuffer {}", present_objects.framebuffer);
     }
     gles.FramebufferRenderbuffer(
@@ -1664,7 +1665,7 @@ unsafe fn ensure_present_objects(gles: &mut dyn GLES) -> PresentObjects {
 unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, drawable: id, options: &crate::options::Options) {
     // Capture this up front because the env borrow is moved into the GL
     // context machinery below.
-    let trace_gl_errors = env.options.trace_gl_errors;
+    let trace_gl_errors = options.trace_gl_errors;
 
     // Save these for when we need to draw the frame
     let viewport = env.window.as_mut().unwrap().viewport();
@@ -1789,9 +1790,9 @@ unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, draw
     if gles.is_es2() {
         if gles.is_translator() {
             std::mem::drop(gles_boxed);
-            present_renderbuffer_readback(env, drawable);
+            present_renderbuffer_readback(env, renderbuffer, drawable);
         } else {
-            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at, &env.options);
+            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at, options);
             std::mem::drop(gles_boxed);
             env.window.as_mut().unwrap().swap_window();
         }

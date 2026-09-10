@@ -15,6 +15,7 @@
 use crate::gles::present::present_frame;
 use crate::gles::{
     create_gles1_ctx_no_parent_stack, create_gles2_ctx_no_parent_stack, GLESContext, GLES,
+    LoggingGLESContext,
 };
 use crate::image::Image;
 use crate::matrix::Matrix;
@@ -930,6 +931,12 @@ impl Window {
         } else {
             create_gles1_ctx_no_parent_stack(&mut window, options)
         };
+        if options.trace_gl_errors {
+            gl_ins = Box::new(LoggingGLESContext {
+                inner: gl_ins,
+                verbose: options.trace_gl_errors,
+            });
+        }
         let gl_driver_description = {
             let gl_ctx = gl_ins.make_current(&mut window);
             unsafe { gl_ctx.driver_description() }
@@ -1519,8 +1526,19 @@ impl Window {
                 }
                 // Toggle FPS counter with F9
                 E::KeyDown {
-                    keycode: Some(sdl2::keyboard::Keycode::F9),
+                    keycode: Some(sdl2::keyboard::Keycode::F10),
                     repeat: false,
+                    ..
+                } => {
+                    // This is a hack for the user: we can't easily modify Options
+                    // while the environment is running without some synchronization,
+                    // but for debugging we can just log that the key was pressed.
+                    // Actually, if we want to toggle it, we need access to env.options.
+                    echo!("F10 pressed: Toggle Verbose GLES (requires env.options access)");
+                    continue;
+                }
+                E::KeyDown {
+                    keycode: Some(sdl2::keyboard::Keycode::F11),
                     ..
                 } => {
                     let new = !self.show_fps_counter.get();
