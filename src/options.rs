@@ -102,6 +102,9 @@ pub struct Options {
     /// `glGetError()` clears the error queue, so guest `glGetError()` calls
     /// will see 0 instead of the real error. Diagnostic only.
     pub trace_gl_errors: bool,
+    /// Log every GLES call made by the guest (via the LoggingGLES wrapper).
+    /// Much noisier than `trace_gl_errors`. Diagnostic only.
+    pub verbose_gles: bool,
     /// After a `glTexImage2D(level=0, …)` upload, if the bound texture's
     /// `GL_TEXTURE_MIN_FILTER` is still the ES 1.1 default
     /// `GL_NEAREST_MIPMAP_LINEAR` (which makes the texture incomplete
@@ -159,6 +162,7 @@ impl Default for Options {
             dumping_file: crate::paths::user_data_base_path().join("DUMP.txt"),
             ignore_gl_errors: false,
             trace_gl_errors: false,
+            verbose_gles: false,
             // On Android the host GLES driver is essentially always
             // ARM Mali / Qualcomm Adreno / something equally strict,
             // and apps shipped for iOS overwhelmingly upload PVRTC and
@@ -389,6 +393,8 @@ impl Options {
             self.ignore_gl_errors = true;
         } else if arg == "--trace-gl-errors" {
             self.trace_gl_errors = true;
+        } else if arg == "--verbose-gles" {
+            self.verbose_gles = true;
         } else if arg == "--fix-texture-min-filter" {
             self.fix_texture_min_filter = true;
         } else if arg == "--no-fix-texture-min-filter" {

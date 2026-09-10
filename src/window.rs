@@ -934,7 +934,7 @@ impl Window {
         if options.trace_gl_errors {
             gl_ins = Box::new(LoggingGLESContext {
                 inner: gl_ins,
-                verbose: options.trace_gl_errors,
+                verbose: options.trace_gl_errors || options.verbose_gles,
             });
         }
         let gl_driver_description = {

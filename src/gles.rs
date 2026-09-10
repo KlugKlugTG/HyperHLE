@@ -769,7 +769,7 @@ pub fn create_gles2_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
         if options.trace_gl_errors {
             Box::new(LoggingGLESContext {
                 inner: ctx,
-                verbose: options.trace_gl_errors,
+                verbose: options.trace_gl_errors || options.verbose_gles,
             })
         } else {
             ctx
@@ -824,7 +824,7 @@ pub fn create_gles3_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
         if options.trace_gl_errors {
             Box::new(LoggingGLESContext {
                 inner: ctx,
-                verbose: options.trace_gl_errors,
+                verbose: options.trace_gl_errors || options.verbose_gles,
             })
         } else {
             ctx
