@@ -760,8 +760,9 @@ pub const CLASSES: ClassExports = objc_classes! {
                 drawable,
                 renderbuffer,
             );
+            let options = env.options.clone();
             unsafe {
-                present_renderbuffer(env, renderbuffer, drawable, &env.options);
+                present_renderbuffer(env, renderbuffer, drawable, &options);
             }
         }
     } else {
@@ -1664,7 +1665,7 @@ unsafe fn ensure_present_objects(gles: &mut dyn GLES) -> PresentObjects {
 unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, drawable: id, options: &crate::options::Options) {
     // Capture this up front because the env borrow is moved into the GL
     // context machinery below.
-    let trace_gl_errors = env.options.trace_gl_errors;
+    let trace_gl_errors = options.trace_gl_errors;
 
     // Save these for when we need to draw the frame
     let viewport = env.window.as_mut().unwrap().viewport();
@@ -1791,7 +1792,7 @@ unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, draw
             std::mem::drop(gles_boxed);
             present_renderbuffer_readback(env, renderbuffer, drawable);
         } else {
-            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at, &env.options);
+            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at, options);
             std::mem::drop(gles_boxed);
             env.window.as_mut().unwrap().swap_window();
         }
