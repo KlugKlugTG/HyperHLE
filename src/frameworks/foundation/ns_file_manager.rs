@@ -930,6 +930,19 @@ pub const CLASSES: ClassExports = objc_classes! {
     false
 }
 
+- (id)displayNameAtPath:(id)path {
+    log_dbg!("NSFileManager displayNameAtPath: {:?}", path);
+    if path.is_null() {
+        return nil;
+    }
+    let path_str = ns_string::to_rust_string(env, path);
+    let last_component = std::path::Path::new(&path_str)
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or(&path_str);
+    ns_string::from_rust_string(env, last_component.to_string())
+}
+
 // MARK: - Determining Access to Files
 
 - (bool)fileExistsAtPath:(id)path {
