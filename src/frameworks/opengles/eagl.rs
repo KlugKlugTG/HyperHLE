@@ -1177,7 +1177,7 @@ unsafe fn present_renderbuffer_es2(
             .saturating_mul(height.max(0) as usize)
             .saturating_mul(4)
     ];
-    if options.verbose_gles {
+    if options.trace_gl_errors {
         log!("PRESENTATION: viewport={:?}, rotation={:?}", viewport, rotation_matrix);
     }
     if width > 0 && height > 0 && !pixels.is_empty() {
@@ -1233,7 +1233,7 @@ unsafe fn present_renderbuffer_es2(
 
     let present_objects = ensure_present_objects(gles);
     gles.BindFramebuffer(gles2::FRAMEBUFFER, present_objects.framebuffer);
-    if options.verbose_gles {
+    if options.trace_gl_errors {
         log!("PRESENTATION: binding framebuffer {}", present_objects.framebuffer);
     }
     gles.FramebufferRenderbuffer(

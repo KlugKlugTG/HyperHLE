@@ -931,10 +931,10 @@ impl Window {
         } else {
             create_gles1_ctx_no_parent_stack(&mut window, options)
         };
-        if options.verbose_gles {
+        if options.trace_gl_errors {
             gl_ins = Box::new(LoggingGLESContext {
                 inner: gl_ins,
-                verbose: options.verbose_gles,
+                verbose: options.trace_gl_errors,
             });
         }
         let gl_driver_description = {
