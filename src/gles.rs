@@ -144,6 +144,10 @@ impl<'a> GLES for LoggingGLES<'a> {
         self.inner.driver_description()
     }
 
+    fn is_native_es1(&self) -> bool {
+        self.inner.is_native_es1()
+    }
+
     unsafe fn GetError(&mut self) -> GLenum {
         let err = self.inner.GetError();
         if self.verbose {

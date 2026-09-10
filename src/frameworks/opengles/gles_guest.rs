@@ -2863,11 +2863,27 @@ fn unmap_buffer(env: &mut Environment, target: GLenum, oes: bool) -> GLboolean {
     }
     env.mem.free(guest_buffer);
     with_ctx_and_mem(env, |gles, _mem| unsafe {
-        if oes {
+        let result = if oes {
             gles.UnmapBufferOES(target)
         } else {
             gles.UnmapBuffer(target)
+        };
+        // Strict drivers (e.g. Qualcomm Adreno) can raise GL_INVALID_OPERATION
+        // here even for mappings we believe are balanced, poisoning the error
+        // queue for the app's own glGetError() polling. Apple's unmap never
+        // surfaces such phantom errors, so purge whatever this call raised and
+        // keep reporting success (same lenient philosophy as the unbalanced
+        // unmap path above).
+        let raised = gles.GetError();
+        if raised != 0 {
+            log_dbg!(
+                "glUnmapBuffer{}: driver raised error {:#x} on unmap of target {:#x}; purging (treated as benign)",
+                if oes { "OES" } else { "" },
+                raised,
+                target
+            );
         }
+        result
     })
 }
 
