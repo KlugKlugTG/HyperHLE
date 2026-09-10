@@ -802,7 +802,7 @@ pub const CLASSES: ClassExports = objc_classes! {
                 env.current_thread,
             );
             match maybe_gles {
-                Some(mut gles) => Some(unsafe { read_renderbuffer(gles.as_mut(), pixels_vec) }),
+                Some(mut gles) => Some(unsafe { read_renderbuffer(gles.as_mut(), renderbuffer, pixels_vec) }),
                 None => {
                     log!(
                         "[EAGLContext presentRenderbuffer:{:#x}] lost GL \
@@ -1120,6 +1120,7 @@ unsafe fn present_renderbuffer_es2(
     viewport: (u32, u32, u32, u32),
     rotation_matrix: crate::matrix::Matrix<2>,
     virtual_cursor_visible_at: Option<(f32, f32, bool)>,
+    options: &crate::options::Options,
 ) {
     use crate::gles::gles2_raw as gles2;
 
@@ -1176,7 +1177,22 @@ unsafe fn present_renderbuffer_es2(
             .saturating_mul(height.max(0) as usize)
             .saturating_mul(4)
     ];
+    if options.verbose_gles {
+        log!("PRESENTATION: viewport={:?}, rotation={:?}", viewport, rotation_matrix);
+    }
     if width > 0 && height > 0 && !pixels.is_empty() {
+        // Diagnostic: check if the buffer is actually empty (all zeros/black)
+        static LOGGED_EMPTY: std::sync::Once = std::sync::Once::new();
+        LOGGED_EMPTY.call_once(|| {
+            let is_empty = pixels.iter().all(|&p| p == 0);
+            log!(
+                "GLES2 presenter diagnostic: buffer size {}x{}, is_all_zeros={}",
+                width,
+                height,
+                is_empty
+            );
+        });
+
         // Read from the *renderbuffer being presented*, not from whatever
         // framebuffer the guest happened to leave bound. On iOS the EAGL
         // renderbuffer IS the default framebuffer, so apps can leave any
@@ -1217,6 +1233,9 @@ unsafe fn present_renderbuffer_es2(
 
     let present_objects = ensure_present_objects(gles);
     gles.BindFramebuffer(gles2::FRAMEBUFFER, present_objects.framebuffer);
+    if options.verbose_gles {
+        log!("PRESENTATION: binding framebuffer {}", present_objects.framebuffer);
+    }
     gles.FramebufferRenderbuffer(
         gles2::FRAMEBUFFER,
         gles2::COLOR_ATTACHMENT0,
@@ -1642,7 +1661,7 @@ unsafe fn ensure_present_objects(gles: &mut dyn GLES) -> PresentObjects {
 /// (which should be provided by the app) to a texture and presents it with
 /// [present_frame], trying to avoid noticeably modifying OpenGL ES state while
 /// doing so. The front and back buffers are then swapped.
-unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, drawable: id) {
+unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, drawable: id, options: &crate::options::Options) {
     // Capture this up front because the env borrow is moved into the GL
     // context machinery below.
     let trace_gl_errors = env.options.trace_gl_errors;
@@ -1772,7 +1791,7 @@ unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, draw
             std::mem::drop(gles_boxed);
             present_renderbuffer_readback(env, drawable);
         } else {
-            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at);
+            present_renderbuffer_es2(gles, renderbuffer, viewport, rotation_matrix, virtual_cursor_visible_at, &env.options);
             std::mem::drop(gles_boxed);
             env.window.as_mut().unwrap().swap_window();
         }
