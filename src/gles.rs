@@ -93,8 +93,8 @@ use gles3_on_gl3::GLES3OnGL3Context;
 pub use gles_generic::GLESContext;
 pub use gles_generic::GLES;
 
-pub struct LoggingGLES {
-    pub inner: Box<dyn GLES + 'static>,
+pub struct LoggingGLES<'a> {
+    pub inner: Box<dyn GLES + 'a>,
     pub verbose: bool,
 }
 
@@ -138,7 +138,7 @@ impl GLESContext for LoggingGLESContext {
     }
 }
 
-impl GLES for LoggingGLES<'_> {
+impl<'a> GLES for LoggingGLES<'a> {
     unsafe fn GetError(&mut self) -> GLenum {
         let err = self.inner.GetError();
         if self.verbose {
