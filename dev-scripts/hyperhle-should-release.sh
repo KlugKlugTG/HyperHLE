@@ -27,6 +27,10 @@ version="v1.0.${next_patch}"
 
 if [ "${FORCE_HYPERHLE_RELEASE:-}" = "true" ]; then
     should_release=true
+elif [ "${GITHUB_EVENT_NAME:-}" = "workflow_dispatch" ]; then
+    # Manual "Build HyperHLE" runs must never publish files to Releases;
+    # they only produce build artifacts.
+    should_release=false
 elif [ "$commits_since" -lt "$RELEASE_EVERY" ]; then
     should_release=false
 elif git rev-parse "refs/tags/${version}" >/dev/null 2>&1; then
