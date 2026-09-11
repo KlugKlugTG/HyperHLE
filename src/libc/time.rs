@@ -840,6 +840,16 @@ fn strftime(
                 let formatted_wday = format!("{}", wday);
                 res.extend_from_slice(formatted_wday.as_bytes());
             }
+            b'z' => {
+                // RFC 822 numeric zone: ±HHMM (e.g. +0300). Uses the guest
+                // tm_gmtoff like the %Z handler above; with the epoch-relative
+                // clock this is +0000 (UTC).
+                let gmtoff: i32 = time_val.tm_gmtoff;
+                let (sign, abs) = if gmtoff < 0 { ('-', -gmtoff) } else { ('+', gmtoff) };
+                let hh = abs / 3600;
+                let mm = (abs % 3600) / 60;
+                res.extend_from_slice(format!("{}{:02}{:02}", sign, hh, mm).as_bytes());
+            }
             b'd' => {
                 let day = time_val.tm_mday.clamp(1, 31);
                 let formatted_day = format!("{:02}", day);
@@ -879,6 +889,18 @@ fn strftime(
                 let formatted_year = format!("{:02}", year);
                 res.extend_from_slice(formatted_year.as_bytes());
             }
+            b'z' => {
+                // RFC 822 / ISO 8601 numeric offset: "+hhmm" / "-hhmm".
+                // Derived from tm_gmtoff exactly like glibc's implementation
+                // (tm_gmtoff is seconds east of UTC).
+                let offset_seconds = time_val.tm_gmtoff;
+                let sign = if offset_seconds < 0 { '-' } else { '+' };
+                let abs_offset = offset_seconds.abs();
+                let hh = abs_offset / 3600;
+                let mm = (abs_offset % 3600) / 60;
+                res.push(sign as u8);
+                res.extend_from_slice(format!("{:02}{:02}", hh, mm).as_bytes());
+            }
             b'Z' => {
                 let tz_ptr = time_val.tm_zone;
                 if tz_ptr.is_null() {
@@ -897,6 +919,17 @@ fn strftime(
                 let second = time_val.tm_sec.clamp(0, 60);
                 let formatted_second = format!("{:02}", second);
                 res.extend_from_slice(formatted_second.as_bytes());
+            }
+            b'z' => {
+                // Numeric UTC offset, e.g. "+0300". Derived from tm_gmtoff
+                // (seconds east of UTC); zones west produce a '-'.
+                let offset_seconds = time_val.tm_gmtoff as i64;
+                let sign = if offset_seconds < 0 { '-' } else { '+' };
+                let abs_offset = offset_seconds.abs();
+                let hours = abs_offset / 3600;
+                let minutes = (abs_offset % 3600) / 60;
+                let formatted_offset = format!("{}{:02}{:02}", sign, hours, minutes);
+                res.extend_from_slice(formatted_offset.as_bytes());
             }
             other => {
                 // Unsupported format specifier in strftime(). Emit it

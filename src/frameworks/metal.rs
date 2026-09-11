@@ -12,7 +12,8 @@
 
 use crate::dyld::{ConstantExports, HostDylib};
 use crate::frameworks::foundation::{ns_string, NSUInteger};
-use crate::mem::{ConstVoidPtr, GuestUSize, MutPtr, MutVoidPtr};
+use crate::frameworks::core_graphics::cg_geometry::CGSize;
+use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, MutPtr, MutVoidPtr};
 use crate::objc::{id, msg, msg_class, nil, objc_classes, ClassExports, HostObject, NSZonePtr};
 use crate::Environment;
 
@@ -52,6 +53,9 @@ struct MetalObjectHostObject {
     store_action: NSUInteger,
     clear_color: [f64; 4],
     command_buffer: id,
+    layouts: id,
+    attributes: id,
+    stride: NSUInteger,
 }
 impl HostObject for MetalObjectHostObject {}
 
@@ -81,6 +85,14 @@ const CLASSES: ClassExports = objc_classes! {
 - (bool)hasUnifiedMemory { true }
 - (NSUInteger)recommendedMaxWorkingSetSize { 0 }
 - (bool)supportsFamily:(NSUInteger)_family { false }
+- (bool)supportsFeatureSet:(NSUInteger)_feature_set {
+    // Feature sets (iOS 5–11 era GPU capability tiers) — apps like Asphalt 8
+    // probe MTLDevice.supportsFeatureSet: to pick a rendering path. All real
+    // devices that ran these games support the iOS 8 feature sets, and the
+    // app degrades gracefully when told a newer set is available, so
+    // reporting true is the compatibility-maximising answer.
+    true
+}
 - (bool)supportsTextureSampleCount:(NSUInteger)count { count == 1 }
 - (id)newCommandQueue { msg_class![env; MTLCommandQueue new] }
 - (id)newCommandQueueWithMaxCommandBufferCount:(NSUInteger)_count { msg_class![env; MTLCommandQueue new] }
@@ -122,9 +134,25 @@ const CLASSES: ClassExports = objc_classes! {
     host.sample_count = sample_count;
     object
 }
+- (id)newLibraryWithSource:(id)_source options:(id)_options error:(MutPtr<id>)_error {
+    // Runtime shader compilation: the game compiles MSL at startup. Without a
+    // host GPU to translate it to, we hand back an object that behaves like an
+    // empty library — function lookups return real MTLFunction objects whose
+    // handles the app can attach to pipeline descriptors.
+    msg_class![env; MTLLibrary new]
+}
+- (id)newLibraryWithData:(ConstVoidPtr)_data error:(MutPtr<id>)_error { msg_class![env; MTLLibrary new] }
+- (id)newLibraryWithFile:(ConstPtr<u8>)_path error:(MutPtr<id>)_error { msg_class![env; MTLLibrary new] }
 - (id)newSamplerStateWithDescriptor:(id)_descriptor { msg_class![env; MTLSamplerState new] }
 - (id)newRenderPipelineStateWithDescriptor:(id)_descriptor error:(MutPtr<id>)_error { msg_class![env; MTLRenderPipelineState new] }
 - (id)newDepthStencilStateWithDescriptor:(id)_descriptor { msg_class![env; MTLDepthStencilState new] }
+- (bool)supportsFeatureSet:(NSUInteger)_feature_set {
+    // Asphalt 9 probes feature sets before creating its Metal device.
+    // The iOS 7-era feature sets (1-5) are universally supported by the
+    // GLES presentation path; later A9+ feature sets are reported as
+    // unsupported so apps pick their legacy pipeline.
+    _feature_set <= 5
+}
 
 @end
 
@@ -140,7 +168,7 @@ const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem)
 }
-- (id)renderCommandEncoderWithDescriptor:(id)_descriptor { msg_class![env; MTLRenderCommandEncoder new] }
+- (id)renderCommandEncoderWithDescriptor:(id)_descriptor { msg_class![env; RMTLRenderCommandEncoder new] }
 - (())commit {}
 - (())waitUntilCompleted {}
 - (())presentDrawable:(id)_drawable {}
@@ -225,9 +253,166 @@ const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
 @end
 
+@implementation MTLLibrary: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
+- (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+- (id)newFunctionWithName:(id)name {
+    let object = msg_class![env; MTLFunction new];
+    env.objc.borrow_mut::<MetalObjectHostObject>(object).label = name;
+    object
+}
+@end
+
+@implementation MTLFunction: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)name { env.objc.borrow::<MetalObjectHostObject>(this).label }
+- (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
+- (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+@end
+
+@implementation CAMetalLayer: NSObject
++ (id)layer { msg_class![env; CAMetalLayer new] }
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)device { env.objc.borrow::<MetalObjectHostObject>(this).device }
+- (())setDevice:(id)device { env.objc.borrow_mut::<MetalObjectHostObject>(this).device = device }
+- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
+- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
+- (id)nextDrawable { nil }
+- (CGSize)drawableSize {
+    // Apps read the layer size before resizing; the presentation path picks
+    // the size up from the surface, so an empty size is a safe default.
+    CGSize::default()
+}
+- (())setDrawableSize:(CGSize)_size {}
+@end
+
 @implementation MTLSamplerState: NSObject
 + (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
 @end
+
+@implementation MTLCompileOptions: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+// Properties on MTLCompileOptions are only consulted host-side; accept
+// the common ones so shader-compilation paths proceed.
+- (())setPreprocessorMacros:(id)_macros {}
+- (id)preprocessorMacros { nil }
+- (bool)fastMathEnabled { true }
+- (())setFastMathEnabled:(bool)_enabled {}
+- (())setLanguageVersion:(f32)_version {}
+- (f32)languageVersion { 1.0 }
+@end
+
+@implementation MTLVertexDescriptor: NSObject
++ (id)vertexDescriptor { msg_class![env; MTLVertexDescriptor new] }
++ (id)allocWithZone:(NSZonePtr)_zone {
+    let object = env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem);
+    let host = env.objc.borrow_mut::<MetalObjectHostObject>(object);
+    host.layouts = nil;
+    host.attributes = nil;
+    object
+}
+- (id)init { this }
+- (id)layouts {
+    let existing = env.objc.borrow::<MetalObjectHostObject>(this).layouts;
+    if existing != nil { return existing; }
+    let layouts = msg_class![env; MTLVertexBufferLayoutDescriptorArray new];
+    env.objc.borrow_mut::<MetalObjectHostObject>(this).layouts = layouts;
+    layouts
+}
+- (id)attributes {
+    let existing = env.objc.borrow::<MetalObjectHostObject>(this).attributes;
+    if existing != nil { return existing; }
+    let attributes = msg_class![env; MTLVertexAttributeDescriptorArray new];
+    env.objc.borrow_mut::<MetalObjectHostObject>(this).attributes = attributes;
+    attributes
+}
+- (NSUInteger)stride { env.objc.borrow::<MetalObjectHostObject>(this).stride }
+- (())setStride:(NSUInteger)stride { env.objc.borrow_mut::<MetalObjectHostObject>(this).stride = stride }
+@end
+
+@implementation MTLVertexBufferLayoutDescriptorArray: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)objectAtIndexedSubscript:(NSUInteger)_index { msg_class![env; MTLVertexBufferLayoutDescriptor new] }
+- (id)objectAtIndex:(NSUInteger)_index { msg![env; this objectAtIndexedSubscript:_index] }
+@end
+
+@implementation MTLVertexBufferLayoutDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (NSUInteger)stride { env.objc.borrow::<MetalObjectHostObject>(this).stride }
+- (())setStride:(NSUInteger)stride { env.objc.borrow_mut::<MetalObjectHostObject>(this).stride = stride }
+@end
+
+@implementation MTLVertexAttributeDescriptorArray: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)objectAtIndexedSubscript:(NSUInteger)_index { msg_class![env; MTLVertexAttributeDescriptor new] }
+- (id)objectAtIndex:(NSUInteger)_index { msg![env; this objectAtIndexedSubscript:_index] }
+@end
+
+@implementation MTLVertexAttributeDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (NSUInteger)format { 0 }
+- (())setFormat:(NSUInteger)_format {}
+- (NSUInteger)offset { 0 }
+- (())setOffset:(NSUInteger)_offset {}
+- (NSUInteger)bufferIndex { 0 }
+- (())setBufferIndex:(NSUInteger)_index {}
+@end
+
+@implementation MTLSamplerDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (NSUInteger)minFilter { env.objc.borrow::<MetalObjectHostObject>(this).usage }
+- (())setMinFilter:(NSUInteger)filter { env.objc.borrow_mut::<MetalObjectHostObject>(this).usage = filter }
+- (NSUInteger)magFilter { env.objc.borrow::<MetalObjectHostObject>(this).storage_mode }
+- (())setMagFilter:(NSUInteger)filter { env.objc.borrow_mut::<MetalObjectHostObject>(this).storage_mode = filter }
+- (NSUInteger)mipFilter { env.objc.borrow::<MetalObjectHostObject>(this).load_action }
+- (())setMipFilter:(NSUInteger)filter { env.objc.borrow_mut::<MetalObjectHostObject>(this).load_action = filter }
+- (NSUInteger)addressModeS { 0 }
+- (())setAddressModeS:(NSUInteger)_mode {}
+- (NSUInteger)addressModeT { 0 }
+- (())setAddressModeT:(NSUInteger)_mode {}
+- (NSUInteger)addressModeR { 0 }
+- (())setAddressModeR:(NSUInteger)_mode {}
+- (NSUInteger)addressModeW { 0 }
+- (())setAddressModeW:(NSUInteger)_mode {}
+- (NSUInteger)compareFunction { 0 }
+- (())setCompareFunction:(NSUInteger)_function {}
+- (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
+- (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+@end
+
+@implementation MTLDepthStencilDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)depthCompareFunction { env.objc.borrow::<MetalObjectHostObject>(this).device }
+- (())setDepthCompareFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).device = function }
+- (bool)depthWriteEnabled { env.objc.borrow::<MetalObjectHostObject>(this).usage != 0 }
+- (())setDepthWriteEnabled:(bool)enabled { env.objc.borrow_mut::<MetalObjectHostObject>(this).usage = enabled as NSUInteger }
+- (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
+- (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+@end
+
+@implementation MTLRenderPipelineDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (id)vertexDescriptor { env.objc.borrow::<MetalObjectHostObject>(this).layouts }
+- (())setVertexDescriptor:(id)descriptor { env.objc.borrow_mut::<MetalObjectHostObject>(this).layouts = descriptor }
+- (id)colorAttachments { msg_class![env; MTLRenderPassColorAttachmentDescriptorArray new] }
+- (NSUInteger)sampleCount { env.objc.borrow::<MetalObjectHostObject>(this).sample_count }
+- (())setSampleCount:(NSUInteger)count { env.objc.borrow_mut::<MetalObjectHostObject>(this).sample_count = count }
+- (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
+- (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+@end
+
 
 };
 

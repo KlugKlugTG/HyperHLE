@@ -88,6 +88,25 @@ fn asl_set_filter(_env: &mut Environment, _client: MutVoidPtr, _mask: i32) -> i3
     0
 }
 
+/// Legacy convenience wrapper (iOS 7+, deprecated in 10.0): games such as
+/// Asphalt 9 log through this instead of the `asl_*` handle-based API.
+/// It is `printf`-variadic in C, so only the fixed prefix is registered;
+/// the message is forwarded to the host log rather than silently dropped.
+fn asl_log_message(
+    _env: &mut Environment,
+    level: i32,
+    format: ConstPtr<u8>,
+) -> i32 {
+    if let Ok(message) = _env.mem.cstr_at_utf8(format) {
+        log_dbg!(
+            "asl_log_message(level={}): {}",
+            level,
+            message
+        );
+    }
+    0
+}
+
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(asl_open(_, _, _)),
     export_c_func!(asl_close(_)),
@@ -102,4 +121,5 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(asl_add_log_file(_, _)),
     export_c_func!(asl_remove_log_file(_, _)),
     export_c_func!(asl_set_filter(_, _)),
+    export_c_func!(asl_log_message(_, _)),
 ];

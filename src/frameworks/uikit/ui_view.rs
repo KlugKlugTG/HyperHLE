@@ -1879,6 +1879,13 @@ pub const CLASSES: ClassExports = objc_classes! {
     msg![env; this_layer convertRect:rect toLayer:other_layer]
 }
 
+- (id)traitCollection {
+    // iOS ≥ 8 asks views for their trait collection. Returning nil is the
+    // documented legacy behaviour for views not in a trait environment and
+    // satisfies engines probing for size classes without crashing.
+    nil
+}
+
 - (CGSize)sizeThatFits:(CGSize)size { size }
 
 - (())sizeToFit {
