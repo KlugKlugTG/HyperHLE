@@ -75,6 +75,10 @@ struct MetalObjectHostObject {
     read_mask: NSUInteger,
     frame: CGRect,
     bounds: CGRect,
+    vertex_function: id,
+    fragment_function: id,
+    depth_pixel_format: NSUInteger,
+    stencil_pixel_format: NSUInteger,
 }
 impl HostObject for MetalObjectHostObject {}
 
@@ -188,9 +192,11 @@ const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem)
 }
 - (id)renderCommandEncoderWithDescriptor:(id)_descriptor { msg_class![env; RMTLRenderCommandEncoder new] }
+- (())enqueue {}
 - (())commit {}
 - (())waitUntilCompleted {}
 - (())presentDrawable:(id)_drawable {}
+- (id)device { env.objc.borrow::<MetalObjectHostObject>(this).command_buffer }
 - (NSUInteger)status { 0 }
 @end
 
@@ -222,8 +228,21 @@ const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem)
 }
-- (id)objectAtIndexedSubscript:(NSUInteger)_index { msg_class![env; MTLRenderPassColorAttachmentDescriptor new] }
-- (id)objectAtIndex:(NSUInteger)_index { msg![env; this objectAtIndexedSubscript:_index] }
+- (id)objectAtIndexedSubscript:(NSUInteger)index {
+    if index == 0 {
+        let stored = env.objc.borrow::<MetalObjectHostObject>(this).device;
+        if stored != nil {
+            return stored;
+        }
+    }
+    msg_class![env; MTLRenderPassColorAttachmentDescriptor new]
+}
+- (id)objectAtIndex:(NSUInteger)index { msg![env; this objectAtIndexedSubscript:index] }
+- (())setObject:(id)obj atIndexedSubscript:(NSUInteger)index {
+    if index == 0 {
+        env.objc.borrow_mut::<MetalObjectHostObject>(this).device = obj;
+    }
+}
 @end
 
 @implementation MTLRenderPassColorAttachmentDescriptor: NSObject
@@ -290,6 +309,26 @@ const CLASSES: ClassExports = objc_classes! {
 - (id)name { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+- (id)vertexFunction { env.objc.borrow::<MetalObjectHostObject>(this).vertex_function }
+- (())setVertexFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).vertex_function = function }
+- (id)fragmentFunction { env.objc.borrow::<MetalObjectHostObject>(this).fragment_function }
+- (())setFragmentFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).fragment_function = function }
+- (NSUInteger)depthAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).depth_pixel_format }
+- (())setDepthAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).depth_pixel_format = format }
+- (NSUInteger)stencilAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).stencil_pixel_format }
+- (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
+@end
+
+@implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
+- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
+- (bool)blendingEnabled { false }
+- (())setBlendingEnabled:(bool)_enabled {}
+- (NSUInteger)sourceRGBBlendFactor { 1 }
+- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
+- (NSUInteger)destinationRGBBlendFactor { 0 }
+- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
 @end
 
 @implementation CAMetalLayer: NSObject
@@ -435,6 +474,26 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setNormalizedCoordinates:(bool)normalized { env.objc.borrow_mut::<MetalObjectHostObject>(this).normalized_coordinates = normalized }
 - (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+- (id)vertexFunction { env.objc.borrow::<MetalObjectHostObject>(this).vertex_function }
+- (())setVertexFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).vertex_function = function }
+- (id)fragmentFunction { env.objc.borrow::<MetalObjectHostObject>(this).fragment_function }
+- (())setFragmentFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).fragment_function = function }
+- (NSUInteger)depthAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).depth_pixel_format }
+- (())setDepthAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).depth_pixel_format = format }
+- (NSUInteger)stencilAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).stencil_pixel_format }
+- (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
+@end
+
+@implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
+- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
+- (bool)blendingEnabled { false }
+- (())setBlendingEnabled:(bool)_enabled {}
+- (NSUInteger)sourceRGBBlendFactor { 1 }
+- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
+- (NSUInteger)destinationRGBBlendFactor { 0 }
+- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
 @end
 
 @implementation MTLDepthStencilDescriptor: NSObject
@@ -460,6 +519,26 @@ const CLASSES: ClassExports = objc_classes! {
 }
 - (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+- (id)vertexFunction { env.objc.borrow::<MetalObjectHostObject>(this).vertex_function }
+- (())setVertexFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).vertex_function = function }
+- (id)fragmentFunction { env.objc.borrow::<MetalObjectHostObject>(this).fragment_function }
+- (())setFragmentFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).fragment_function = function }
+- (NSUInteger)depthAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).depth_pixel_format }
+- (())setDepthAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).depth_pixel_format = format }
+- (NSUInteger)stencilAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).stencil_pixel_format }
+- (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
+@end
+
+@implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
+- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
+- (bool)blendingEnabled { false }
+- (())setBlendingEnabled:(bool)_enabled {}
+- (NSUInteger)sourceRGBBlendFactor { 1 }
+- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
+- (NSUInteger)destinationRGBBlendFactor { 0 }
+- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
 @end
 
 @implementation MTLStencilDescriptor: NSObject
@@ -489,6 +568,26 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setSampleCount:(NSUInteger)count { env.objc.borrow_mut::<MetalObjectHostObject>(this).sample_count = count }
 - (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+- (id)vertexFunction { env.objc.borrow::<MetalObjectHostObject>(this).vertex_function }
+- (())setVertexFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).vertex_function = function }
+- (id)fragmentFunction { env.objc.borrow::<MetalObjectHostObject>(this).fragment_function }
+- (())setFragmentFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).fragment_function = function }
+- (NSUInteger)depthAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).depth_pixel_format }
+- (())setDepthAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).depth_pixel_format = format }
+- (NSUInteger)stencilAttachmentPixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).stencil_pixel_format }
+- (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
+@end
+
+@implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
+- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
+- (bool)blendingEnabled { false }
+- (())setBlendingEnabled:(bool)_enabled {}
+- (NSUInteger)sourceRGBBlendFactor { 1 }
+- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
+- (NSUInteger)destinationRGBBlendFactor { 0 }
+- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
 @end
 
 
