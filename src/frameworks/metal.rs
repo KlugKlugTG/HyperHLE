@@ -12,7 +12,7 @@
 
 use crate::dyld::{ConstantExports, HostDylib};
 use crate::frameworks::foundation::{ns_string, NSUInteger};
-use crate::frameworks::core_graphics::cg_geometry::CGSize;
+use crate::frameworks::core_graphics::cg_geometry::{CGRect, CGSize};
 use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, MutPtr, MutVoidPtr};
 use crate::objc::{id, msg, msg_class, nil, objc_classes, ClassExports, HostObject, NSZonePtr};
 use crate::Environment;
@@ -56,6 +56,23 @@ struct MetalObjectHostObject {
     layouts: id,
     attributes: id,
     stride: NSUInteger,
+    s_address_mode: NSUInteger,
+    t_address_mode: NSUInteger,
+    r_address_mode: NSUInteger,
+    lod_min_clamp: f32,
+    lod_max_clamp: f32,
+    max_anisotropy: NSUInteger,
+    normalized_coordinates: bool,
+    front_stencil: id,
+    back_stencil: id,
+    step_function: NSUInteger,
+    step_rate: NSUInteger,
+    stencil_compare_function: NSUInteger,
+    stencil_failure_operation: NSUInteger,
+    depth_failure_operation: NSUInteger,
+    depth_stencil_pass_operation: NSUInteger,
+    write_mask: NSUInteger,
+    read_mask: NSUInteger,
 }
 impl HostObject for MetalObjectHostObject {}
 
@@ -288,6 +305,10 @@ const CLASSES: ClassExports = objc_classes! {
     CGSize::default()
 }
 - (())setDrawableSize:(CGSize)_size {}
+- (bool)isHidden { false }
+- (())setHidden:(bool)_hidden {}
+- (CGRect)frame { CGRect::default() }
+- (())setFrame:(CGRect)_frame {}
 @end
 
 @implementation MTLSamplerState: NSObject
@@ -340,6 +361,7 @@ const CLASSES: ClassExports = objc_classes! {
 - (id)init { this }
 - (id)objectAtIndexedSubscript:(NSUInteger)_index { msg_class![env; MTLVertexBufferLayoutDescriptor new] }
 - (id)objectAtIndex:(NSUInteger)_index { msg![env; this objectAtIndexedSubscript:_index] }
+- (())setObject:(id)_object atIndexedSubscript:(NSUInteger)_index {}
 @end
 
 @implementation MTLVertexBufferLayoutDescriptor: NSObject
@@ -347,6 +369,10 @@ const CLASSES: ClassExports = objc_classes! {
 - (id)init { this }
 - (NSUInteger)stride { env.objc.borrow::<MetalObjectHostObject>(this).stride }
 - (())setStride:(NSUInteger)stride { env.objc.borrow_mut::<MetalObjectHostObject>(this).stride = stride }
+- (NSUInteger)stepFunction { env.objc.borrow::<MetalObjectHostObject>(this).step_function }
+- (())setStepFunction:(NSUInteger)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).step_function = function }
+- (NSUInteger)stepRate { env.objc.borrow::<MetalObjectHostObject>(this).step_rate }
+- (())setStepRate:(NSUInteger)rate { env.objc.borrow_mut::<MetalObjectHostObject>(this).step_rate = rate }
 @end
 
 @implementation MTLVertexAttributeDescriptorArray: NSObject
@@ -354,6 +380,7 @@ const CLASSES: ClassExports = objc_classes! {
 - (id)init { this }
 - (id)objectAtIndexedSubscript:(NSUInteger)_index { msg_class![env; MTLVertexAttributeDescriptor new] }
 - (id)objectAtIndex:(NSUInteger)_index { msg![env; this objectAtIndexedSubscript:_index] }
+- (())setObject:(id)_object atIndexedSubscript:(NSUInteger)_index {}
 @end
 
 @implementation MTLVertexAttributeDescriptor: NSObject
@@ -376,16 +403,31 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setMagFilter:(NSUInteger)filter { env.objc.borrow_mut::<MetalObjectHostObject>(this).storage_mode = filter }
 - (NSUInteger)mipFilter { env.objc.borrow::<MetalObjectHostObject>(this).load_action }
 - (())setMipFilter:(NSUInteger)filter { env.objc.borrow_mut::<MetalObjectHostObject>(this).load_action = filter }
-- (NSUInteger)addressModeS { 0 }
-- (())setAddressModeS:(NSUInteger)_mode {}
-- (NSUInteger)addressModeT { 0 }
-- (())setAddressModeT:(NSUInteger)_mode {}
-- (NSUInteger)addressModeR { 0 }
-- (())setAddressModeR:(NSUInteger)_mode {}
+- (NSUInteger)addressModeS { env.objc.borrow::<MetalObjectHostObject>(this).s_address_mode }
+- (())setAddressModeS:(NSUInteger)mode { env.objc.borrow_mut::<MetalObjectHostObject>(this).s_address_mode = mode }
+// The SDK also spells the address-mode properties with S/T/R prefixes.
+- (NSUInteger)sAddressMode { env.objc.borrow::<MetalObjectHostObject>(this).s_address_mode }
+- (())setSAddressMode:(NSUInteger)mode { env.objc.borrow_mut::<MetalObjectHostObject>(this).s_address_mode = mode }
+- (NSUInteger)addressModeT { env.objc.borrow::<MetalObjectHostObject>(this).t_address_mode }
+- (())setAddressModeT:(NSUInteger)mode { env.objc.borrow_mut::<MetalObjectHostObject>(this).t_address_mode = mode }
+- (NSUInteger)tAddressMode { env.objc.borrow::<MetalObjectHostObject>(this).t_address_mode }
+- (())setTAddressMode:(NSUInteger)mode { env.objc.borrow_mut::<MetalObjectHostObject>(this).t_address_mode = mode }
+- (NSUInteger)addressModeR { env.objc.borrow::<MetalObjectHostObject>(this).r_address_mode }
+- (())setAddressModeR:(NSUInteger)mode { env.objc.borrow_mut::<MetalObjectHostObject>(this).r_address_mode = mode }
+- (NSUInteger)rAddressMode { env.objc.borrow::<MetalObjectHostObject>(this).r_address_mode }
+- (())setRAddressMode:(NSUInteger)mode { env.objc.borrow_mut::<MetalObjectHostObject>(this).r_address_mode = mode }
 - (NSUInteger)addressModeW { 0 }
 - (())setAddressModeW:(NSUInteger)_mode {}
 - (NSUInteger)compareFunction { 0 }
 - (())setCompareFunction:(NSUInteger)_function {}
+- (f32)lodMinClamp { env.objc.borrow::<MetalObjectHostObject>(this).lod_min_clamp }
+- (())setLodMinClamp:(f32)clamp { env.objc.borrow_mut::<MetalObjectHostObject>(this).lod_min_clamp = clamp }
+- (f32)lodMaxClamp { env.objc.borrow::<MetalObjectHostObject>(this).lod_max_clamp }
+- (())setLodMaxClamp:(f32)clamp { env.objc.borrow_mut::<MetalObjectHostObject>(this).lod_max_clamp = clamp }
+- (NSUInteger)maxAnisotropy { env.objc.borrow::<MetalObjectHostObject>(this).max_anisotropy }
+- (())setMaxAnisotropy:(NSUInteger)anisotropy { env.objc.borrow_mut::<MetalObjectHostObject>(this).max_anisotropy = anisotropy }
+- (bool)normalizedCoordinates { env.objc.borrow::<MetalObjectHostObject>(this).normalized_coordinates }
+- (())setNormalizedCoordinates:(bool)normalized { env.objc.borrow_mut::<MetalObjectHostObject>(this).normalized_coordinates = normalized }
 - (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
 @end
@@ -393,12 +435,43 @@ const CLASSES: ClassExports = objc_classes! {
 @implementation MTLDepthStencilDescriptor: NSObject
 + (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
 - (id)init { this }
-- (id)depthCompareFunction { env.objc.borrow::<MetalObjectHostObject>(this).device }
-- (())setDepthCompareFunction:(id)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).device = function }
-- (bool)depthWriteEnabled { env.objc.borrow::<MetalObjectHostObject>(this).usage != 0 }
-- (())setDepthWriteEnabled:(bool)enabled { env.objc.borrow_mut::<MetalObjectHostObject>(this).usage = enabled as NSUInteger }
+- (NSUInteger)depthCompareFunction { env.objc.borrow::<MetalObjectHostObject>(this).usage }
+- (())setDepthCompareFunction:(NSUInteger)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).usage = function }
+- (bool)depthWriteEnabled { env.objc.borrow::<MetalObjectHostObject>(this).sample_count != 0 }
+- (())setDepthWriteEnabled:(bool)enabled { env.objc.borrow_mut::<MetalObjectHostObject>(this).sample_count = enabled as NSUInteger }
+- (id)frontFaceStencil {
+    let existing = env.objc.borrow::<MetalObjectHostObject>(this).front_stencil;
+    if existing != nil { return existing; }
+    let stencil = msg_class![env; MTLStencilDescriptor new];
+    env.objc.borrow_mut::<MetalObjectHostObject>(this).front_stencil = stencil;
+    stencil
+}
+- (id)backFaceStencil {
+    let existing = env.objc.borrow::<MetalObjectHostObject>(this).back_stencil;
+    if existing != nil { return existing; }
+    let stencil = msg_class![env; MTLStencilDescriptor new];
+    env.objc.borrow_mut::<MetalObjectHostObject>(this).back_stencil = stencil;
+    stencil
+}
 - (id)label { env.objc.borrow::<MetalObjectHostObject>(this).label }
 - (())setLabel:(id)label { env.objc.borrow_mut::<MetalObjectHostObject>(this).label = label }
+@end
+
+@implementation MTLStencilDescriptor: NSObject
++ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
+- (id)init { this }
+- (NSUInteger)stencilCompareFunction { env.objc.borrow::<MetalObjectHostObject>(this).stencil_compare_function }
+- (())setStencilCompareFunction:(NSUInteger)function { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_compare_function = function }
+- (NSUInteger)stencilFailureOperation { env.objc.borrow::<MetalObjectHostObject>(this).stencil_failure_operation }
+- (())setStencilFailureOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_failure_operation = operation }
+- (NSUInteger)depthFailureOperation { env.objc.borrow::<MetalObjectHostObject>(this).depth_failure_operation }
+- (())setDepthFailureOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).depth_failure_operation = operation }
+- (NSUInteger)depthStencilPassOperation { env.objc.borrow::<MetalObjectHostObject>(this).depth_stencil_pass_operation }
+- (())setDepthStencilPassOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).depth_stencil_pass_operation = operation }
+- (NSUInteger)writeMask { env.objc.borrow::<MetalObjectHostObject>(this).write_mask }
+- (())setWriteMask:(NSUInteger)mask { env.objc.borrow_mut::<MetalObjectHostObject>(this).write_mask = mask }
+- (NSUInteger)readMask { env.objc.borrow::<MetalObjectHostObject>(this).read_mask }
+- (())setReadMask:(NSUInteger)mask { env.objc.borrow_mut::<MetalObjectHostObject>(this).read_mask = mask }
 @end
 
 @implementation MTLRenderPipelineDescriptor: NSObject
