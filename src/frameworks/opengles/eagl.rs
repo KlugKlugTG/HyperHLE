@@ -265,47 +265,15 @@ pub const CLASSES: ClassExports = objc_classes! {
         return false;
     };
 
-    // We're presenting to the opaque CAEAGLLayer that covers the screen.
-    // We can use the fast path where we skip composition and present directly.
-    //DebugPresentPath
-    log!("DEBUG_EAGL: presentRenderbuffer: target={}, drawable={:?}, fullscreen_layer={:?}", target, drawable, fullscreen_layer);
-    if drawable == fullscreen_layer {
-        log!(
-            "DEBUG_EAGL: Layer {:?} IS fullscreen layer. Fast path ACTIVE. renderbuffer: {:?}",
-            drawable,
-            renderbuffer,
-        );
-        // re-borrow
-        unsafe {
-            present_renderbuffer(env);
-        }
-    } else {
-        if fullscreen_layer != nil {
-            log!("DEBUG_EAGL: Layer {:?} is NOT fullscreen layer {:?}. Rendering to RAM (SLOW PATH) or skipped!", drawable, fullscreen_layer);
-            // If there's a single layer that covers the screen, and this isn't
-            // it, there's no point in presenting the output because it won't be
-            // seen. Using a noisy log because it's a weird scenario and might
-            // indicate a bug.
-            log!(
-                "Layer {:?} is not the fullscreen layer {:?}, skipping presentation of renderbuffer {:?}!",
-                drawable,
-                fullscreen_layer,
-                renderbuffer,
-            );
-            if let Some(sleep_for) = sleep_for {
-                env.sleep(sleep_for);
-            }
-            return true;
-        }
-
-        let pixels_vec = get_pixels_vec_for_presenting(env, drawable);
-        let (pixels_vec, width, height) = {
-            let mut gles = super::sync_context(&mut env.framework_state.opengles, &mut env.objc, env.window.as_mut().unwrap(), env.current_thread).unwrap();
-            unsafe {
-                read_renderbuffer(gles.as_mut(), pixels_vec)
-            }
-        };
-        present_pixels(env, drawable, pixels_vec, width, height);
+    // Like on real iOS, [EAGLContext presentRenderbuffer:] always presents the
+    // renderbuffer to the CAEAGLLayer it is bound to — unconditionally. Gating
+    // the presentation on a "is this THE fullscreen layer" comparison broke
+    // when an app had two fullscreen EAGL layers of the same size (Asphalt 8:
+    // loading screen + game), since the heuristic could latch onto the other
+    // layer and skip every presentation, leaving a permanent black screen.
+    log!("DEBUG_EAGL: presentRenderbuffer: target={}, drawable={:?}", target, drawable);
+    unsafe {
+        present_renderbuffer(env);
     }
 
     if let Some(sleep_for) = sleep_for {
