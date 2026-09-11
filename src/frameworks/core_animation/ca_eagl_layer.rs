@@ -192,38 +192,52 @@ pub fn find_fullscreen_eagl_layer(env: &mut Environment) -> id {
     }
 
     let windows = env.framework_state.uikit.ui_view.ui_window.windows.clone();
-    let Some(top_window) = windows
+    // Assumes the windows in the list are ordered back-to-front.
+    let mut top_window = windows
         .into_iter()
         .rev()
         .find(|&window| !msg![env; window isHidden])
-    else {
+        .unwrap_or(nil);
+
+    // FallbackToHackWindow
+    let hack_bits = *crate::libc::stdlib::HACK_MAIN_WINDOW.lock().unwrap();
+    if top_window == nil && hack_bits != 0 {
+        top_window = crate::mem::Ptr::from_bits(hack_bits);
+    }
+
+    if top_window == nil {
         return nil;
-    };
+    }
 
-    let screen_bounds: CGRect = {
-        let screen: id = msg_class![env; UIScreen mainScreen];
-        msg![env; screen bounds]
-    };
-
+    // RevertToLoop
     let mut layer: id = msg![env; top_window layer];
+    if layer == nil {
+        return nil;
+    }
+    //DebugFindLayer
+    log!(
+        "DEBUG_CAEAGL: find_fullscreen_eagl_layer START. top_window: {:?}",
+        top_window
+    );
 
     loop {
-        // assert!(layer != nil);
-
         let layer_host_obj: &CALayerHostObject = env.objc.borrow(layer);
+        let b = layer_host_obj.bounds;
+        //FixPackedStructLog
+        let bx = b.origin.x;
+        let by = b.origin.y;
+        let bw = b.size.width;
+        let bh = b.size.height;
+        log!(
+            "DEBUG_CAEAGL: Inspecting layer: {:?} | bounds: x={},y={},w={},h={} | hidden: {}, opacity: {}",
+            layer, bx, by, bw, bh, layer_host_obj.hidden, layer_host_obj.opacity
+        );
 
-        if layer_host_obj.bounds.size != screen_bounds.size
-            || layer_host_obj.bounds.origin != (CGPoint { x: 0.0, y: 0.0 })
-            || layer_host_obj.anchor_point != (CGPoint { x: 0.5, y: 0.5 })
-            || layer_host_obj.position
-                != (CGPoint {
-                    x: screen_bounds.size.width / 2.0,
-                    y: screen_bounds.size.height / 2.0,
-                })
-            || layer_host_obj.hidden
-            || layer_host_obj.opacity != 1.0
-            || !layer_host_obj.affine_transform.is_identity()
-        {
+        // BypassStrictBounds: XaView found strict bounds checks break Asphalt 8's
+        // layer tree (ad overlays, transformed root views); only reject hidden
+        // or fully transparent layers.
+        if layer_host_obj.hidden || layer_host_obj.opacity == 0.0 {
+            log!("DEBUG_CAEAGL: Layer hidden/transparent, returning nil.");
             return nil;
         }
 
@@ -234,15 +248,24 @@ pub fn find_fullscreen_eagl_layer(env: &mut Environment) -> id {
         }
     }
 
-    if !env.objc.borrow::<CALayerHostObject>(layer).opaque {
-        return nil;
-    }
-
+    // IgnoreOpaqueFlag: accept the deepest layer if it is the EAGL drawable,
+    // or even a plain layer that already carries presented pixels.
     let ca_eagl_layer_class: Class = msg_class![env; CAEAGLLayer class];
-    if !msg![env; layer isKindOfClass:ca_eagl_layer_class] {
+    let is_eagl: bool = msg![env; layer isKindOfClass:ca_eagl_layer_class];
+    let host: &CALayerHostObject = env.objc.borrow(layer);
+
+    log!(
+        "DEBUG_CAEAGL: Deepest layer: {:?} | is_eagl: {}, has_pixels: {}",
+        layer,
+        is_eagl,
+        host.presented_pixels.is_some()
+    );
+    if !is_eagl && host.presented_pixels.is_none() {
+        log!("DEBUG_CAEAGL: Not EAGL and no pixels, returning nil.");
         return nil;
     }
 
+    log!("DEBUG_CAEAGL: Found valid fullscreen layer: {:?}", layer);
     layer
 }
 
