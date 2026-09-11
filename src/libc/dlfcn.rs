@@ -71,6 +71,12 @@ fn dlopen(env: &mut Environment, path: ConstPtr<u8>, _mode: i32) -> MutVoidPtr {
         }
     };
 
+    // --- EKLENECEK KOD BAŞLANGICI ---
+    // Mono'nun sqlite3 arayışını çökmeden atlatması için global scope (RTLD_DEFAULT) döndürüyoruz.
+    if path_str.contains("sqlite3") {
+        return RTLD_DEFAULT;
+    }
+
     // Если библиотека не известна системе эмуляции (например,
     // кросс-платформенный фреймворк пытается
     // загрузить специфичный для другой платформы плагин), мы мягко отклоняем
