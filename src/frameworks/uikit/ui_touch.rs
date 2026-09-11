@@ -24,6 +24,12 @@ use crate::window::{Coords, Event, FingerId};
 use crate::Environment;
 use std::collections::hash_map::{Entry, HashMap};
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+/// Number of touch-down diagnostics to print at `log!` level (always visible)
+/// before going quiet. Helps diagnose "game ignores taps" reports without
+/// requiring the user to enable debug logging.
+static TOUCH_DIAGS_LEFT: AtomicUsize = AtomicUsize::new(12);
 
 pub type UITouchPhase = NSInteger;
 pub const UITouchPhaseBegan: UITouchPhase = 0;
@@ -431,12 +437,53 @@ fn touchhle_send_cocos_touch_aliases_to_chain(
     touches: id,
     event: id,
 ) {
+    // XaView A8 fix: touchHLE's responder chain has no view->viewController
+    // links, so game views owned by view controllers (Asphalt 8's CCEAGLView
+    // subclass) never receive Cocos touch aliases when a tap lands on a
+    // sibling/overlay UIView. Walk the ENTIRE view hierarchy under the
+    // touched view's top-level ancestor instead - the superview chain is a
+    // subset of it.
     let mut current = view;
     let mut depth = 0;
     while current != nil && depth < 32 {
-        touchhle_send_cocos_touch_aliases(env, current, phase, touches, event);
-        current = msg![env; current superview];
+        let superview: id = msg![env; current superview];
+        if superview == nil {
+            break;
+        }
+        current = superview;
         depth += 1;
+    }
+    touchhle_send_cocos_touch_aliases_to_hierarchy(env, current, phase, touches, event);
+}
+
+/// Send Cocos touch aliases (`ccTouchesBegan:` etc.) to every view in the
+/// view hierarchy rooted at `root` whose class responds to them. This makes
+/// up for touchHLE not modelling UIViewController responder-chain links.
+fn touchhle_send_cocos_touch_aliases_to_hierarchy(
+    env: &mut Environment,
+    root: id,
+    phase: &str,
+    touches: id,
+    event: id,
+) {
+    if root == nil {
+        return;
+    }
+    let mut stack: Vec<id> = vec![root];
+    let mut visited: HashSet<id> = HashSet::new();
+    while let Some(current) = stack.pop() {
+        if current == nil || !visited.insert(current) {
+            continue;
+        }
+        touchhle_send_cocos_touch_aliases(env, current, phase, touches, event);
+        let subviews: id = msg![env; current subviews];
+        if subviews != nil {
+            let count: NSUInteger = msg![env; subviews count];
+            for i in 0..count {
+                let child: id = msg![env; subviews objectAtIndex:i];
+                stack.push(child);
+            }
+        }
     }
 }
 
@@ -462,7 +509,7 @@ fn touchhle_is_shield_view(env: &mut Environment, view: id) -> bool {
         // A web view showing actual content (the ad has loaded and painted)
         // is a legitimate target; an invisible/blank one is a shield.
         let hidden: bool = msg![env; view isHidden];
-        let alpha: crate::frameworks::core_graphics::cg_geometry::CGFloat = msg![env; view alpha];
+        let alpha: crate::frameworks::core_graphics::CGFloat = msg![env; view alpha];
         if hidden || alpha == 0.0 {
             return true;
         }
@@ -480,9 +527,10 @@ fn touchhle_is_shield_view(env: &mut Environment, view: id) -> bool {
     let uiimageview_class = env.objc.get_known_class("UIImageView", &mut env.mem);
     let is_image: bool = msg![env; view isKindOfClass:uiimageview_class];
     if is_image {
-        // Invisible image overlays are the classic "shield" pattern.
-        let alpha: crate::frameworks::core_graphics::cg_geometry::CGFloat = msg![env; view alpha];
-        return alpha == 0.0;
+        // XaView A8 behavior: pierce through ALL image views. The loading
+        // splash is an opaque full-screen UIImageView stacked above the game
+        // view, so an alpha==0.0-only check let it swallow every tap.
+        return true;
     }
     false
 }
@@ -491,6 +539,9 @@ fn touchhle_find_game_touch_target(env: &mut Environment, root: id) -> id {
     if root == nil {
         return nil;
     }
+    // XaView A8 piercer: scan the top-level subviews of the window from top
+    // to bottom and route to the first custom (non-shield), visible,
+    // interaction-enabled view — that is the 3D game engine view.
     let subviews: id = msg![env; root subviews];
     if subviews != nil {
         let count: NSUInteger = msg![env; subviews count];
@@ -500,38 +551,22 @@ fn touchhle_find_game_touch_target(env: &mut Environment, root: id) -> id {
             if child_hidden {
                 continue;
             }
-            // Prefer explicit interactive descendants (buttons etc.).
-            let uicontrol_class = env.objc.get_known_class("UIControl", &mut env.mem);
-            let is_control: bool = msg![env; child isKindOfClass:uicontrol_class];
-            if is_control {
-                return child;
+            if touchhle_is_shield_view(env, child) {
+                continue;
             }
-            let found = touchhle_find_game_touch_target(env, child);
-            if found != nil {
-                return found;
+            let interactive: bool = msg![env; child isUserInteractionEnabled];
+            if !interactive {
+                continue;
             }
+            return child;
         }
     }
-    // Fall back to the deepest non-shield, interaction-enabled view that is
-    // not the root itself: for Asphalt 8 that is the Cocos2d/EAGL game view.
-    if touchhle_is_shield_view(env, root) {
-        return nil;
+    // Fall back to the deepest Cocos/EAGL-style view anywhere in the tree.
+    let cocos_target = touchhle_find_cocos_touch_target(env, root);
+    if cocos_target != nil {
+        return cocos_target;
     }
-    let enabled: bool = msg![env; root isUserInteractionEnabled];
-    if !enabled {
-        return nil;
-    }
-    let class_name = touchhle_cocos_view_class_name(env, root);
-    if touchhle_cocos_is_gl_or_game_view_name(&class_name)
-        || class_name.starts_with("CC")
-        || class_name.contains("GLView")
-        || class_name.contains("EAGL")
-        || class_name.contains("CCEAGL")
-    {
-        root
-    } else {
-        nil
-    }
+    nil
 }
 
 fn touchhle_find_cocos_touch_target(env: &mut Environment, root: id) -> id {
@@ -709,7 +744,7 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
                 );
                 view = target;
             } else {
-                log_dbg!(
+                log!(
                     "Shield piercer: hit shield {} but no game view found; keeping shield",
                     overlay_name
                 );
@@ -743,6 +778,39 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
                 class_name,
                 view,
                 f,
+            );
+        }
+
+        // Compact always-visible diagnostic for the first few touch-downs:
+        // shows which window/view received the tap so "game ignores taps"
+        // reports can be diagnosed from a normal log.
+        if TOUCH_DIAGS_LEFT.load(Ordering::Relaxed) > 0 {
+            TOUCH_DIAGS_LEFT.fetch_sub(1, Ordering::Relaxed);
+            let diag_x = location.x;
+            let diag_y = location.y;
+            let windows_count = env.framework_state.uikit.ui_view.ui_window.windows.len();
+            let win_class: crate::objc::Class = msg![env; window class];
+            let win_name = env.objc.get_class_name(win_class).to_owned();
+            let hit_name = if view != nil {
+                let c: crate::objc::Class = msg![env; view class];
+                env.objc.get_class_name(c).to_owned()
+            } else {
+                "(nil)".to_string()
+            };
+            let enabled: bool = if view != nil {
+                msg![env; view isUserInteractionEnabled]
+            } else {
+                false
+            };
+            log!(
+                "TOUCH-DIAG #{}: tap ({:.0},{:.0}) windows={} window={} -> view={} interactionEnabled={}",
+                12 - TOUCH_DIAGS_LEFT.load(Ordering::Relaxed),
+                diag_x,
+                diag_y,
+                windows_count,
+                win_name,
+                hit_name,
+                enabled,
             );
         }
 
