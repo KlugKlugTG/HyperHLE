@@ -192,7 +192,6 @@ pub fn find_fullscreen_eagl_layer(env: &mut Environment) -> id {
     }
 
     let windows = env.framework_state.uikit.ui_view.ui_window.windows.clone();
-    // Assumes the windows in the list are ordered back-to-front.
     let mut top_window = windows
         .into_iter()
         .rev()
@@ -209,64 +208,55 @@ pub fn find_fullscreen_eagl_layer(env: &mut Environment) -> id {
         return nil;
     }
 
-    // RevertToLoop
-    let mut layer: id = msg![env; top_window layer];
-    if layer == nil {
+    // XaView-style leniency, upgraded: Asphalt 8's layer tree contains small
+    // EAGL layers (ad widgets) stacked above the main game drawable. Instead
+    // of blindly following the deepest sublayer (which picks a 40x23 ad view
+    // and makes every presentRenderbuffer skip), collect ALL visible
+    // CAEAGLLayers in the tree and return the one with the largest area —
+    // that is the game's actual drawable.
+    let root_layer: id = msg![env; top_window layer];
+    if root_layer == nil {
         return nil;
     }
-    //DebugFindLayer
-    log!(
-        "DEBUG_CAEAGL: find_fullscreen_eagl_layer START. top_window: {:?}",
-        top_window
-    );
 
-    loop {
-        let layer_host_obj: &CALayerHostObject = env.objc.borrow(layer);
-        let b = layer_host_obj.bounds;
-        //FixPackedStructLog
-        let bx = b.origin.x;
-        let by = b.origin.y;
-        let bw = b.size.width;
-        let bh = b.size.height;
-        log!(
-            "DEBUG_CAEAGL: Inspecting layer: {:?} | bounds: x={},y={},w={},h={} | hidden: {}, opacity: {}",
-            layer, bx, by, bw, bh, layer_host_obj.hidden, layer_host_obj.opacity
-        );
+    let mut candidates: Vec<(id, f32)> = Vec::new();
+    collect_eagl_layers(env, root_layer, &mut candidates);
 
-        // BypassStrictBounds: XaView found strict bounds checks break Asphalt 8's
-        // layer tree (ad overlays, transformed root views); only reject hidden
-        // or fully transparent layers.
-        if layer_host_obj.hidden || layer_host_obj.opacity == 0.0 {
-            log!("DEBUG_CAEAGL: Layer hidden/transparent, returning nil.");
-            return nil;
-        }
-
-        if let Some(&next) = layer_host_obj.sublayers.last() {
-            layer = next;
-        } else {
-            break;
-        }
+    if candidates.is_empty() {
+        log!("DEBUG_CAEAGL: no visible CAEAGLLayer found in window tree, returning nil.");
+        return nil;
     }
 
-    // IgnoreOpaqueFlag: accept the deepest layer if it is the EAGL drawable,
-    // or even a plain layer that already carries presented pixels.
-    let ca_eagl_layer_class: Class = msg_class![env; CAEAGLLayer class];
-    let is_eagl: bool = msg![env; layer isKindOfClass:ca_eagl_layer_class];
-    let host: &CALayerHostObject = env.objc.borrow(layer);
-
+    // Prefer the largest-area drawable (the game's fullscreen layer).
+    candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+    let (layer, area) = candidates[0];
     log!(
-        "DEBUG_CAEAGL: Deepest layer: {:?} | is_eagl: {}, has_pixels: {}",
+        "DEBUG_CAEAGL: Found game drawable {:?} (area {}), {} candidate(s)",
         layer,
-        is_eagl,
-        host.presented_pixels.is_some()
+        area,
+        candidates.len()
     );
-    if !is_eagl && host.presented_pixels.is_none() {
-        log!("DEBUG_CAEAGL: Not EAGL and no pixels, returning nil.");
-        return nil;
+    layer
+}
+
+fn collect_eagl_layers(env: &mut Environment, layer: id, out: &mut Vec<(id, f32)>) {
+    let hidden: bool = msg![env; layer isHidden];
+    let opacity: CGFloat = msg![env; layer opacity];
+    if hidden || opacity == 0.0 {
+        return;
     }
 
-    log!("DEBUG_CAEAGL: Found valid fullscreen layer: {:?}", layer);
-    layer
+    let ca_eagl_layer_class: Class = msg_class![env; CAEAGLLayer class];
+    if msg![env; layer isKindOfClass:ca_eagl_layer_class] {
+        let host: &CALayerHostObject = env.objc.borrow(layer);
+        let area = host.bounds.size.width * host.bounds.size.height;
+        out.push((layer, area));
+    }
+
+    let host_obj: &CALayerHostObject = env.objc.borrow(layer);
+    for &sub in host_obj.sublayers.clone().iter() {
+        collect_eagl_layers(env, sub, out);
+    }
 }
 
 // =========================================================================

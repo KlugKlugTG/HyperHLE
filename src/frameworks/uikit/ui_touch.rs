@@ -604,15 +604,20 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             let uiimageview_class = env.objc.get_known_class("UIImageView", &mut env.mem);
             let is_image: bool = msg![env; view isKindOfClass:uiimageview_class];
             if is_generic || is_image {
+                let uiwebview_class = env.objc.get_known_class("UIWebView", &mut env.mem);
                 let subviews: id = msg![env; window subviews];
                 let count: NSUInteger = msg![env; subviews count];
                 for j in (0..count).rev() {
                     let v: id = msg![env; subviews objectAtIndex:j];
                     let v_is_generic: bool = msg![env; v isMemberOfClass:uiview_class];
                     let v_is_image: bool = msg![env; v isKindOfClass:uiimageview_class];
+                    // Ad web views (Asphalt 8) are custom subclasses of
+                    // UIView, not UIImageView, but they swallow every touch
+                    // while showing nothing — skip them too.
+                    let v_is_webview: bool = msg![env; v isKindOfClass:uiwebview_class];
                     let v_hidden: bool = msg![env; v isHidden];
                     let v_interactive: bool = msg![env; v isUserInteractionEnabled];
-                    if !v_is_generic && !v_is_image && !v_hidden && v_interactive {
+                    if !v_is_generic && !v_is_image && !v_is_webview && !v_hidden && v_interactive {
                         let overlay_class: crate::objc::Class = msg![env; view class];
                         let target_class: crate::objc::Class = msg![env; v class];
                         let overlay_name = env.objc.get_class_name(overlay_class).to_owned();
