@@ -12,8 +12,10 @@
 
 use crate::dyld::{ConstantExports, HostDylib};
 use crate::frameworks::foundation::{ns_string, NSUInteger};
+use crate::frameworks::core_animation::ca_layer::CALayerHostObject;
 use crate::frameworks::core_graphics::cg_geometry::{CGRect, CGSize};
 use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, MutPtr, MutVoidPtr};
+use crate::frameworks::core_graphics::CGFloat;
 use crate::objc::{id, msg, msg_class, nil, objc_classes, ClassExports, HostObject, NSZonePtr};
 use crate::Environment;
 
@@ -34,6 +36,7 @@ const MTL_LOAD_ACTION_LOAD: NSUInteger = 1;
 const MTL_LOAD_ACTION_CLEAR: NSUInteger = 2;
 const MTL_STORE_ACTION_DONT_CARE: NSUInteger = 0;
 const MTL_STORE_ACTION_STORE: NSUInteger = 1;
+const MAX_COLOR_ATTACHMENTS: usize = 8;
 
 #[derive(Default)]
 struct MetalObjectHostObject {
@@ -79,6 +82,14 @@ struct MetalObjectHostObject {
     fragment_function: id,
     depth_pixel_format: NSUInteger,
     stencil_pixel_format: NSUInteger,
+    blending_enabled: bool,
+    source_rgb_blend_factor: NSUInteger,
+    destination_rgb_blend_factor: NSUInteger,
+    source_alpha_blend_factor: NSUInteger,
+    destination_alpha_blend_factor: NSUInteger,
+    rgb_blend_operation: NSUInteger,
+    alpha_blend_operation: NSUInteger,
+    color_attachments: [id; MAX_COLOR_ATTACHMENTS],
 }
 impl HostObject for MetalObjectHostObject {}
 
@@ -185,6 +196,14 @@ const CLASSES: ClassExports = objc_classes! {
 }
 - (id)commandBuffer { let buffer = msg_class![env; MTLCommandBuffer new]; env.objc.borrow_mut::<MetalObjectHostObject>(buffer).command_buffer = this; buffer }
 - (id)commandBufferWithUnretainedReferences { msg![env; this commandBuffer] }
+- (id)newBufferWithLength:(NSUInteger)length options:(NSUInteger)options {
+    let device = env.objc.borrow::<MetalObjectHostObject>(this).device;
+    if device != nil {
+        msg![env; device newBufferWithLength:length options:options]
+    } else {
+        msg_class![env; MTLDevice newBufferWithLength:length options:options]
+    }
+}
 @end
 
 @implementation MTLCommandBuffer: NSObject
@@ -229,18 +248,21 @@ const CLASSES: ClassExports = objc_classes! {
     env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem)
 }
 - (id)objectAtIndexedSubscript:(NSUInteger)index {
-    if index == 0 {
-        let stored = env.objc.borrow::<MetalObjectHostObject>(this).device;
-        if stored != nil {
-            return stored;
-        }
+    if (index as usize) >= MAX_COLOR_ATTACHMENTS {
+        return msg_class![env; MTLRenderPassColorAttachmentDescriptor new];
     }
-    msg_class![env; MTLRenderPassColorAttachmentDescriptor new]
+    let stored = env.objc.borrow::<MetalObjectHostObject>(this).color_attachments[index as usize];
+    if stored != nil {
+        return stored;
+    }
+    let attachment = msg_class![env; MTLRenderPassColorAttachmentDescriptor new];
+    env.objc.borrow_mut::<MetalObjectHostObject>(this).color_attachments[index as usize] = attachment;
+    attachment
 }
 - (id)objectAtIndex:(NSUInteger)index { msg![env; this objectAtIndexedSubscript:index] }
 - (())setObject:(id)obj atIndexedSubscript:(NSUInteger)index {
-    if index == 0 {
-        env.objc.borrow_mut::<MetalObjectHostObject>(this).device = obj;
+    if (index as usize) < MAX_COLOR_ATTACHMENTS {
+        env.objc.borrow_mut::<MetalObjectHostObject>(this).color_attachments[index as usize] = obj;
     }
 }
 @end
@@ -255,7 +277,20 @@ const CLASSES: ClassExports = objc_classes! {
 - (NSUInteger)loadAction { env.objc.borrow::<MetalObjectHostObject>(this).load_action }
 - (())setStoreAction:(NSUInteger)action { env.objc.borrow_mut::<MetalObjectHostObject>(this).store_action = action }
 - (NSUInteger)storeAction { env.objc.borrow::<MetalObjectHostObject>(this).store_action }
-- (())setClearColor:(f64)color { env.objc.borrow_mut::<MetalObjectHostObject>(this).clear_color[0] = color }
+- (())setClearColor:(id)color {
+    let host = env.objc.borrow_mut::<MetalObjectHostObject>(this);
+    for component in 0usize..4 {
+        let value: f64 = if color == nil {
+            0.0
+        } else {
+            env.mem.read(color.cast::<f64>() + component as u32)
+        };
+        host.clear_color[component] = value;
+    }
+}
+- (id)clearColor { nil }
+- (())setResolveTexture:(id)texture { env.objc.borrow_mut::<MetalObjectHostObject>(this).device = texture }
+- (id)resolveTexture { env.objc.borrow::<MetalObjectHostObject>(this).device }
 @end
 
 @implementation MTLTexture: NSObject
@@ -323,36 +358,52 @@ const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
 - (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
 - (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
-- (bool)blendingEnabled { false }
-- (())setBlendingEnabled:(bool)_enabled {}
-- (NSUInteger)sourceRGBBlendFactor { 1 }
-- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
-- (NSUInteger)destinationRGBBlendFactor { 0 }
-- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
+- (bool)blendingEnabled { env.objc.borrow::<MetalObjectHostObject>(this).blending_enabled }
+- (())setBlendingEnabled:(bool)enabled { env.objc.borrow_mut::<MetalObjectHostObject>(this).blending_enabled = enabled }
+- (NSUInteger)sourceRGBBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).source_rgb_blend_factor }
+- (())setSourceRGBBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).source_rgb_blend_factor = factor }
+- (NSUInteger)destinationRGBBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).destination_rgb_blend_factor }
+- (())setDestinationRGBBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).destination_rgb_blend_factor = factor }
+- (NSUInteger)sourceAlphaBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).source_alpha_blend_factor }
+- (())setSourceAlphaBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).source_alpha_blend_factor = factor }
+- (NSUInteger)destinationAlphaBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).destination_alpha_blend_factor }
+- (())setDestinationAlphaBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).destination_alpha_blend_factor = factor }
+- (NSUInteger)rgbBlendOperation { env.objc.borrow::<MetalObjectHostObject>(this).rgb_blend_operation }
+- (())setRgbBlendOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).rgb_blend_operation = operation }
+- (NSUInteger)alphaBlendOperation { env.objc.borrow::<MetalObjectHostObject>(this).alpha_blend_operation }
+- (())setAlphaBlendOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).alpha_blend_operation = operation }
+- (NSUInteger)writeMask { env.objc.borrow::<MetalObjectHostObject>(this).write_mask }
+- (())setWriteMask:(NSUInteger)mask { env.objc.borrow_mut::<MetalObjectHostObject>(this).write_mask = mask }
 @end
 
 @implementation CAMetalLayer: NSObject
 + (id)layer { msg_class![env; CAMetalLayer new] }
-+ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
-- (id)init { this }
-- (id)device { env.objc.borrow::<MetalObjectHostObject>(this).device }
-- (())setDevice:(id)device { env.objc.borrow_mut::<MetalObjectHostObject>(this).device = device }
-- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
-- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
-- (id)nextDrawable { nil }
-- (CGSize)drawableSize {
-    // Apps read the layer size before resizing; the presentation path picks
-    // the size up from the surface, so an empty size is a safe default.
-    CGSize::default()
++ (id)allocWithZone:(NSZonePtr)_zone {
+    // CAMetalLayer subclasses CALayer, so it must carry a CALayerHostObject.
+    // Using the generic Metal host object here breaks every CALayer borrow
+    // made by the CoreAnimation compositor (the "SUPER HACK! Faking borrow"
+    // warnings in the logs).
+    env.objc.alloc_object(this, Box::new(crate::frameworks::core_animation::ca_layer::CALayerHostObject::default()), &mut env.mem)
 }
-- (())setDrawableSize:(CGSize)_size {}
+- (id)init { this }
+- (id)device { env.objc.borrow::<CALayerHostObject>(this).metal_device }
+- (())setDevice:(id)device { env.objc.borrow_mut::<CALayerHostObject>(this).metal_device = device }
+- (NSUInteger)pixelFormat { env.objc.borrow::<CALayerHostObject>(this).metal_pixel_format }
+- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<CALayerHostObject>(this).metal_pixel_format = format }
+- (id)nextDrawable { nil }
+- (CGSize)drawableSize { env.objc.borrow::<CALayerHostObject>(this).metal_drawable_size }
+- (())setDrawableSize:(CGSize)size { env.objc.borrow_mut::<CALayerHostObject>(this).metal_drawable_size = size }
 - (bool)isHidden { false }
 - (())setHidden:(bool)_hidden {}
-- (CGRect)frame { env.objc.borrow::<MetalObjectHostObject>(this).frame }
-- (())setFrame:(CGRect)frame { env.objc.borrow_mut::<MetalObjectHostObject>(this).frame = frame }
-- (CGRect)bounds { env.objc.borrow::<MetalObjectHostObject>(this).bounds }
-- (())setBounds:(CGRect)bounds { env.objc.borrow_mut::<MetalObjectHostObject>(this).bounds = bounds }
-- (CGSize)boundsSize { env.objc.borrow::<MetalObjectHostObject>(this).bounds.size }
+- (bool)framebufferOnly { env.objc.borrow::<CALayerHostObject>(this).metal_framebuffer_only }
+- (())setFramebufferOnly:(bool)only { env.objc.borrow_mut::<CALayerHostObject>(this).metal_framebuffer_only = only }
+- (CGRect)frame { msg![env; this bounds] }
+- (())setFrame:(CGRect)frame { env.objc.borrow_mut::<CALayerHostObject>(this).set_frame_metal(frame) }
+- (CGRect)bounds { env.objc.borrow::<CALayerHostObject>(this).get_bounds_frame() }
+- (())setBounds:(CGRect)bounds { env.objc.borrow_mut::<CALayerHostObject>(this).set_bounds_metal(bounds) }
+- (CGSize)boundsSize { env.objc.borrow::<CALayerHostObject>(this).get_bounds_frame().size }
+- (CGFloat)contentsScale { 1.0 }
+- (())setContentsScale:(CGFloat)_scale {}
 @end
 
 @implementation MTLSamplerState: NSObject
@@ -484,16 +535,25 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
 @end
 
+
 @implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
 + (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
 - (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
 - (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
-- (bool)blendingEnabled { false }
-- (())setBlendingEnabled:(bool)_enabled {}
-- (NSUInteger)sourceRGBBlendFactor { 1 }
-- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
-- (NSUInteger)destinationRGBBlendFactor { 0 }
-- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
+- (bool)blendingEnabled { env.objc.borrow::<MetalObjectHostObject>(this).blending_enabled }
+- (())setBlendingEnabled:(bool)enabled { env.objc.borrow_mut::<MetalObjectHostObject>(this).blending_enabled = enabled }
+- (NSUInteger)sourceRGBBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).source_rgb_blend_factor }
+- (())setSourceRGBBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).source_rgb_blend_factor = factor }
+- (NSUInteger)destinationRGBBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).destination_rgb_blend_factor }
+- (())setDestinationRGBBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).destination_rgb_blend_factor = factor }
+- (NSUInteger)sourceAlphaBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).source_alpha_blend_factor }
+- (())setSourceAlphaBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).source_alpha_blend_factor = factor }
+- (NSUInteger)destinationAlphaBlendFactor { env.objc.borrow::<MetalObjectHostObject>(this).destination_alpha_blend_factor }
+- (())setDestinationAlphaBlendFactor:(NSUInteger)factor { env.objc.borrow_mut::<MetalObjectHostObject>(this).destination_alpha_blend_factor = factor }
+- (NSUInteger)rgbBlendOperation { env.objc.borrow::<MetalObjectHostObject>(this).rgb_blend_operation }
+- (())setRgbBlendOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).rgb_blend_operation = operation }
+- (NSUInteger)alphaBlendOperation { env.objc.borrow::<MetalObjectHostObject>(this).alpha_blend_operation }
+- (())setAlphaBlendOperation:(NSUInteger)operation { env.objc.borrow_mut::<MetalObjectHostObject>(this).alpha_blend_operation = operation }
 @end
 
 @implementation MTLDepthStencilDescriptor: NSObject
@@ -529,17 +589,6 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
 @end
 
-@implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
-+ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
-- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
-- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
-- (bool)blendingEnabled { false }
-- (())setBlendingEnabled:(bool)_enabled {}
-- (NSUInteger)sourceRGBBlendFactor { 1 }
-- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
-- (NSUInteger)destinationRGBBlendFactor { 0 }
-- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
-@end
 
 @implementation MTLStencilDescriptor: NSObject
 + (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
@@ -578,17 +627,6 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setStencilAttachmentPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).stencil_pixel_format = format }
 @end
 
-@implementation MTLRenderPipelineColorAttachmentDescriptor: NSObject
-+ (id)allocWithZone:(NSZonePtr)_zone { env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem) }
-- (NSUInteger)pixelFormat { env.objc.borrow::<MetalObjectHostObject>(this).pixel_format }
-- (())setPixelFormat:(NSUInteger)format { env.objc.borrow_mut::<MetalObjectHostObject>(this).pixel_format = format }
-- (bool)blendingEnabled { false }
-- (())setBlendingEnabled:(bool)_enabled {}
-- (NSUInteger)sourceRGBBlendFactor { 1 }
-- (())setSourceRGBBlendFactor:(NSUInteger)_factor {}
-- (NSUInteger)destinationRGBBlendFactor { 0 }
-- (())setDestinationRGBBlendFactor:(NSUInteger)_factor {}
-@end
 
 
 };
