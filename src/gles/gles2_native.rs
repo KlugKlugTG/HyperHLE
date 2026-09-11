@@ -44,7 +44,10 @@ impl GLESContext for GLES2NativeContext {
         "Native OpenGL ES 2.0"
     }
 
-    fn new(window: &mut Window) -> Result<Self, String> {
+    fn new(
+        window: &mut Window,
+        options: &crate::options::Options,
+    ) -> Result<Self, String> {
         Ok(Self {
             gl_ctx: window.create_gl_context(GLVersion::GLES20)?,
             is_loaded: false,

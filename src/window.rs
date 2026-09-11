@@ -964,7 +964,7 @@ impl Window {
         // because SDL2 won't let us use more than one graphics API in the same
         // window, and we also need OpenGL ES for the app's own rendering.
         let mut gl_ins = if options.prefer_gles2_context {
-            create_gles2_ctx_no_parent_stack(&mut window)
+            create_gles2_ctx_no_parent_stack(&mut window, options)
         } else {
             create_gles1_ctx_no_parent_stack(&mut window, options)
         };

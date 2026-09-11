@@ -32,7 +32,10 @@ pub trait GLESContext {
     /// Construct a new context. This might fail if the host OS doesn't have a
     /// compatible driver, for example.
     #[allow(clippy::new_ret_no_self)]
-    fn new(window: &mut crate::window::Window) -> Result<Self, String>
+    fn new(
+        window: &mut crate::window::Window,
+        options: &crate::options::Options,
+    ) -> Result<Self, String>
     where
         Self: Sized;
 

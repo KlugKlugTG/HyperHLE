@@ -55,7 +55,10 @@ impl GLESContext for GLES2OnGL3Context {
         "OpenGL ES 2.0 on OpenGL 3.3 Core"
     }
 
-    fn new(window: &mut Window) -> Result<Self, String> {
+    fn new(
+        window: &mut Window,
+        options: &crate::options::Options,
+    ) -> Result<Self, String> {
         Ok(Self {
             inner: GLES3OnGL3Context::new_with_mode(window, /* advertise_es3= */ false)?,
         })

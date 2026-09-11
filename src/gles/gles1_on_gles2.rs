@@ -288,7 +288,11 @@ pub struct GLES1OnGLES2Context {
 }
 
 impl GLES1OnGLES2Context {
-    pub fn new_with_gl_version(window: &mut Window, version: GLVersion) -> Result<Self, String> {
+    pub fn new_with_gl_version(
+        window: &mut Window,
+        _options: &crate::options::Options,
+        version: GLVersion,
+    ) -> Result<Self, String> {
         let gles3 = matches!(version, GLVersion::GLES30);
         Ok(Self {
             gl_ctx: window.create_gl_context(version)?,
@@ -307,8 +311,11 @@ impl GLESContext for GLES1OnGLES2Context {
         "OpenGL ES 1.1 translated to native OpenGL ES 2.0 shaders"
     }
 
-    fn new(window: &mut Window) -> Result<Self, String> {
-        Self::new_with_gl_version(window, GLVersion::GLES20)
+    fn new(
+        window: &mut Window,
+        options: &crate::options::Options,
+    ) -> Result<Self, String> {
+        Self::new_with_gl_version(window, options, GLVersion::GLES20)
     }
 
     fn make_current<'gl_ctx, 'win: 'gl_ctx>(
