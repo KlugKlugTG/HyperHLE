@@ -223,7 +223,7 @@ pub fn find_fullscreen_eagl_layer(env: &mut Environment) -> id {
     collect_eagl_layers(env, root_layer, &mut candidates);
 
     if candidates.is_empty() {
-        log!("DEBUG_CAEAGL: no visible CAEAGLLayer found in window tree, returning nil.");
+        log_dbg!("DEBUG_CAEAGL: no visible CAEAGLLayer found in window tree, returning nil.");
         return nil;
     }
 

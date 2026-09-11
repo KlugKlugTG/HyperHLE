@@ -204,7 +204,7 @@ pub const CLASSES: ClassExports = objc_classes! {
         let final_w = (width * scale * scale_hack).round() as u32;
         let final_h = (height * scale * scale_hack).round() as u32;
         //DebugRenderSize
-        log!("DEBUG_EAGL: renderbufferStorage:fromDrawable: {:?} Bounds: w={}, h={} | scale={}, scale_hack={} | Final FBO: {}x{}", drawable, width, height, scale, scale_hack, final_w, final_h);
+        log_dbg!("DEBUG_EAGL: renderbufferStorage:fromDrawable: {:?} Bounds: w={}, h={} | scale={}, scale_hack={} | Final FBO: {}x{}", drawable, width, height, scale, scale_hack, final_w, final_h);
         (final_w, final_h)
     };
 
@@ -271,7 +271,7 @@ pub const CLASSES: ClassExports = objc_classes! {
     // when an app had two fullscreen EAGL layers of the same size (Asphalt 8:
     // loading screen + game), since the heuristic could latch onto the other
     // layer and skip every presentation, leaving a permanent black screen.
-    log!("DEBUG_EAGL: presentRenderbuffer: target={}, drawable={:?}", target, drawable);
+    log_dbg!("DEBUG_EAGL: presentRenderbuffer: target={}, drawable={:?}", target, drawable);
     unsafe {
         present_renderbuffer(env);
     }
@@ -440,7 +440,7 @@ unsafe fn present_renderbuffer(env: &mut Environment) {
     let old_texture_2d: GLuint = get_int(gles, gles11::TEXTURE_BINDING_2D) as _;
     let active_texture: GLint = get_int(gles, gles11::ACTIVE_TEXTURE);
     //DebugPRBState
-    log!("DEBUG_PRB: Start. RB={}, w={}, h={}. OLD_FB={}, OLD_TEX2D={}, ACTIVE_TEX={:#x}", renderbuffer, width, height, old_framebuffer, old_texture_2d, active_texture);
+    log_dbg!("DEBUG_PRB: Start. RB={}, w={}, h={}. OLD_FB={}, OLD_TEX2D={}, ACTIVE_TEX={:#x}", renderbuffer, width, height, old_framebuffer, old_texture_2d, active_texture);
 
     let mut src_framebuffer = 0;
     gles.GenFramebuffersOES(1, &mut src_framebuffer);
@@ -462,7 +462,7 @@ unsafe fn present_renderbuffer(env: &mut Environment) {
     gles.ReadPixels(0, hh, 1, 1, gles11::RGBA, gles11::UNSIGNED_BYTE, px[8..12].as_mut_ptr() as *mut _);
     gles.ReadPixels(hw, hh, 1, 1, gles11::RGBA, gles11::UNSIGNED_BYTE, px[12..16].as_mut_ptr() as *mut _);
     gles.ReadPixels(width / 2, height / 2, 1, 1, gles11::RGBA, gles11::UNSIGNED_BYTE, px[16..20].as_mut_ptr() as *mut _);
-    log!("DEBUG_PRB: FBO={:#x}. w={}, h={}. Pixels: BL[{},{},{},{}] BR[{},{},{},{}] TL[{},{},{},{}] TR[{},{},{},{}] C[{},{},{},{}]",
+    log_dbg!("DEBUG_PRB: FBO={:#x}. w={}, h={}. Pixels: BL[{},{},{},{}] BR[{},{},{},{}] TL[{},{},{},{}] TR[{},{},{},{}] C[{},{},{},{}]",
         fbo_status, width, height,
         px[0], px[1], px[2], px[3], px[4], px[5], px[6], px[7],
         px[8], px[9], px[10], px[11], px[12], px[13], px[14], px[15],
@@ -491,7 +491,7 @@ unsafe fn present_renderbuffer(env: &mut Environment) {
     //DebugCopyTex
     let err_after_copy = gles.GetError();
     if err_after_copy != 0 {
-        log!("DEBUG_PRB: ERROR after CopyTexImage2D: {:#x}", err_after_copy);
+        log_dbg!("DEBUG_PRB: ERROR after CopyTexImage2D: {:#x}", err_after_copy);
     }
     
     // The texture will not have any mip levels so we must ensure the filter
@@ -588,7 +588,7 @@ unsafe fn present_renderbuffer(env: &mut Environment) {
                 [0.0, 1.0],
             ];
         }
-        log!("DEBUG_EAGL: SmartRotationFix bypassed matrix! rb_w={}, rb_h={}", rb_w, rb_h);
+        log_dbg!("DEBUG_EAGL: SmartRotationFix bypassed matrix! rb_w={}, rb_h={}", rb_w, rb_h);
     }
 
     // Draw the quad

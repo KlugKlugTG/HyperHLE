@@ -228,7 +228,7 @@ pub unsafe fn present_frame(
         gles.DrawArrays(gles11::TRIANGLES, 0, 6);
         let draw_err = gles.GetError();
         if draw_err != 0 {
-            log!("DEBUG_PRESENT: ERROR after DrawArrays: {:#x}", draw_err);
+            log_dbg!("DEBUG_PRESENT: ERROR after DrawArrays: {:#x}", draw_err);
         }
 
         if let Some((x, y, pressed)) = virtual_cursor_visible_at {
