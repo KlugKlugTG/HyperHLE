@@ -549,8 +549,21 @@ impl MachO {
                     nextrel,
                     ..
                 } => {
-                    let indirectsyms =
-                        &bytes[indirectsymoff as usize..][..nindirectsyms as usize * 4];
+                    let indirectsyms = {
+                        let start = indirectsymoff as usize;
+                        let len = nindirectsyms as usize * 4;
+                        if len == 0 || start >= bytes.len() || start + len > bytes.len() {
+                            log!(
+                                "Warning: indirect symbol table out of bounds (offset {:#x}, {} entries, file size {:#x}); skipping.",
+                                indirectsymoff,
+                                nindirectsyms,
+                                bytes.len()
+                            );
+                            &[][..]
+                        } else {
+                            &bytes[start..start + len]
+                        }
+                    };
                     for idx in indirectsyms.chunks(4) {
                         assert!(!is_bigend);
                         let idx = u32::from_le_bytes(idx.try_into().unwrap());
@@ -584,7 +597,21 @@ impl MachO {
                         })
                     }
 
-                    let extrels = &bytes[extreloff as usize..][..nextrel as usize * 8];
+                    let extrels = {
+                        let start = extreloff as usize;
+                        let len = nextrel as usize * 8;
+                        if len == 0 || start >= bytes.len() || start + len > bytes.len() {
+                            log!(
+                                "Warning: external relocation table out of bounds (offset {:#x}, {} entries, file size {:#x}); skipping.",
+                                extreloff,
+                                nextrel,
+                                bytes.len()
+                            );
+                            &[][..]
+                        } else {
+                            &bytes[start..start + len]
+                        }
+                    };
                     for entry in extrels.chunks(8) {
                         let entry_arr: [u8; 8] = match entry.try_into() {
                             Ok(a) => a,

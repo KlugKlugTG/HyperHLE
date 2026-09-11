@@ -24,6 +24,7 @@ mod gk_session;
 mod gk_turn_based_event_handler;
 
 use crate::dyld::{ConstantExports, HostConstant};
+use crate::mem::ConstVoidPtr;
 
 /// Apple GameKit framework — `GKError.h`. `GKErrorDomain` is the
 /// `NSError.domain` value used for every error reported by GameKit
@@ -31,8 +32,15 @@ use crate::dyld::{ConstantExports, HostConstant};
 /// matchmaking). Apps compare against it with
 /// `[error.domain isEqualToString:GKErrorDomain]` to filter
 /// GameKit-specific failures, so the literal must match Apple's.
-pub const CONSTANTS: ConstantExports =
-    &[("_GKErrorDomain", HostConstant::NSString("GKErrorDomain"))];
+pub const CONSTANTS: ConstantExports = &[
+    ("_GKErrorDomain", HostConstant::NSString("GKErrorDomain")),
+    // GKTurnTimeoutNone is a documented sentinel NSTimeInterval meaning
+    // "this turn never times out"; the SDK exports it as -1.
+    (
+        "_GKTurnTimeoutNone",
+        HostConstant::Custom(|env| env.mem.alloc_and_write(-1.0f64).cast().cast_const()),
+    ),
+];
 
 /// Per-process state for the GameKit framework.
 #[derive(Default)]

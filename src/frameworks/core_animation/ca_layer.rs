@@ -38,7 +38,14 @@ use crate::Environment;
 use std::collections::{HashMap, HashSet};
 
 #[derive(Clone, Default)]
-pub(super) struct CALayerHostObject {
+pub(crate) struct CALayerHostObject {
+    // CAMetalLayer storage (Metal presentation path). Kept on the layer host
+    // object so CALayer subclasses keep working with the CoreAnimation
+    // machinery instead of carrying a foreign host object type.
+    pub(crate) metal_device: id,
+    pub(crate) metal_pixel_format: GuestUSize,
+    pub(crate) metal_drawable_size: CGSize,
+    pub(crate) metal_framebuffer_only: bool,
     delegate: id,
     pub(super) sublayers: Vec<id>,
     superlayer: id,
@@ -111,6 +118,18 @@ pub(super) struct CALayerHostObject {
 impl HostObject for CALayerHostObject {}
 
 impl CALayerHostObject {
+    // CAMetalLayer helpers: metal.rs lives in a sibling module tree, so it
+    // cannot reach the pub(super) fields directly. Route frame/bounds access
+    // through these methods.
+    pub(crate) fn get_bounds_frame(&self) -> CGRect {
+        self.bounds
+    }
+    pub(crate) fn set_bounds_metal(&mut self, bounds: CGRect) {
+        self.bounds = bounds;
+    }
+    pub(crate) fn set_frame_metal(&mut self, frame: CGRect) {
+        self.bounds = frame;
+    }
     pub(super) fn superlayer_to_layer_transform(&self) -> CGAffineTransform {
         CGAffineTransform::make_translation(-self.bounds.origin.x, -self.bounds.origin.y)
             .concat(CGAffineTransform::make_translation(
@@ -342,6 +361,13 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 + (id)alloc {
     let host_object = Box::new(CALayerHostObject {
+        metal_device: nil,
+        metal_pixel_format: 0,
+        metal_drawable_size: CGSize {
+            width: 0.0,
+            height: 0.0,
+        },
+        metal_framebuffer_only: false,
         delegate: nil,
         sublayers: Vec::new(),
         superlayer: nil,

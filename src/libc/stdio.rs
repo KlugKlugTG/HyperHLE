@@ -839,7 +839,11 @@ fn remove(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
                 FsError::AccessDenied | FsError::ReadonlyParentDir => EACCES,
                 FsError::AlreadyExist => EINVAL,
             };
-            log!("Warning: remove('{}') failed: {:?}", path_owned, e);
+            // Deleting a not-yet-existing save/option file is a normal
+            // first-launch pattern for games (Asphalt calls remove() before
+            // writing); hide it behind debug logging instead of alarming the
+            // user.
+            log_dbg!("remove('{}') failed: {:?}", path_owned, e);
             set_errno(env, errno);
             -1
         }
