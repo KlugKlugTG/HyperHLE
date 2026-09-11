@@ -282,6 +282,54 @@ impl GLES for GLES1Native<'_> {
             gles11::BlendEquationOES(mode)
         }
     }
+    unsafe fn BlendEquation(&mut self, mode: GLenum) {
+        if self.is_gles2 {
+            touchHLE_gl_bindings::gles2::BlendEquation(mode)
+        } else {
+            gles11::BlendEquationOES(mode)
+        }
+    }
+    unsafe fn BlendEquationSeparate(&mut self, modeRGB: GLenum, modeAlpha: GLenum) {
+        if self.is_gles2 {
+            touchHLE_gl_bindings::gles2::BlendEquationSeparate(modeRGB, modeAlpha)
+        } else {
+            gles11::BlendEquationOES(modeRGB)
+        }
+    }
+    unsafe fn BlendFuncSeparate(
+        &mut self,
+        srcRGB: GLenum,
+        dstRGB: GLenum,
+        srcAlpha: GLenum,
+        dstAlpha: GLenum,
+    ) {
+        if self.is_gles2 {
+            touchHLE_gl_bindings::gles2::BlendFuncSeparate(srcRGB, dstRGB, srcAlpha, dstAlpha)
+        } else {
+            gles11::BlendFunc(srcRGB, dstRGB)
+        }
+    }
+    unsafe fn GetShaderPrecisionFormat(
+        &mut self,
+        shadertype: GLenum,
+        precisiontype: GLenum,
+        range: *mut GLint,
+        precision: *mut GLint,
+    ) {
+        if self.is_gles2 {
+            touchHLE_gl_bindings::gles2::GetShaderPrecisionFormat(
+                shadertype,
+                precisiontype,
+                range,
+                precision,
+            )
+        } else {
+            unsafe {
+                *range = 62;
+                *precision = 16;
+            }
+        }
+    }
     unsafe fn ColorMask(
         &mut self,
         red: GLboolean,
