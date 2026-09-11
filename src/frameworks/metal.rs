@@ -73,6 +73,8 @@ struct MetalObjectHostObject {
     depth_stencil_pass_operation: NSUInteger,
     write_mask: NSUInteger,
     read_mask: NSUInteger,
+    frame: CGRect,
+    bounds: CGRect,
 }
 impl HostObject for MetalObjectHostObject {}
 
@@ -307,8 +309,11 @@ const CLASSES: ClassExports = objc_classes! {
 - (())setDrawableSize:(CGSize)_size {}
 - (bool)isHidden { false }
 - (())setHidden:(bool)_hidden {}
-- (CGRect)frame { CGRect::default() }
-- (())setFrame:(CGRect)_frame {}
+- (CGRect)frame { env.objc.borrow::<MetalObjectHostObject>(this).frame }
+- (())setFrame:(CGRect)frame { env.objc.borrow_mut::<MetalObjectHostObject>(this).frame = frame }
+- (CGRect)bounds { env.objc.borrow::<MetalObjectHostObject>(this).bounds }
+- (())setBounds:(CGRect)bounds { env.objc.borrow_mut::<MetalObjectHostObject>(this).bounds = bounds }
+- (CGSize)boundsSize { env.objc.borrow::<MetalObjectHostObject>(this).bounds.size }
 @end
 
 @implementation MTLSamplerState: NSObject
