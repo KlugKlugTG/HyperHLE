@@ -317,7 +317,7 @@ com.tayasui.mrpoofree: --device-family=iphone --landscape-right --fullscreen --f
 # tricky.sok, console_startup.txt).  Copy-on-Write in fs.rs handles the
 # writes; --landscape-right fixes the orientation; --force-composition
 # prevents render artefacts on Adreno drivers.
-com.go.starwave.scarface: --landscape-right
+com.go.starwave.scarface: --landscape-right --force-composition
 
 # Hack, Slash, Loot (iPad)
 # Landscape iPad title; its first menu is rendered by the fixed-function GLES 1.1 path.
