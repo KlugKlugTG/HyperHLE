@@ -1919,6 +1919,31 @@ unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, draw
     let mut texture: GLuint = 0;
     gles.GenTextures(1, &mut texture);
     gles.BindTexture(gles11::TEXTURE_2D, texture);
+    // Set the texture parameters BEFORE the copy: the renderbuffer is
+    // typically non-power-of-two (e.g. 640x1136), and on strict ES 1.1
+    // drivers (ANGLE's GLES1 front-end, Mali) a CopyTexImage2D into a
+    // texture whose wrap mode is still the GL_REPEAT default fails with
+    // GL_INVALID_ENUM, leaving an incomplete texture and a black frame.
+    gles.TexParameteri(
+        gles11::TEXTURE_2D,
+        gles11::TEXTURE_MIN_FILTER,
+        gles11::LINEAR as _,
+    );
+    gles.TexParameteri(
+        gles11::TEXTURE_2D,
+        gles11::TEXTURE_MAG_FILTER,
+        gles11::LINEAR as _,
+    );
+    gles.TexParameteri(
+        gles11::TEXTURE_2D,
+        gles11::TEXTURE_WRAP_S,
+        gles11::CLAMP_TO_EDGE as _,
+    );
+    gles.TexParameteri(
+        gles11::TEXTURE_2D,
+        gles11::TEXTURE_WRAP_T,
+        gles11::CLAMP_TO_EDGE as _,
+    );
     // Force completion of any pending draws targeting the renderbuffer
     // BEFORE we copy from it. On a spec-conformant driver glCopyTexImage2D
     // implicitly syncs, but on ARM Mali r32p1 (Mali-G57 MC2 OpenGL ES-CM

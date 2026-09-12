@@ -53,6 +53,38 @@ pub struct GLES1NativeContext {
     pvrtc_native_checked: bool,
 }
 
+/// Texture parameters that only exist in OpenGL ES 2.0+ (or are otherwise
+/// invalid for ES 1.1). Games ported from other platforms routinely set them
+/// unconditionally (e.g. `GL_TEXTURE_WRAP_R` when refreshing a video texture
+/// every frame). Strict ES 1.1 front-ends (ANGLE) reject each call with a
+/// sticky `GL_INVALID_ENUM` that then pollutes the game's own error checks;
+/// lenient iOS-era drivers (PowerVR) silently accepted them. Since these
+/// parameters have no effect in an ES 1.1 pipeline, swallowing them matches
+/// the lenient behaviour and keeps the error queue clean.
+fn is_es2_only_texture_parameter(pname: GLenum) -> bool {
+    // GL_TEXTURE_WRAP_R, GL_TEXTURE_MIN_LOD, GL_TEXTURE_MAX_LOD,
+    // GL_TEXTURE_BASE_LEVEL, GL_TEXTURE_MAX_LEVEL, GL_DEPTH_STENCIL_TEXTURE_MODE,
+    // GL_TEXTURE_COMPARE_MODE, GL_TEXTURE_COMPARE_FUNC, GL_TEXTURE_IMMUTABLE_FORMAT,
+    // GL_TEXTURE_SWIZZLE_R/G/B/A/RGBA, GL_TEXTURE_BORDER_COLOR,
+    // GL_TEXTURE_MAX_ANISOTROPY_EXT, GL_TEXTURE_STORAGE_HINT_APPLE
+    matches!(
+        pname,
+        0x8072 // GL_TEXTURE_WRAP_R
+        | 0x813A // GL_TEXTURE_MIN_LOD
+        | 0x813B // GL_TEXTURE_MAX_LOD
+        | 0x8136 // GL_TEXTURE_BASE_LEVEL
+        | 0x813D // GL_TEXTURE_MAX_LEVEL
+        | 0x84F9 // GL_DEPTH_STENCIL_TEXTURE_MODE
+        | 0x884C // GL_TEXTURE_COMPARE_MODE
+        | 0x884D // GL_TEXTURE_COMPARE_FUNC
+        | 0x912F // GL_TEXTURE_IMMUTABLE_FORMAT
+        | 0x8E42..=0x8E45 // GL_TEXTURE_SWIZZLE_R..GL_TEXTURE_SWIZZLE_RGBA
+        | 0x2804 // GL_TEXTURE_BORDER_COLOR
+        | 0x84FF // GL_TEXTURE_MAX_ANISOTROPY_EXT
+        | 0x85BC // GL_TEXTURE_STORAGE_HINT_APPLE
+    )
+}
+
 /// Whether the mipmapped-NPOT-texture workaround (see `TexImage2D`) is
 /// enabled. Defaults to `true` on Android, mirroring
 /// [crate::options::Options::fix_texture_min_filter]; the
@@ -734,21 +766,39 @@ impl GLES for GLES1Native<'_> {
         gles11::BindTexture(target, texture)
     }
     unsafe fn TexParameteri(&mut self, target: GLenum, pname: GLenum, param: GLint) {
+        if is_es2_only_texture_parameter(pname) {
+            return;
+        }
         gles11::TexParameteri(target, pname, param)
     }
     unsafe fn TexParameterf(&mut self, target: GLenum, pname: GLenum, param: GLfloat) {
+        if is_es2_only_texture_parameter(pname) {
+            return;
+        }
         gles11::TexParameterf(target, pname, param)
     }
     unsafe fn TexParameterx(&mut self, target: GLenum, pname: GLenum, param: GLfixed) {
+        if is_es2_only_texture_parameter(pname) {
+            return;
+        }
         gles11::TexParameterx(target, pname, param)
     }
     unsafe fn TexParameteriv(&mut self, target: GLenum, pname: GLenum, params: *const GLint) {
+        if is_es2_only_texture_parameter(pname) {
+            return;
+        }
         gles11::TexParameteriv(target, pname, params)
     }
     unsafe fn TexParameterfv(&mut self, target: GLenum, pname: GLenum, params: *const GLfloat) {
+        if is_es2_only_texture_parameter(pname) {
+            return;
+        }
         gles11::TexParameterfv(target, pname, params)
     }
     unsafe fn TexParameterxv(&mut self, target: GLenum, pname: GLenum, params: *const GLfixed) {
+        if is_es2_only_texture_parameter(pname) {
+            return;
+        }
         gles11::TexParameterxv(target, pname, params)
     }
 
@@ -1619,6 +1669,30 @@ impl GLES1Native<'_> {
     ) {
         if format == gles11::BGRA_EXT {
             internalformat = gles11::BGRA_EXT as GLint
+        }
+        // Strict ES 1.1 drivers (ANGLE's GLES1 front-end, Adreno's native ES
+        // 1.1) reject non-power-of-two uploads unless the texture samples
+        // with CLAMP_TO_EDGE and a non-mipmap filter: the upload fails with
+        // GL_INVALID_ENUM and every draw sampling the texture shows garbage
+        // / black. Guest UI surfaces are typically NPOT (320x480 video
+        // planes, 640x1136 compositor framebuffers), and guests routinely
+        // leave GL_REPEAT as the wrap mode. Force CLAMP_TO_EDGE on the
+        // current binding for NPOT uploads; wrap is per-texture-object
+        // state, so other textures are unaffected.
+        if level == 0
+            && fix_texture_min_filter_enabled()
+            && !(width > 0 && width & (width - 1) == 0 && height > 0 && height & (height - 1) == 0)
+        {
+            gles11::TexParameteri(
+                gles11::TEXTURE_2D,
+                gles11::TEXTURE_WRAP_S,
+                gles11::CLAMP_TO_EDGE as _,
+            );
+            gles11::TexParameteri(
+                gles11::TEXTURE_2D,
+                gles11::TEXTURE_WRAP_T,
+                gles11::CLAMP_TO_EDGE as _,
+            );
         }
         gles11::TexImage2D(
             target,
