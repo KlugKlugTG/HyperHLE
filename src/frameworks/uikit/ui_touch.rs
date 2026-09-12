@@ -40,41 +40,6 @@ pub const UITouchPhaseEnded: UITouchPhase = 3;
 #[derive(Default)]
 pub struct State {
     pub current_touches: HashMap<FingerId, id>,
-    /// Recently-ended UITouches deliberately kept alive (bounded) because
-    /// some apps keep messaging the pointer on later frames after
-    /// `touchesEnded:`/stuck-finger cleanup. See [`retire_touch`].
-    pub retired_touches: Vec<id>,
-}
-
-/// Bounded size of the retired-UITouch pool.
-const RETIRED_TOUCH_LIMIT: usize = 64;
-
-/// Keep a just-ended UITouch alive instead of releasing it immediately.
-///
-/// Gameloft engines (Asphalt 8/9) keep holding UITouch pointers and keep
-/// messaging them on later frames even after the touch ended. If we release
-/// here and the object is freed, those messages hit a dead object
-/// ("SUPER HACK! Faking borrow for missing object" spam) and return garbage,
-/// which makes the games ignore input. Instead of the unbounded leak used
-/// previously, we park the touch in a bounded FIFO: once more than
-/// [`RETIRED_TOUCH_LIMIT`] retired touches accumulate, the oldest is
-/// released. Apps messaging a touch this late are broken anyway, and 64
-/// retired touches is far more headroom than any real app needs.
-fn retire_touch(env: &mut Environment, touch: id) {
-    let overflow = {
-        let state = &mut env.framework_state.uikit.ui_touch;
-        state.retired_touches.push(touch);
-        state.retired_touches.len() > RETIRED_TOUCH_LIMIT
-    };
-    if overflow {
-        let old = env
-            .framework_state
-            .uikit
-            .ui_touch
-            .retired_touches
-            .remove(0);
-        release(env, old);
-    }
 }
 
 #[derive(Default)]
@@ -766,7 +731,7 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
                         .current_touches
                         .remove(&fid)
                     {
-                        retire_touch(env, t);
+                        release(env, t);
                     }
                 }
             } else {
@@ -1025,8 +990,10 @@ fn handle_touches_up(env: &mut Environment, map: HashMap<FingerId, Coords>) {
     }
 
     // Now that all touchesEnded: callbacks have returned, remove the touches
-    // from current_touches and park them in the bounded retired pool rather
-    // than releasing straight away (see `retire_touch`).
+    // from current_touches and release our retain.  The touch objects are
+    // still in the NSMutableSets held by the per-view v_set locals (via
+    // addObject:, which retains), so they remain alive until those sets are
+    // released when the autorelease pool drains.
     for (finger_id, touch) in touches_to_remove {
         if let Some(current_touch) = env
             .framework_state
@@ -1035,7 +1002,7 @@ fn handle_touches_up(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             .current_touches
             .remove(&finger_id)
         {
-            retire_touch(env, current_touch);
+            release(env, current_touch);
         }
     }
 
