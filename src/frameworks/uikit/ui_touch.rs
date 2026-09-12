@@ -488,87 +488,6 @@ fn touchhle_send_cocos_touch_aliases_to_hierarchy(
 }
 
 
-// XaView helpers (A8 touch fix)
-fn touchhle_is_shield_view(env: &mut Environment, view: id) -> bool {
-    // Hidden views can't be tapped anyway.
-    let hidden: bool = msg![env; view isHidden];
-    if hidden {
-        return false;
-    }
-    // Don't treat controls/web views the user is actually interacting with
-    // as shields: UIControl subclasses (buttons) receive taps through
-    // touch dispatch, and a visible web view is a real UI.
-    let uicontrol_class = env.objc.get_known_class("UIControl", &mut env.mem);
-    let is_control: bool = msg![env; view isKindOfClass:uicontrol_class];
-    if is_control {
-        return false;
-    }
-    let uiwebview_class = env.objc.get_known_class("UIWebView", &mut env.mem);
-    let is_webview: bool = msg![env; view isKindOfClass:uiwebview_class];
-    if is_webview {
-        // A web view showing actual content (the ad has loaded and painted)
-        // is a legitimate target; an invisible/blank one is a shield.
-        let hidden: bool = msg![env; view isHidden];
-        let alpha: crate::frameworks::core_graphics::CGFloat = msg![env; view alpha];
-        if hidden || alpha == 0.0 {
-            return true;
-        }
-        // Gameloft's ad web view paints nothing in touchHLE (no Chromium
-        // bridge), so treat ALL UIWebViews as shields while they are on top
-        // of a game view. Games that need real web interaction can opt out
-        // with TOUCHHLE_NO_WEBVIEW_PIERCE.
-        return std::env::var_os("TOUCHHLE_NO_WEBVIEW_PIERCE").is_none();
-    }
-    let uiview_class = env.objc.get_known_class("UIView", &mut env.mem);
-    let is_generic: bool = msg![env; view isMemberOfClass:uiview_class];
-    if is_generic {
-        return true;
-    }
-    let uiimageview_class = env.objc.get_known_class("UIImageView", &mut env.mem);
-    let is_image: bool = msg![env; view isKindOfClass:uiimageview_class];
-    if is_image {
-        // XaView A8 behavior: pierce through ALL image views. The loading
-        // splash is an opaque full-screen UIImageView stacked above the game
-        // view, so an alpha==0.0-only check let it swallow every tap.
-        return true;
-    }
-    false
-}
-
-fn touchhle_find_game_touch_target(env: &mut Environment, root: id) -> id {
-    if root == nil {
-        return nil;
-    }
-    // XaView A8 piercer: scan the top-level subviews of the window from top
-    // to bottom and route to the first custom (non-shield), visible,
-    // interaction-enabled view — that is the 3D game engine view.
-    let subviews: id = msg![env; root subviews];
-    if subviews != nil {
-        let count: NSUInteger = msg![env; subviews count];
-        for i in (0..count).rev() {
-            let child: id = msg![env; subviews objectAtIndex:i];
-            let child_hidden: bool = msg![env; child isHidden];
-            if child_hidden {
-                continue;
-            }
-            if touchhle_is_shield_view(env, child) {
-                continue;
-            }
-            let interactive: bool = msg![env; child isUserInteractionEnabled];
-            if !interactive {
-                continue;
-            }
-            return child;
-        }
-    }
-    // Fall back to the deepest Cocos/EAGL-style view anywhere in the tree.
-    let cocos_target = touchhle_find_cocos_touch_target(env, root);
-    if cocos_target != nil {
-        return cocos_target;
-    }
-    nil
-}
-
 fn touchhle_find_cocos_touch_target(env: &mut Environment, root: id) -> id {
     if root == nil {
         return nil;
@@ -721,33 +640,6 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
 
             if class_name == "MBProgressHUD" {
                 log!("Touch hit MBProgressHUD; keeping HUD as touch target");
-            }
-        }
-
-        // XaView "shield piercer" (A8 touch fix): when the touch lands on an
-        // invisible overlay stacked above the game view, reroute it to the
-        // real game view instead. Shields include generic UIViews,
-        // UIImageViews AND any UIWebView/UIView subclass — Gameloft's ad
-        // layer is a custom subclass, which is why the old exact-class check
-        // never fired and Asphalt 8 ignored every tap.
-        if view != nil && touchhle_is_shield_view(env, view) {
-            let overlay_class: crate::objc::Class = msg![env; view class];
-            let overlay_name = env.objc.get_class_name(overlay_class).to_owned();
-            let target = touchhle_find_game_touch_target(env, window);
-            if target != nil {
-                let target_class: crate::objc::Class = msg![env; target class];
-                let target_name = env.objc.get_class_name(target_class).to_owned();
-                log!(
-                    "Shield piercer: rerouted touch from overlay {} to {}",
-                    overlay_name,
-                    target_name
-                );
-                view = target;
-            } else {
-                log!(
-                    "Shield piercer: hit shield {} but no game view found; keeping shield",
-                    overlay_name
-                );
             }
         }
 
