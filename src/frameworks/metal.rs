@@ -113,20 +113,75 @@ const CLASSES: ClassExports = objc_classes! {
 + (id)allocWithZone:(NSZonePtr)_zone {
     env.objc.alloc_object(this, Box::new(MetalObjectHostObject::default()), &mut env.mem)
 }
+// Some apps treat the MTLDevice *class* itself as the device (e.g. calling
+// [MTLDevice newBufferWithLength:options:] after getting a class object from
+// a failed/nil device lookup). Real iOS answers these on the metaclass only
+// for the handful of +class helpers, but being permissive here is free:
+// forward every creation/probe selector to a fresh instance.
++ (id)name { metal_string(env, "HyperHLE Metal compatibility device") }
++ (bool)hasUnifiedMemory { true }
++ (bool)supportsFamily:(NSUInteger)family {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device supportsFamily:family]
+}
++ (bool)supportsFeatureSet:(NSUInteger)feature_set {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device supportsFeatureSet:feature_set]
+}
++ (bool)supportsTextureSampleCount:(NSUInteger)count {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device supportsTextureSampleCount:count]
+}
++ (id)newCommandQueue {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newCommandQueue]
+}
++ (id)newCommandQueueWithMaxCommandBufferCount:(NSUInteger)count {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newCommandQueueWithMaxCommandBufferCount:count]
+}
++ (id)newBufferWithLength:(NSUInteger)length options:(NSUInteger)options {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newBufferWithLength:length options:options]
+}
++ (id)newBufferWithBytes:(ConstVoidPtr)bytes length:(NSUInteger)length options:(NSUInteger)options {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newBufferWithBytes:bytes length:length options:options]
+}
++ (id)newTextureWithDescriptor:(id)descriptor {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newTextureWithDescriptor:descriptor]
+}
++ (id)newLibraryWithSource:(id)source options:(id)options error:(MutPtr<id>)error {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newLibraryWithSource:source options:options error:error]
+}
++ (id)newLibraryWithData:(ConstVoidPtr)data error:(MutPtr<id>)error {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newLibraryWithData:data error:error]
+}
++ (id)newLibraryWithFile:(ConstPtr<u8>)path error:(MutPtr<id>)error {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newLibraryWithFile:path error:error]
+}
++ (id)newSamplerStateWithDescriptor:(id)descriptor {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newSamplerStateWithDescriptor:descriptor]
+}
++ (id)newRenderPipelineStateWithDescriptor:(id)descriptor error:(MutPtr<id>)error {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newRenderPipelineStateWithDescriptor:descriptor error:error]
+}
++ (id)newDepthStencilStateWithDescriptor:(id)descriptor {
+    let device: id = msg_class![env; MTLDevice new];
+    msg![env; device newDepthStencilStateWithDescriptor:descriptor]
+}
 
 - (id)init { this }
 - (id)name { metal_string(env, "HyperHLE Metal compatibility device") }
 - (bool)hasUnifiedMemory { true }
 - (NSUInteger)recommendedMaxWorkingSetSize { 0 }
 - (bool)supportsFamily:(NSUInteger)_family { false }
-- (bool)supportsFeatureSet:(NSUInteger)_feature_set {
-    // Feature sets (iOS 5–11 era GPU capability tiers) — apps like Asphalt 8
-    // probe MTLDevice.supportsFeatureSet: to pick a rendering path. All real
-    // devices that ran these games support the iOS 8 feature sets, and the
-    // app degrades gracefully when told a newer set is available, so
-    // reporting true is the compatibility-maximising answer.
-    true
-}
 - (bool)supportsTextureSampleCount:(NSUInteger)count { count == 1 }
 - (id)newCommandQueue { msg_class![env; MTLCommandQueue new] }
 - (id)newCommandQueueWithMaxCommandBufferCount:(NSUInteger)_count { msg_class![env; MTLCommandQueue new] }
