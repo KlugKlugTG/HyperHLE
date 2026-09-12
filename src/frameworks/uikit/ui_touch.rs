@@ -832,15 +832,13 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
                 .collect();
             if !stuck.is_empty() {
                 for fid in stuck {
-                    if let Some(t) = env
-                        .framework_state
+                    // Deliberately leak the retain: the app may still hold
+                    // and message this UITouch after removal.
+                    env.framework_state
                         .uikit
                         .ui_touch
                         .current_touches
-                        .remove(&fid)
-                    {
-                        release(env, t);
-                    }
+                        .remove(&fid);
                 }
             } else {
                 continue;
@@ -1098,20 +1096,20 @@ fn handle_touches_up(env: &mut Environment, map: HashMap<FingerId, Coords>) {
     }
 
     // Now that all touchesEnded: callbacks have returned, remove the touches
-    // from current_touches and release our retain.  The touch objects are
-    // still in the NSMutableSets held by the per-view v_set locals (via
-    // addObject:, which retains), so they remain alive until those sets are
-    // released when the autorelease pool drains.
-    for (finger_id, touch) in touches_to_remove {
-        if let Some(current_touch) = env
-            .framework_state
+    // from current_touches.
+    // Gameloft engines (Asphalt 8/9) keep holding UITouch pointers and keep
+    // messaging them on later frames even after the touch ended. If we
+    // release here and the object is freed, those messages hit a dead
+    // object ("Faking borrow for missing object") and return garbage, which
+    // makes the game ignore input. So: remove from current_touches but
+    // deliberately leak the retain. UITouch objects are small; this is
+    // harmless for emulation.
+    for (finger_id, _touch) in touches_to_remove {
+        env.framework_state
             .uikit
             .ui_touch
             .current_touches
-            .remove(&finger_id)
-        {
-            release(env, current_touch);
-        }
+            .remove(&finger_id);
     }
 
     // ULTRAHLE_MINIONJUMP_DRAIN_SELECT_BEGIN
