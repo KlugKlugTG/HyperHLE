@@ -234,16 +234,14 @@ fn socket(env: &mut Environment, domain: i32, type_: i32, protocol: i32) -> File
     // errno is set on every failure path below.
     set_errno(env, 0);
     if !env.options.network_access {
-        // OfflineSocketBypass (from XaView): still create the guest socket.
-        // Returning -1 here makes Gameloft netcode spin/abort before the
-        // menu (black screen); a real fd plus refused connects lets the
-        // game fall back to offline gracefully.
-        log!(
-            "Network access is disabled, creating offline socket({}, {}, {})",
+        log_dbg!(
+            "Network access is disabled, socket({}, {}, {}) => -1",
             domain,
             type_,
             protocol
         );
+        set_errno(env, EPROTONOSUPPORT);
+        return -1;
     }
 
     if domain != AF_INET {
@@ -848,13 +846,6 @@ fn connect(
     if type_ != SOCK_STREAM {
         set_errno(env, ESOCKTNOSUPPORT);
         return -1;
-    }
-
-    if !env.options.network_access {
-        // OfflineConnectBypass (from XaView): report success without a host
-        // connection; send()/recv() below complete the offline illusion.
-        log!("connect: network access disabled, pretending to succeed (offline bypass)");
-        return 0;
     }
 
     if address_len < guest_size_of::<sockaddr>() {
@@ -1536,12 +1527,6 @@ fn recvfrom(
         );
     }
 
-    if !env.options.network_access {
-        // OfflineRecvBypass (from XaView): report EOF so the game treats the
-        // connection as closed and falls back to offline mode.
-        return 0;
-    }
-
     let (num_bytes_read, addr) = match type_ {
         SOCK_DGRAM => {
             // A UDP socket with no host socket yet (never bound nor sent
@@ -1702,11 +1687,6 @@ fn send(
         );
     }
 
-    if !env.options.network_access {
-        // OfflineSendBypass (from XaView): pretend the data was sent.
-        return length.min(i32::MAX as GuestUSize) as i32;
-    }
-
     match type_ {
         SOCK_STREAM => {
             let Some(mut stream) = State::get(env)
@@ -1836,11 +1816,6 @@ fn sendto(
         socket_address,
         dest_address_len
     );
-    if !env.options.network_access {
-        // OfflineSendtoBypass (from XaView): pretend the datagram was sent.
-        return length.min(i32::MAX as GuestUSize) as i32;
-    }
-
     let num_bytes_written = match type_ {
         SOCK_DGRAM => {
             if State::get(env)
