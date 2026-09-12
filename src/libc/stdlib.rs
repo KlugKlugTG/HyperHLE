@@ -18,8 +18,6 @@ use crate::objc::id;
 use crate::{impl_GuestRet_for_large_struct, Environment};
 use std::str::FromStr;
 
-pub static HACK_MAIN_WINDOW: std::sync::Mutex<u32> = std::sync::Mutex::new(0);
-
 pub mod qsort;
 
 #[derive(Default)]

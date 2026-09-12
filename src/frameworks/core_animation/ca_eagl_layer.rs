@@ -192,71 +192,58 @@ pub fn find_fullscreen_eagl_layer(env: &mut Environment) -> id {
     }
 
     let windows = env.framework_state.uikit.ui_view.ui_window.windows.clone();
-    let mut top_window = windows
+    let Some(top_window) = windows
         .into_iter()
         .rev()
         .find(|&window| !msg![env; window isHidden])
-        .unwrap_or(nil);
-
-    // FallbackToHackWindow
-    let hack_bits = *crate::libc::stdlib::HACK_MAIN_WINDOW.lock().unwrap();
-    if top_window == nil && hack_bits != 0 {
-        top_window = crate::mem::Ptr::from_bits(hack_bits);
-    }
-
-    if top_window == nil {
+    else {
         return nil;
+    };
+
+    let screen_bounds: CGRect = {
+        let screen: id = msg_class![env; UIScreen mainScreen];
+        msg![env; screen bounds]
+    };
+
+    let mut layer: id = msg![env; top_window layer];
+
+    loop {
+        // assert!(layer != nil);
+
+        let layer_host_obj: &CALayerHostObject = env.objc.borrow(layer);
+
+        if layer_host_obj.bounds.size != screen_bounds.size
+            || layer_host_obj.bounds.origin != (CGPoint { x: 0.0, y: 0.0 })
+            || layer_host_obj.anchor_point != (CGPoint { x: 0.5, y: 0.5 })
+            || layer_host_obj.position
+                != (CGPoint {
+                    x: screen_bounds.size.width / 2.0,
+                    y: screen_bounds.size.height / 2.0,
+                })
+            || layer_host_obj.hidden
+            || layer_host_obj.opacity != 1.0
+            || !layer_host_obj.affine_transform.is_identity()
+        {
+            return nil;
+        }
+
+        if let Some(&next) = layer_host_obj.sublayers.last() {
+            layer = next;
+        } else {
+            break;
+        }
     }
 
-    // XaView-style leniency, upgraded: Asphalt 8's layer tree contains small
-    // EAGL layers (ad widgets) stacked above the main game drawable. Instead
-    // of blindly following the deepest sublayer (which picks a 40x23 ad view
-    // and makes every presentRenderbuffer skip), collect ALL visible
-    // CAEAGLLayers in the tree and return the one with the largest area —
-    // that is the game's actual drawable.
-    let root_layer: id = msg![env; top_window layer];
-    if root_layer == nil {
+    if !env.objc.borrow::<CALayerHostObject>(layer).opaque {
         return nil;
-    }
-
-    let mut candidates: Vec<(id, f32)> = Vec::new();
-    collect_eagl_layers(env, root_layer, &mut candidates);
-
-    if candidates.is_empty() {
-        log_dbg!("DEBUG_CAEAGL: no visible CAEAGLLayer found in window tree, returning nil.");
-        return nil;
-    }
-
-    // Prefer the largest-area drawable (the game's fullscreen layer).
-    candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-    let (layer, area) = candidates[0];
-    log!(
-        "DEBUG_CAEAGL: Found game drawable {:?} (area {}), {} candidate(s)",
-        layer,
-        area,
-        candidates.len()
-    );
-    layer
-}
-
-fn collect_eagl_layers(env: &mut Environment, layer: id, out: &mut Vec<(id, f32)>) {
-    let hidden: bool = msg![env; layer isHidden];
-    let opacity: CGFloat = msg![env; layer opacity];
-    if hidden || opacity == 0.0 {
-        return;
     }
 
     let ca_eagl_layer_class: Class = msg_class![env; CAEAGLLayer class];
-    if msg![env; layer isKindOfClass:ca_eagl_layer_class] {
-        let host: &CALayerHostObject = env.objc.borrow(layer);
-        let area = host.bounds.size.width * host.bounds.size.height;
-        out.push((layer, area));
+    if !msg![env; layer isKindOfClass:ca_eagl_layer_class] {
+        return nil;
     }
 
-    let host_obj: &CALayerHostObject = env.objc.borrow(layer);
-    for &sub in host_obj.sublayers.clone().iter() {
-        collect_eagl_layers(env, sub, out);
-    }
+    layer
 }
 
 // =========================================================================
