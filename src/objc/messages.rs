@@ -463,6 +463,17 @@ fn objc_msgSend_inner(
                 )
             };
 
+            // `+[Class self]` must return the class itself. The real objc
+            // runtime resolves `self` via the metaclass root NSObject chain,
+            // but a bare metaclass registered for an unimplemented class
+            // falls through here and previously returned 0 — breaking e.g.
+            // the Burstly ad SDK which calls `+[BurstlyCurrency... self]`.
+            if selector.as_str(&env.mem) == "self" {
+                env.cpu.regs_mut()[0] = receiver.to_bits();
+                env.cpu.regs_mut()[1] = 0;
+                return;
+            }
+
             let missing_selector_name = selector.as_str(&env.mem).to_owned();
 
             if try_cocos_missing_selector_compat(

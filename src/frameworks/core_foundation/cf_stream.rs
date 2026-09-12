@@ -12,7 +12,7 @@ use crate::frameworks::core_foundation::cf_url::{kCFURLPOSIXPathStyle, CFURLCopy
 use crate::frameworks::core_foundation::{CFRelease, CFRetain, CFTypeRef};
 use crate::frameworks::foundation::ns_string;
 use crate::fs::GuestPath;
-use crate::mem::{ConstPtr, MutPtr, MutVoidPtr};
+use crate::mem::{ConstPtr, MutPtr, MutVoidPtr, Ptr};
 use crate::objc::{msg, nil, objc_classes, ClassExports, HostObject};
 use crate::Environment;
 
@@ -541,6 +541,38 @@ fn CFReadStreamOpen(env: &mut Environment, stream: CFReadStreamRef) -> bool {
     host.status = kCFStreamStatusOpen;
     host.offset = 0;
     true
+}
+
+// MARK: - CFNetwork bridge (real host objects instead of dummy handles)
+
+/// Allocate a `_touchHLE_CFReadStream` for CFNetwork's dummy handle.
+pub(crate) fn alloc_read_stream_for_cf_network(env: &mut Environment) -> u32 {
+    alloc_read_stream(env).to_bits() as _
+}
+
+pub(crate) fn cf_network_read_stream_open(env: &mut Environment, stream: u32) -> bool {
+    CFReadStreamOpen(env, Ptr::from_bits(stream as _))
+}
+
+pub(crate) fn cf_network_read_stream_has_bytes_available(
+    env: &mut Environment,
+    stream: u32,
+) -> bool {
+    // No real networking: report "no bytes" so app polling loops terminate.
+    CFReadStreamHasBytesAvailable(env, Ptr::from_bits(stream as _))
+}
+
+pub(crate) fn cf_network_read_stream_read(
+    env: &mut Environment,
+    stream: u32,
+    buffer: MutPtr<u8>,
+    buffer_length: i32,
+) -> i32 {
+    CFReadStreamRead(env, Ptr::from_bits(stream as _), buffer, buffer_length)
+}
+
+pub(crate) fn cf_network_read_stream_close(env: &mut Environment, stream: u32) {
+    CFReadStreamClose(env, Ptr::from_bits(stream as _))
 }
 
 fn CFReadStreamClose(env: &mut Environment, stream: CFReadStreamRef) {

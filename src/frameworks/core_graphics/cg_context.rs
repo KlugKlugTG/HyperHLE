@@ -216,6 +216,27 @@ fn CGContextSetGrayStrokeColor(
     CGContextSetRGBStrokeColor(env, context, gray, gray, gray, alpha);
 }
 
+/// `void CGContextSetStrokeColor(CGContextRef c, const CGFloat components[])`
+///
+/// Colour-space-agnostic stroke colour setter. touchHLE contexts only track
+/// RGBA, so we interpret the components as RGBA (matching the most common
+/// device-RGB usage). `CGContextGetShouldColorSpace`-aware behaviour is not
+/// modelled.
+fn CGContextSetStrokeColor(
+    env: &mut Environment,
+    context: CGContextRef,
+    components: ConstPtr<CGFloat>,
+) {
+    if context.is_null() || components.is_null() {
+        return;
+    }
+    let r: CGFloat = env.mem.read(components + 0);
+    let g: CGFloat = env.mem.read(components + 1);
+    let b: CGFloat = env.mem.read(components + 2);
+    let a: CGFloat = env.mem.read(components + 3);
+    CGContextSetRGBStrokeColor(env, context, r, g, b, a);
+}
+
 // MARK: - Alpha
 
 fn CGContextSetAlpha(env: &mut Environment, context: CGContextRef, alpha: CGFloat) {
@@ -828,6 +849,20 @@ fn CGContextStrokePath(env: &mut Environment, context: CGContextRef) {
 fn CGContextSetShouldAntialias(_env: &mut Environment, _context: CGContextRef, _value: bool) {}
 fn CGContextSetAllowsAntialiasing(_env: &mut Environment, _context: CGContextRef, _value: bool) {}
 fn CGContextSetShouldSmoothFonts(_env: &mut Environment, _context: CGContextRef, _value: bool) {}
+
+fn CGContextSetAllowsFontSmoothing(_env: &mut Environment, _context: CGContextRef, _value: bool) {}
+fn CGContextSetShouldSubpixelPositionFonts(
+    _env: &mut Environment,
+    _context: CGContextRef,
+    _value: bool,
+) {
+}
+fn CGContextSetAllowsFontSubpixelQuantization(
+    _env: &mut Environment,
+    _context: CGContextRef,
+    _value: bool,
+) {
+}
 
 // MARK: - Flush / sync
 
@@ -1511,6 +1546,7 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CGContextShowGlyphs(_, _, _)),
     // Add to FUNCTIONS:
     export_c_func!(CGContextSetStrokeColorWithColor(_, _)),
+    export_c_func!(CGContextSetStrokeColor(_, _)),
     export_c_func!(CGContextSetGrayStrokeColor(_, _, _)),
     export_c_func!(CGContextSetAlpha(_, _)),
     export_c_func!(CGContextSetLineWidth(_, _)),
@@ -1542,6 +1578,9 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CGContextSetShouldAntialias(_, _)),
     export_c_func!(CGContextSetAllowsAntialiasing(_, _)),
     export_c_func!(CGContextSetShouldSmoothFonts(_, _)),
+    export_c_func!(CGContextSetAllowsFontSmoothing(_, _)),
+    export_c_func!(CGContextSetShouldSubpixelPositionFonts(_, _)),
+    export_c_func!(CGContextSetAllowsFontSubpixelQuantization(_, _)),
     export_c_func!(CGContextFlush(_)),
     export_c_func!(CGContextSynchronize(_)),
     export_c_func!(CGContextGetClipBoundingBox(_)),

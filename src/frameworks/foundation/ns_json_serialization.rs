@@ -183,7 +183,7 @@ fn collect_dictionary_pairs(env: &mut Environment, dict: id) -> Vec<(id, id)> {
     out
 }
 
-fn encode_value(env: &mut Environment, obj: id, out: &mut String, pretty: bool, depth: usize) {
+pub(crate) fn encode_value(env: &mut Environment, obj: id, out: &mut String, pretty: bool, depth: usize) {
     if obj == nil {
         out.push_str("null");
         return;

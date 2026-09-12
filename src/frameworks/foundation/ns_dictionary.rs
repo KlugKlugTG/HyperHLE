@@ -24,7 +24,7 @@ use crate::frameworks::foundation::ns_file_manager::{
 };
 use crate::fs::GuestPath;
 use crate::libc::stdlib::qsort::qsort_generic;
-use crate::mem::{ConstPtr, MutPtr, Ptr, SafeRead};
+use crate::mem::{ConstPtr, ConstVoidPtr, MutPtr, Ptr, SafeRead};
 use crate::objc::{
     autorelease, id, msg, msg_class, msg_send, nil, objc_classes, release, retain,
     todo_objc_setter, Class, ClassExports, HostObject, NSZonePtr, SEL,
@@ -1093,6 +1093,83 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 - (id)initWithDictionary:(id)dictionary {
     init_with_dictionary_common(env, this, dictionary)
+}
+// Category method used by some ad/analytics SDKs (Burstly-era
+// "NSDictionary+JSON"): serialize the receiver to a JSON string, dropping
+// the keys listed in `exclude_keys` and renaming keys per `translations`
+// (original key -> replacement key). The first argument is treated as an
+// NSError** out-parameter and set to nil, matching the convention callers
+// expect. A missing/failed serialization yields an empty string rather
+// than NULL so string-based call sites don't dereference nil.
+- (id)toJSONAs:(MutPtr<id>)out_error
+     excludingInArray:(id)exclude_keys
+     withTranslations:(id)translations {
+    use crate::frameworks::foundation::ns_json_serialization;
+    use crate::frameworks::foundation::ns_string;
+
+    if !out_error.is_null() {
+        env.mem.write(out_error, nil);
+    }
+
+    // Work on a mutable copy so the receiver is untouched.
+    let working: id = msg![env; this mutableCopy];
+    let keys: id = msg![env; working allKeys];
+    let count: NSUInteger = msg![env; keys count];
+
+    let mut to_remove: Vec<id> = Vec::new();
+    let mut to_add: Vec<(id, id)> = Vec::new();
+
+    for i in 0..count {
+        let key: id = msg![env; keys objectAtIndex:i];
+
+        // Exclusion check (string-compared, tolerating non-string keys).
+        let mut excluded = false;
+        if exclude_keys != nil {
+            let ec: NSUInteger = msg![env; exclude_keys count];
+            for j in 0..ec {
+                let ek: id = msg![env; exclude_keys objectAtIndex:j];
+                let is_eq: bool = msg![env; ek isEqualToString:key];
+                if is_eq {
+                    excluded = true;
+                    break;
+                }
+            }
+        }
+        if excluded {
+            to_remove.push(key);
+            continue;
+        }
+
+        // Key translation: original key -> replacement key.
+        if translations != nil {
+            let mapped: id = msg![env; translations objectForKey:key];
+            if mapped != nil {
+                let value: id = msg![env; working objectForKey:key];
+                to_add.push((mapped, value));
+                to_remove.push(key);
+            }
+        }
+    }
+
+    for &key in &to_remove {
+        () = msg![env; working removeObjectForKey:key];
+    }
+    for &(key, value) in &to_add {
+        () = msg![env; working setObject:value forKey:key];
+    }
+
+    let error_ptr: MutPtr<id> = MutPtr::null();
+    let data: id = msg_class![env; NSJSONSerialization dataWithJSONObject:working options:0u32 error:error_ptr];
+    if data == nil {
+        let empty = ns_string::from_rust_string(env, String::new());
+        return autorelease(env, empty);
+    }
+    let len: NSUInteger = msg![env; data length];
+    let bytes_ptr: ConstVoidPtr = msg![env; data bytes];
+    let bytes = env.mem.bytes_at(bytes_ptr.cast::<u8>(), len);
+    let json = String::from_utf8_lossy(bytes).into_owned();
+    let json_str = ns_string::from_rust_string(env, json);
+    autorelease(env, json_str)
 }
 
 - (id)initWithObjects:(id)objects //NSArray *

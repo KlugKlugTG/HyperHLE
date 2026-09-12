@@ -29,32 +29,35 @@ use crate::mem::MutPtr;
 use crate::objc::{id, msg_class};
 use crate::Environment;
 
-const DUMMY_STREAM: u32 = 0xC0F0_0001;
-
-fn CFReadStreamCreateForHTTPRequest(_env: &mut Environment, _alloc: u32, _request: u32) -> u32 {
-    // Return a non-null dummy handle so callers that only check for null
-    // continue past the nil check.
-    DUMMY_STREAM
+fn CFReadStreamCreateForHTTPRequest(env: &mut Environment, _alloc: u32, _request: u32) -> u32 {
+    // Return a real (non-functional) stream object from cf_stream so later
+    // CFReadStream* calls hit registered host objects instead of the
+    // phantom-object fallback path ("SUPER HACK! Faking borrow" warnings).
+    crate::frameworks::core_foundation::cf_stream::alloc_read_stream_for_cf_network(env)
 }
 
-fn CFReadStreamOpen(_env: &mut Environment, _stream: u32) -> bool {
-    true
+fn CFReadStreamOpen(env: &mut Environment, stream: u32) -> bool {
+    crate::frameworks::core_foundation::cf_stream::cf_network_read_stream_open(env, stream)
 }
 
-fn CFReadStreamHasBytesAvailable(_env: &mut Environment, _stream: u32) -> bool {
-    false
+fn CFReadStreamHasBytesAvailable(env: &mut Environment, stream: u32) -> bool {
+    crate::frameworks::core_foundation::cf_stream::cf_network_read_stream_has_bytes_available(env, stream)
 }
 
 fn CFReadStreamRead(
-    _env: &mut Environment,
-    _stream: u32,
-    _buffer: MutPtr<u8>,
-    _buffer_length: i32,
+    env: &mut Environment,
+    stream: u32,
+    buffer: MutPtr<u8>,
+    buffer_length: i32,
 ) -> i32 {
-    0
+    use crate::frameworks::core_foundation::cf_stream;
+    cf_stream::cf_network_read_stream_read(env, stream, buffer, buffer_length)
 }
 
-fn CFReadStreamClose(_env: &mut Environment, _stream: u32) {}
+fn CFReadStreamClose(env: &mut Environment, stream: u32) {
+    use crate::frameworks::core_foundation::cf_stream;
+    cf_stream::cf_network_read_stream_close(env, stream)
+}
 
 fn CFReadStreamSetProperty(
     _env: &mut Environment,

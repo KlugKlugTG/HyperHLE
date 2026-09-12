@@ -35,6 +35,7 @@
 
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant, HostDylib};
 use crate::font::{Font, TextAlignment, WrapMode};
+use rusttype::GlyphId;
 use crate::frameworks::core_foundation::{CFRange, cf_array::CFArrayRef, cf_type::CFTypeRef};
 use crate::frameworks::core_graphics::cg_bitmap_context::CGBitmapContextDrawer;
 use crate::frameworks::core_graphics::cg_font::{CGFontCreateWithFontName, CGFontRef, CGGlyph};
@@ -623,6 +624,57 @@ fn CTLineGetGlyphRuns(env: &mut Environment, line: CTLineRef) -> id {
     autorelease(env, immutable)
 }
 
+/// `CFIndex CTRunGetGlyphCount(CTRunRef run)`
+///
+/// touchHLE lays text out as a single run per line, and the
+/// `_touchHLE_CTLine` host object stands in for a run as well, so the glyph
+/// count of a run is simply the length of the run's text.
+///
+/// Reference: <https://developer.apple.com/documentation/coretext/ctrungetglyphcount(_:)>
+fn CTRunGetGlyphCount(env: &mut Environment, run: CTLineRef) -> i32 {
+    CTLineGetGlyphCount(env, run)
+}
+
+/// `double CTFontGetAdvancesForGlyphs(CTFontRef font, CTFontOrientation orientation,
+///     const CGGlyph glyphs[], CGSize advances[], CFIndex count)`
+///
+/// Returns the total advance width for the given glyphs and fills the
+/// caller's array with per-glyph advances (width only; height 0, matching
+/// horizontal orientation). The `orientation` parameter (0 = default /
+/// horizontal, 1 = vertical) is accepted but only horizontal metrics are
+/// produced — vertical layout is not used by apps in the corpus.
+///
+/// Reference: <https://developer.apple.com/documentation/coretext/ctfontgetadvancesforglyphs(_:_:_:_:_:)>
+fn CTFontGetAdvancesForGlyphs(
+    env: &mut Environment,
+    font: CTFontRef,
+    _orientation: u32,
+    glyphs: ConstPtr<CGGlyph>,
+    advances: MutPtr<CGSize>,
+    count: i32,
+) -> f64 {
+    if font.is_null() || glyphs.is_null() || count <= 0 {
+        return 0.0;
+    }
+    let ui_font = env.objc.borrow::<CTFontHostObject>(font).font;
+    let font_obj = font_from_uifont(env, ui_font).unwrap_or_else(Font::sans_regular);
+    let upm = font_obj.units_per_em() as f64;
+    let size = CTFontGetSize(env, font) as f64;
+    // Design units -> points at the font's current size.
+    let scale = if upm > 0.0 { size / upm } else { 0.0 };
+    let mut total = 0.0f64;
+    for i in 0..count as u32 {
+        let glyph_id: CGGlyph = env.mem.read(glyphs + i);
+        let advance_design = font_obj.glyph_advance(GlyphId(glyph_id as u16)) as f64;
+        let advance_pt = advance_design * scale;
+        if !advances.is_null() {
+            env.mem.write(advances + i, CGSize { width: advance_pt as CGFloat, height: 0.0 });
+        }
+        total += advance_pt;
+    }
+    total
+}
+
 /// `bool CTFontGetGlyphsForCharacters(CTFontRef font, const UniChar characters[],
 ///     CGGlyph glyphs[], CFIndex count)`
 ///
@@ -1021,6 +1073,8 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CTFontGetDescent(_)),
     export_c_func!(CTFontGetLeading(_)),
     export_c_func!(CTFontGetSize(_)),
+    export_c_func!(CTFontGetAdvancesForGlyphs(_, _, _, _, _)),
+    export_c_func!(CTRunGetGlyphCount(_)),
     export_c_func!(CTParagraphStyleCreate(_, _)),
     export_c_func!(CTParagraphStyleCreateCopy(_)),
     export_c_func!(CTParagraphStyleGetValueForSpecifier(_, _, _, _)),

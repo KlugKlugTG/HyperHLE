@@ -440,13 +440,6 @@ pub const CLASSES: ClassExports = objc_classes! {
     crate::objc::autorelease(env, empty)
 }
 
-- (())touchhleWebViewLoadDidFinish:(id)_timer {
-    // Fired via NSTimer after a native (Android WebView) load. The timer
-    // holds a retain on `this`; balance it.
-    finish_load(env, this);
-    release(env, this);
-}
-
 // =========================================================================
 // MARK: - Request / URL accessors
 // =========================================================================

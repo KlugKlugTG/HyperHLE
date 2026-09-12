@@ -16,7 +16,7 @@ pub const LIBRESOLV: super::HostDylib = super::HostDylib {
     aliases: &["/usr/lib/libresolv.dylib"],
     class_exports: &[],
     constant_exports: &[],
-    function_exports: &[crate::libc::resolv::FUNCTIONS],
+    function_exports: &[],
 };
 
 pub const CORE_AUDIO: super::HostDylib = super::HostDylib {
@@ -106,8 +106,11 @@ pub const TWITTER: super::HostDylib = super::HostDylib {
     function_exports: &[],
 };
 
-// libresolv — stub resolver-state entry points; the functions are shared
-// with the main libc table so lookups through either dylib resolve to the
+// libresolv — stub resolver-state entry points live in the main libc table
+// (src/libc.rs), which every app links against; listing them here too would
+// trip the no-duplicate-exports test. The dylib entry stays so the path
+// resolves and non-lazy relocations don't warn about a missing dylib.
+// CoreTelephony — touchHLE has no cellular radio, but we expose real
 // CoreTelephony — touchHLE has no cellular radio, but we expose real
 // `CTTelephonyNetworkInfo` / `CTCarrier` classes plus the
 // `CTRadioAccessTechnology*` string constants and the
