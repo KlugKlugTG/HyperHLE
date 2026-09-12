@@ -912,16 +912,42 @@ impl MachO {
                     S_NON_LAZY_SYMBOL_POINTERS => (ST::NonLazySymbolPointers, Some(4)),
                     _ => (ST::Normal, None),
                 };
-                let dyld_indirect_symbol_info = dyld_entry_size.map(|entry_size| {
-                    let indirect_start = section.reserved1 as usize;
-                    assert!(size.is_multiple_of(entry_size));
-                    let indirect_count = (size / entry_size) as usize;
-                    let indirects = &mut indirect_undef_symbols[indirect_start..][..indirect_count];
-                    let syms = indirects.iter_mut().map(|sym| sym.take()).collect();
-                    DyldIndirectSymbolInfo {
-                        entry_size,
-                        indirect_undef_symbols: syms,
+                let dyld_indirect_symbol_info = dyld_entry_size.and_then(|entry_size| {
+                    if entry_size == 0 || !size.is_multiple_of(entry_size) {
+                        log!(
+                            "Warning: section {:?} has invalid entry size {} for size {:#x}; skipping indirect symbol info.",
+                            name,
+                            entry_size,
+                            size
+                        );
+                        return None;
                     }
+                    let indirect_start = section.reserved1 as usize;
+                    let indirect_count = (size / entry_size) as usize;
+                    // Corrupt or trimmed binaries (e.g. Bug Heroes Quest) can
+                    // declare an indirect symbol table that is past EOF; in
+                    // that case the table above was skipped and is empty.
+                    // Pad with anonymous entries instead of panicking: the
+                    // dyld code skips `None` entries gracefully.
+                    let indirects = match indirect_undef_symbols
+                        .get(indirect_start..)
+                        .and_then(|s| s.get(..indirect_count))
+                    {
+                        Some(s) => s.to_vec(),
+                        None => {
+                            log!(
+                                "Warning: indirect symbol entries [{}, {}) out of range for table of length {}; treating as anonymous.",
+                                indirect_start,
+                                indirect_start + indirect_count,
+                                indirect_undef_symbols.len()
+                            );
+                            vec![None; indirect_count]
+                        }
+                    };
+                    Some(DyldIndirectSymbolInfo {
+                        entry_size,
+                        indirect_undef_symbols: indirects,
+                    })
                 });
 
                 Section {
