@@ -1783,37 +1783,6 @@ unsafe fn present_renderbuffer(env: &mut Environment, renderbuffer: GLuint, draw
         present_check(gles, trace_gl_errors, &SEEN, "after make_current");
     }
 
-    // EXPERIMENTAL black-screen hack: bypass the entire host-side present
-    // pipeline (renderbuffer->texture copy + fixed-function or shader quad +
-    // Core Animation recomposite) and instead read the renderbuffer back on
-    // the CPU and blit it straight to the window. Much slower, but works on
-    // any backend and sidesteps every driver/compositor quirk.
-    //
-    // Enabled explicitly via TOUCHHLE_FORCE_READBACK_PRESENT=1, and enabled
-    // BY DEFAULT for Asphalt 8 (GloftA8) because its presentation path is
-    // exactly where the remaining black screens live. Opt out for Asphalt 8
-    // with TOUCHHLE_NO_FORCE_READBACK=1.
-    {
-        use std::sync::atomic::{AtomicBool, Ordering};
-        static SEEN: AtomicBool = AtomicBool::new(false);
-        let bundle_id = env.bundle.bundle_identifier().to_lowercase();
-        let is_asphalt8 = bundle_id.contains("glofta8") || bundle_id.contains("asphalt8");
-        let force_readback = std::env::var_os("TOUCHHLE_FORCE_READBACK_PRESENT").is_some()
-            || (is_asphalt8 && std::env::var_os("TOUCHHLE_NO_FORCE_READBACK").is_none());
-        if force_readback && !SEEN.swap(true, Ordering::Relaxed) {
-            log!(
-                "EXPERIMENTAL: forcing CPU-readback present path (bundle {}, renderbuffer {})",
-                bundle_id,
-                renderbuffer
-            );
-        }
-        if force_readback {
-            std::mem::drop(gles_boxed);
-            present_renderbuffer_readback(env, renderbuffer, drawable);
-            return;
-        }
-    }
-
     // On a real OpenGL ES 2.0 driver (Android etc.) the fixed-function code
     // path below cannot be used — there is no glMatrixMode / glColor4f /
     // glEnableClientState / glVertexPointer. Use a small dedicated
