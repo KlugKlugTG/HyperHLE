@@ -2267,6 +2267,56 @@ impl Window {
         (x, y, scaled_width, scaled_height)
     }
 
+    /// Map a guest-space `CGRect` (points, possibly rotated/letterboxed) to
+    /// host window pixels `(x, y, w, h)` for host-side overlays (native
+    /// Android webviews etc.). Returns `w`/`h` of 0 when nothing is visible.
+    pub fn guest_frame_to_window_px(
+        &self,
+        frame: crate::frameworks::core_graphics::CGRect,
+    ) -> (i32, i32, i32, i32) {
+        let (vp_x, vp_y, vp_w, vp_h) = self.viewport();
+        let (app_w, app_h) = self.size_unrotated_unscaled();
+        let (app_w, app_h) = (app_w as f32, app_h as f32);
+        if app_w <= 0.0 || app_h <= 0.0 || vp_w == 0 || vp_h == 0 {
+            return (0, 0, 0, 0);
+        }
+        let sx = vp_w as f32 / app_w;
+        let sy = vp_h as f32 / app_h;
+        // Rotate the guest rect into the device orientation, then scale to
+        // viewport pixels (mirrors the composition rotation).
+        let (x, y, w, h) = match self.device_orientation {
+            crate::window::DeviceOrientation::Portrait => (
+                frame.origin.x as f32,
+                frame.origin.y as f32,
+                frame.size.width as f32,
+                frame.size.height as f32,
+            ),
+            crate::window::DeviceOrientation::PortraitUpsideDown => (
+                app_w - frame.origin.x as f32 - frame.size.width as f32,
+                app_h - frame.origin.y as f32 - frame.size.height as f32,
+                frame.size.width as f32,
+                frame.size.height as f32,
+            ),
+            crate::window::DeviceOrientation::LandscapeLeft => (
+                frame.origin.y as f32,
+                app_w - frame.origin.x as f32 - frame.size.width as f32,
+                frame.size.height as f32,
+                frame.size.width as f32,
+            ),
+            crate::window::DeviceOrientation::LandscapeRight => (
+                app_h - frame.origin.y as f32 - frame.size.height as f32,
+                frame.origin.x as f32,
+                frame.size.height as f32,
+                frame.size.width as f32,
+            ),
+        };
+        let px = (vp_x as f32 + x * sx).round() as i32;
+        let py = (vp_y as f32 + y * sy).round() as i32;
+        let pw = (w * sx).round() as i32;
+        let ph = (h * sy).round() as i32;
+        (px, py, pw.max(0), ph.max(0))
+    }
+
     /// Special offset to add to y co-ordinates, only when drawing to screen.
     pub fn viewport_y_offset(&self) -> u32 {
         #[cfg(target_os = "macos")]

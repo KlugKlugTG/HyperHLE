@@ -82,9 +82,9 @@ pub struct State {
 }
 
 pub(crate) struct UIViewHostObject {
-    layer: id,
-    subviews: Vec<id>,
-    superview: id,
+    pub(crate) layer: id,
+    pub(crate) subviews: Vec<id>,
+    pub(crate) superview: id,
     view_controller: id,
     /// Only used by UIWindow. Strong reference for the iOS 4
     /// rootViewController property.

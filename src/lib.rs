@@ -27,6 +27,7 @@
 #[macro_use]
 mod log;
 mod abi;
+mod android_web_view;
 mod audio;
 mod bundle;
 mod cpu;

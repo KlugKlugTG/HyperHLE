@@ -38,6 +38,252 @@ public class MainActivity extends SDLActivity {
     // Request code for the system file picker started by this activity.
     private static final int REQUEST_ADD_IPA = 1;
 
+    // =====================================================================
+    // Real WebView overlay support (called from Rust via JNI; see
+    // src/android_web_view.rs). Each UIWebView in the emulated app can
+    // display a genuine Android WebView layered on top of the SDL surface,
+    // with real page loading (HTML/CSS/JS), link navigation, back/forward
+    // and JavaScript evaluation.
+    // =====================================================================
+    private static final java.util.HashMap<Integer, android.webkit.WebView> webOverlays =
+            new java.util.HashMap<Integer, android.webkit.WebView>();
+    private static int nextWebOverlayId = 1;
+
+    // Create a new overlay WebView loading `url` (may be empty to create it
+    // blank). x/y/w/h are in window pixels; w or h <= 0 means "match the
+    // window" on that axis. Returns the overlay id (always > 0).
+    public static int showWebOverlay(final String url, final int x, final int y,
+                                     final int w, final int h) {
+        final int id = nextWebOverlayId++;
+        mSingleton.runOnUiThread(new Runnable() {
+            public void run() {
+                createWebOverlay(id, url, x, y, w, h);
+            }
+        });
+        return id;
+    }
+
+    private static void createWebOverlay(int id, String url, int x, int y, int w, int h) {
+        android.app.Activity act = mSingleton;
+        if (act == null) return;
+        try {
+            android.webkit.WebView wv = new android.webkit.WebView(act);
+            android.webkit.WebSettings ws = wv.getSettings();
+            ws.setJavaScriptEnabled(true);
+            ws.setDomStorageEnabled(true);
+            ws.setLoadWithOverviewMode(true);
+            ws.setUseWideViewPort(true);
+            ws.setBuiltInZoomControls(true);
+            ws.setDisplayZoomControls(false);
+            ws.setSupportZoom(true);
+            ws.setMediaPlaybackRequiresUserGesture(false);
+            wv.setWebChromeClient(new android.webkit.WebChromeClient());
+            wv.setWebViewClient(new android.webkit.WebViewClient());
+            // Transparent background so the emulated app shows through before
+            // the page paints.
+            wv.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+
+            android.view.ViewGroup content =
+                    (android.view.ViewGroup) act.findViewById(android.R.id.content);
+            int width = w > 0 ? w : android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+            int height = h > 0 ? h : android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+            android.widget.FrameLayout.LayoutParams lp =
+                    new android.widget.FrameLayout.LayoutParams(width, height);
+            content.addView(wv, lp);
+            wv.setTranslationX(x);
+            wv.setTranslationY(y);
+            content.bringChildToFront(wv);
+
+            if (url != null && !url.isEmpty()) {
+                wv.loadUrl(url);
+            }
+            webOverlays.put(id, wv);
+        } catch (Throwable t) {
+            Log.e(TAG, "createWebOverlay failed", t);
+        }
+    }
+
+    // Navigate an existing overlay to a new URL.
+    public static void navigateWebOverlay(final int id, final String url) {
+        withWebOverlay(id, new Runnable() {
+            public void run() {
+                webOverlays.get(id).loadUrl(url);
+            }
+        });
+    }
+
+    // Load raw data (e.g. loadHTMLString:) into an existing overlay.
+    public static void loadDataWebOverlay(final int id, final String data,
+                                          final String mime) {
+        withWebOverlay(id, new Runnable() {
+            public void run() {
+                webOverlays.get(id).loadDataWithBaseURL(null, data,
+                        mime != null ? mime : "text/html", "utf-8", null);
+            }
+        });
+    }
+
+    // Move/resize an existing overlay (window pixels).
+    public static void setWebOverlayBounds(final int id, final int x, final int y,
+                                           final int w, final int h) {
+        withWebOverlay(id, new Runnable() {
+            public void run() {
+                android.webkit.WebView wv = webOverlays.get(id);
+                android.view.ViewGroup.LayoutParams lp0 = wv.getLayoutParams();
+                int width = w > 0 ? w : lp0.width;
+                int height = h > 0 ? h : lp0.height;
+                android.widget.FrameLayout.LayoutParams lp;
+                if (lp0 instanceof android.widget.FrameLayout.LayoutParams) {
+                    lp = (android.widget.FrameLayout.LayoutParams) lp0;
+                    lp.width = width;
+                    lp.height = height;
+                } else {
+                    lp = new android.widget.FrameLayout.LayoutParams(width, height);
+                    wv.setLayoutParams(lp);
+                }
+                wv.setTranslationX(x);
+                wv.setTranslationY(y);
+                wv.requestLayout();
+            }
+        });
+    }
+
+    // Remove and destroy an overlay.
+    public static void hideWebOverlay(final int id) {
+        android.app.Activity act = mSingleton;
+        if (act == null) return;
+        act.runOnUiThread(new Runnable() {
+            public void run() {
+                android.webkit.WebView wv = webOverlays.remove(id);
+                if (wv == null) return;
+                try {
+                    android.view.ViewGroup parent = (android.view.ViewGroup) wv.getParent();
+                    if (parent != null) parent.removeView(wv);
+                    wv.stopLoading();
+                    wv.destroy();
+                } catch (Throwable t) {
+                    Log.e(TAG, "hideWebOverlay failed", t);
+                }
+            }
+        });
+    }
+
+    public static void goBackWebOverlay(final int id) {
+        withWebOverlay(id, new Runnable() {
+            public void run() {
+                if (webOverlays.get(id).canGoBack()) webOverlays.get(id).goBack();
+            }
+        });
+    }
+
+    public static void goForwardWebOverlay(final int id) {
+        withWebOverlay(id, new Runnable() {
+            public void run() {
+                if (webOverlays.get(id).canGoForward()) webOverlays.get(id).goForward();
+            }
+        });
+    }
+
+    public static boolean canGoBackWebOverlay(final int id) {
+        return withWebOverlayResult(id, new java.util.concurrent.Callable<Boolean>() {
+            public Boolean call() {
+                return webOverlays.get(id).canGoBack();
+            }
+        }, Boolean.FALSE);
+    }
+
+    public static boolean canGoForwardWebOverlay(final int id) {
+        return withWebOverlayResult(id, new java.util.concurrent.Callable<Boolean>() {
+            public Boolean call() {
+                return webOverlays.get(id).canGoForward();
+            }
+        }, Boolean.FALSE);
+    }
+
+    // Evaluate JavaScript synchronously (called from the SDL thread; blocks
+    // the caller for up to ~5s until the UI thread produces the result).
+    public static String evalJsWebOverlay(final int id, final String script) {
+        return withWebOverlayResult(id, new java.util.concurrent.Callable<String>() {
+            public String call() {
+                final java.util.concurrent.CountDownLatch latch =
+                        new java.util.concurrent.CountDownLatch(1);
+                final String[] result = new String[]{""};
+                webOverlays.get(id).evaluateJavascript(script,
+                        new android.webkit.ValueCallback<String>() {
+                            public void onReceiveValue(String value) {
+                                result[0] = value != null ? value : "";
+                                latch.countDown();
+                            }
+                        });
+                try {
+                    latch.await(5, java.util.concurrent.TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return result[0];
+            }
+        }, "");
+    }
+
+    public static void stopLoadingWebOverlay(final int id) {
+        withWebOverlay(id, new Runnable() {
+            public void run() {
+                webOverlays.get(id).stopLoading();
+            }
+        });
+    }
+
+    private static void withWebOverlay(final int id, final Runnable r) {
+        android.app.Activity act = mSingleton;
+        if (act == null) return;
+        act.runOnUiThread(new Runnable() {
+            public void run() {
+                if (webOverlays.containsKey(id)) r.run();
+            }
+        });
+    }
+
+    // Run a Callable that touches a WebView on the UI thread and block the
+    // SDL thread until the result is available (or timeout).
+    @SuppressWarnings("unchecked")
+    private static <T> T withWebOverlayResult(final int id,
+                                              final java.util.concurrent.Callable<T> c,
+                                              T fallback) {
+        final java.util.concurrent.CountDownLatch latch =
+                new java.util.concurrent.CountDownLatch(1);
+        final Object[] out = new Object[1];
+        final Throwable[] err = new Throwable[1];
+        Runnable body = new Runnable() {
+            public void run() {
+                try {
+                    if (webOverlays.containsKey(id)) out[0] = c.call();
+                } catch (Throwable t) {
+                    err[0] = t;
+                } finally {
+                    latch.countDown();
+                }
+            }
+        };
+        android.app.Activity act = mSingleton;
+        if (act == null) return fallback;
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            body.run();
+        } else {
+            act.runOnUiThread(body);
+        }
+        try {
+            latch.await(5, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        if (err[0] != null) {
+            Log.e(TAG, "webOverlay call failed", err[0]);
+            return fallback;
+        }
+        if (out[0] == null) return fallback;
+        return (T) out[0];
+    }
+
     @Override
     protected String[] getLibraries() {
         return new String[]{
