@@ -35,7 +35,7 @@
 
 use crate::dyld::{export_c_func, ConstantExports, FunctionExports, HostConstant, HostDylib};
 use crate::font::{Font, TextAlignment, WrapMode};
-use crate::frameworks::core_foundation::CFRange;
+use crate::frameworks::core_foundation::{CFRange, cf_array::CFArrayRef, cf_type::CFTypeRef};
 use crate::frameworks::core_graphics::cg_bitmap_context::CGBitmapContextDrawer;
 use crate::frameworks::core_graphics::cg_font::{CGFontCreateWithFontName, CGFontRef, CGGlyph};
 use crate::frameworks::core_graphics::{CGFloat, CGPoint, CGRect, CGSize};
@@ -337,6 +337,23 @@ fn CTFontDescriptorCreateWithAttributes(
     };
     retain(env, attrs);
     alloc_descriptor(env, attrs)
+}
+
+/// `CTFontDescriptorCreateMatchingFontDescriptors` — returns descriptors
+/// matching the given one under `attributes` (a set of mandatory keys).
+/// touchHLE's font stack only exposes the built-in system fonts, so no
+/// additional descriptors can ever match: return an empty (non-null)
+/// CFArray, which is what a real system returns when nothing matches.
+/// Returning NULL here makes some engines treat Core Text as broken and
+/// abort font fallback entirely.
+fn CTFontDescriptorCreateMatchingFontDescriptors(
+    env: &mut Environment,
+    _descriptor: CTFontDescriptorRef,
+    _attributes: CFTypeRef, // CFSetRef of mandatory attribute keys
+) -> CFArrayRef {
+    let empty: CFArrayRef = msg_class![env; NSArray array];
+    retain(env, empty);
+    empty
 }
 
 fn CTFontCreateWithFontDescriptor(
@@ -998,6 +1015,7 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CTFontCreateWithGraphicsFont(_, _, _, _)),
     export_c_func!(CTFontCreateWithFontDescriptor(_, _, _)),
     export_c_func!(CTFontDescriptorCreateWithAttributes(_)),
+    export_c_func!(CTFontDescriptorCreateMatchingFontDescriptors(_, _)),
     export_c_func!(CTFontManagerRegisterGraphicsFont(_, _)),
     export_c_func!(CTFontGetAscent(_)),
     export_c_func!(CTFontGetDescent(_)),

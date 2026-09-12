@@ -105,6 +105,12 @@ pub struct ObjC {
     /// If an object isn't in this map, we will consider it not to exist.
     objects: HashMap<id, HostObjectEntry>,
 
+    /// Fake-borrow warnings already logged, as (object id, host type).
+    /// Games commonly retry operations on missing/faked objects every
+    /// frame; without this set the log fills with thousands of identical
+    /// "SUPER HACK!" lines. One warning per pair is enough for diagnosis.
+    fake_borrow_warned: std::sync::Mutex<std::collections::HashSet<(id, std::any::TypeId)>>,
+
     /// Known classes.
     ///
     /// Look at the `isa` to get the metaclass for a class.
@@ -212,6 +218,7 @@ impl ObjC {
             objects: HashMap::new(),
             classes: HashMap::new(),
             sync_mutexes: HashMap::new(),
+            fake_borrow_warned: std::sync::Mutex::new(std::collections::HashSet::new()),
             property_locks: HashMap::new(),
             message_type_info: None,
             initialized_classes: HashSet::new(),

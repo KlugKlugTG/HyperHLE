@@ -292,16 +292,20 @@ impl super::ObjC {
             // diagnosable — it's usually either a guest pointer/type confusion
             // or a host class that forgot to embed its superclass host object
             // (see `impl_HostObject_with_superclass!`).
+            if self.warn_fake_borrow_once(object, std::any::TypeId::of::<T>()) {
+                log!(
+                    "Warning: SUPER HACK! Faking borrow for wrong-type object {:?}: \
+                     requested {}, actual host type {} (suppressing further warnings \
+                     for this object/type pair)",
+                    object,
+                    std::any::type_name::<T>(),
+                    entry.host_object.type_name(),
+                );
+            }
+        } else if self.warn_fake_borrow_once(object, std::any::TypeId::of::<T>()) {
             log!(
-                "Warning: SUPER HACK! Faking borrow for wrong-type object {:?}: \
-                 requested {}, actual host type {}",
-                object,
-                std::any::type_name::<T>(),
-                entry.host_object.type_name(),
-            );
-        } else {
-            log!(
-                "Warning: SUPER HACK! Faking borrow for missing object {:?} of type {}",
+                "Warning: SUPER HACK! Faking borrow for missing object {:?} of type {} \
+                 (suppressing further warnings for this object/type pair)",
                 object,
                 std::any::type_name::<T>()
             );
@@ -334,14 +338,25 @@ impl super::ObjC {
                 "borrow_mut on nil receiver of type {} — returning zero-initialized phantom",
                 std::any::type_name::<T>()
             );
-        } else {
+        } else if self.warn_fake_borrow_once(object, std::any::TypeId::of::<T>()) {
             log!(
-                "Warning: SUPER HACK! Faking borrow_mut for missing object {:?} of type {}",
+                "Warning: SUPER HACK! Faking borrow_mut for missing object {:?} of type {} \
+                 (suppressing further warnings for this object/type pair)",
                 object,
                 std::any::type_name::<T>()
             );
         }
         phantom_host_object_mut::<T>(object)
+    }
+
+    /// Returns `true` the first time a fake borrow is attempted for the
+    /// (object, host type) pair, `false` afterwards. Keeps the diagnostic
+    /// value of the SUPER HACK warnings while preventing per-frame spam.
+    fn warn_fake_borrow_once(&self, object: id, ty: std::any::TypeId) -> bool {
+        self.fake_borrow_warned
+            .lock()
+            .unwrap()
+            .insert((object, ty))
     }
 
     pub fn get_refcount(&mut self, object: id) -> NonZeroU32 {

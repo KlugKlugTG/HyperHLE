@@ -19,6 +19,7 @@ pub mod gk_challenge_event_handler;
 mod gk_leaderboard;
 pub mod gk_leaderboard_view_controller;
 pub mod gk_local_player;
+pub mod gk_matchmaker;
 mod gk_score;
 mod gk_session;
 mod gk_turn_based_event_handler;
@@ -46,6 +47,7 @@ pub const CONSTANTS: ConstantExports = &[
 #[derive(Default)]
 pub struct State {
     pub local_player: gk_local_player::State,
+    pub matchmaker: gk_matchmaker::State,
     pub challenge_event_handler: gk_challenge_event_handler::State,
     pub turn_based_event_handler: gk_turn_based_event_handler::State,
 }
@@ -62,6 +64,7 @@ pub const DYLIB: crate::dyld::HostDylib = crate::dyld::HostDylib {
         gk_leaderboard::CLASSES,
         gk_leaderboard_view_controller::CLASSES,
         gk_local_player::CLASSES,
+        gk_matchmaker::CLASSES,
         gk_score::CLASSES,
         gk_session::CLASSES,
     ],

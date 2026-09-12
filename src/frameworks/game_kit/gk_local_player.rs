@@ -32,7 +32,7 @@ const BLOCK_INVOKE_WORD_OFFSET: u32 = 3;
 /// Game Center" condition. Domain = `GKErrorDomain`,
 /// code = `GKErrorNotAuthenticated`, with a localized description so
 /// games that surface the error to the user get a sensible message.
-fn make_not_authenticated_error(env: &mut Environment) -> id {
+pub fn make_not_authenticated_error(env: &mut Environment) -> id {
     use crate::frameworks::foundation::ns_string::{from_rust_string, get_static_str};
     let domain = from_rust_string(env, "GKErrorDomain".to_string());
     autorelease(env, domain);
