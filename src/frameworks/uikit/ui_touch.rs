@@ -15,7 +15,7 @@ use super::ui_gesture_recognizer::{
 };
 use crate::frameworks::core_graphics::{CGPoint, CGRect};
 use crate::frameworks::foundation::{NSInteger, NSTimeInterval, NSUInteger};
-use crate::mem::MutVoidPtr;
+use crate::mem::{GuestUSize, MutVoidPtr};
 use crate::objc::{
     autorelease, id, msg, msg_class, msg_send_no_type_checking, nil, objc_classes, release, retain,
     ClassExports, HostObject, NSZonePtr,
@@ -42,17 +42,48 @@ pub struct State {
     pub current_touches: HashMap<FingerId, id>,
 }
 
+/// Guest-memory ivars for `UITouch`.
+///
+/// Some engines (Gameloft's Cross engine in Scarface, etc.) do a raw
+/// `memcpy` of the whole 0x40-byte `UITouch` object into their own
+/// structures and later send messages to that *copy*. On real iOS this
+/// works because instance methods read their ivars from the object's own
+/// guest memory. To emulate that, ALL public state lives in guest memory
+/// at self-consistent offsets within the first 0x40 bytes; methods must
+/// never read it from the host object (a copy is not registered in the
+/// object map, so a host-side lookup would fail and return garbage).
+#[repr(C)]
+struct UITouchIvars {
+    /// Written by the runtime in `alloc_object_inner`; never touched by us.
+    _isa: u32,
+    window: id,                // 0x04
+    view: id,                  // 0x08
+    phase: UITouchPhase,       // 0x0C
+    timestamp: NSTimeInterval, // 0x10
+    location: CGPoint,         // 0x18
+    previous_location: CGPoint, // 0x28
+    tap_count: u32,            // 0x38
+    // struct size: 0x40, matching the stride guest engines use when they
+    // bit-copy a UITouch.
+}
+
+/// Run `f` with the guest-memory ivars of the (possibly unregistered —
+/// i.e. a guest-made bit-copy) UITouch at `this`. The borrow is not held
+/// across message sends: copy fields out first, then act on them.
+fn touch_ivars<R>(env: &mut Environment, this: id, f: impl FnOnce(&mut UITouchIvars) -> R) -> R {
+    let size = std::mem::size_of::<UITouchIvars>();
+    let bytes = env.mem.bytes_at_mut(this.cast(), size as GuestUSize);
+    let ivars = unsafe { &mut *(bytes.as_mut_ptr() as *mut UITouchIvars) };
+    f(ivars)
+}
+
 #[derive(Default)]
 pub(super) struct UITouchHostObject {
-    pub(super) view: id,
-    pub(super) window: id,
-    location: CGPoint,
-    previous_location: CGPoint,
     /// Where this touch first landed (in window/screen coordinates). Used to
     /// compute the total displacement for swipe gesture recognition.
+    /// Host-side only: guests never need it, and swipe recognition always
+    /// operates on registered (non-copied) touch objects.
     start_location: CGPoint,
-    timestamp: NSTimeInterval,
-    phase: UITouchPhase,
 }
 impl HostObject for UITouchHostObject {}
 
@@ -252,15 +283,16 @@ pub const CLASSES: ClassExports = objc_classes! {
 
 + (id)allocWithZone:(NSZonePtr)_zone {
     let host_object = Box::new(UITouchHostObject {
-        view: nil,
-        window: nil,
-        location: CGPoint { x: 0.0, y: 0.0 },
-        previous_location: CGPoint { x: 0.0, y: 0.0 },
         start_location: CGPoint { x: 0.0, y: 0.0 },
-        timestamp: 0.0,
-        phase: UITouchPhaseBegan,
     });
-    env.objc.alloc_object(this, host_object, &mut env.mem)
+    // The guest allocation must cover the ivars (see `UITouchIvars`): guest
+    // engines bit-copy the whole 0x40-byte object and message the copy.
+    env.objc.alloc_object_sized(
+        this,
+        std::mem::size_of::<UITouchIvars>() as GuestUSize,
+        host_object,
+        &mut env.mem,
+    )
 }
 
 - (())dealloc {
@@ -278,7 +310,7 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (CGPoint)locationInView:(id)that_view {
-    let &UITouchHostObject { location, window, view, .. } = env.objc.borrow(this);
+    let (location, window, view) = touch_ivars(env, this, |v| (v.location, v.window, v.view));
     let location_in_window: CGPoint = msg![env; window
         convertPoint:location fromWindow:nil];
     let mut result: CGPoint = if that_view == nil {
@@ -300,7 +332,8 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (CGPoint)previousLocationInView:(id)that_view {
-    let &UITouchHostObject { previous_location, window, view, .. } = env.objc.borrow(this);
+    let (previous_location, window, view) =
+        touch_ivars(env, this, |v| (v.previous_location, v.window, v.view));
     let location_in_window: CGPoint = msg![env; window
         convertPoint:previous_location fromWindow:nil];
     let mut result: CGPoint = if that_view == nil {
@@ -319,23 +352,23 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (id)view {
-    env.objc.borrow::<UITouchHostObject>(this).view
+    touch_ivars(env, this, |v| v.view)
 }
 
 - (id)window {
-    env.objc.borrow::<UITouchHostObject>(this).window
+    touch_ivars(env, this, |v| v.window)
 }
 
 - (NSTimeInterval)timestamp {
-    env.objc.borrow::<UITouchHostObject>(this).timestamp
+    touch_ivars(env, this, |v| v.timestamp)
 }
 
 - (NSUInteger)tapCount {
-    1
+    touch_ivars(env, this, |v| v.tap_count as NSUInteger)
 }
 
 - (UITouchPhase)phase {
-    env.objc.borrow::<UITouchHostObject>(this).phase
+    touch_ivars(env, this, |v| v.phase)
 }
 
 @end
@@ -352,7 +385,7 @@ pub fn handle_event(env: &mut Environment, event: Event) {
         .cloned()
         .collect();
     for touch in touch_ids {
-        env.objc.borrow_mut::<UITouchHostObject>(touch).phase = UITouchPhaseStationary;
+        touch_ivars(env, touch, |v| v.phase = UITouchPhaseStationary);
     }
     match event {
         Event::TouchesDown(map) => handle_touches_down(env, map),
@@ -551,15 +584,16 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             y: coords.1,
         };
         let new_touch: id = msg_class![env; UITouch alloc];
-        *env.objc.borrow_mut(new_touch) = UITouchHostObject {
-            view: nil,
-            window: nil,
-            location,
-            previous_location: location,
-            start_location: location,
-            timestamp,
-            phase: UITouchPhaseBegan,
-        };
+        touch_ivars(env, new_touch, |v| {
+            v.window = nil;
+            v.view = nil;
+            v.location = location;
+            v.previous_location = location;
+            v.timestamp = timestamp;
+            v.phase = UITouchPhaseBegan;
+            v.tap_count = 1;
+        });
+        env.objc.borrow_mut::<UITouchHostObject>(new_touch).start_location = location;
         autorelease(env, new_touch);
 
         let _: () = msg![env; touches addObject:new_touch];
@@ -587,13 +621,17 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
 
     let event = ui_event::new_event(env, all_touches_set);
     autorelease(env, event);
-    let views_with_existing_touches: HashSet<id> = env
+    let current_touch_ids: Vec<id> = env
         .framework_state
         .uikit
         .ui_touch
         .current_touches
         .values()
-        .map(|&touch| env.objc.borrow::<UITouchHostObject>(touch).view)
+        .cloned()
+        .collect();
+    let views_with_existing_touches: HashSet<id> = current_touch_ids
+        .into_iter()
+        .map(|touch| touch_ivars(env, touch, |v| v.view))
         .collect();
     let mut view_touches: HashMap<id, id> = HashMap::new();
     let touches_arr: id = msg![env; touches allObjects];
@@ -603,7 +641,7 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
     for i in 0..touches_count {
         let touch: id = msg![env;
             touches_arr objectAtIndex:i];
-        let &UITouchHostObject { location, .. } = env.objc.borrow(touch);
+        let location = touch_ivars(env, touch, |v| v.location);
 
         let windows = env.framework_state.uikit.ui_view.ui_window.windows.clone();
         let found_window = windows.iter().rev().find_map(|&window| {
@@ -718,16 +756,20 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             && !touchhle_cocos_should_allow_multitouch(env, view)
             && (view_touches.contains_key(&view) || views_with_existing_touches.contains(&view))
         {
-            let stuck: Vec<FingerId> = env
+            let active: Vec<(FingerId, id)> = env
                 .framework_state
                 .uikit
                 .ui_touch
                 .current_touches
                 .iter()
-                .filter(|(_, &t)| {
-                    env.objc.borrow::<UITouchHostObject>(t).view == view && t != touch
+                .map(|(&fid, &t)| (fid, t))
+                .collect();
+            let stuck: Vec<FingerId> = active
+                .into_iter()
+                .filter(|&(_, t)| {
+                    touch_ivars(env, t, |v| v.view) == view && t != touch
                 })
-                .map(|(&fid, _)| fid)
+                .map(|(fid, _)| fid)
                 .collect();
             if !stuck.is_empty() {
                 for fid in stuck {
@@ -756,12 +798,11 @@ fn handle_touches_down(env: &mut Environment, map: HashMap<FingerId, Coords>) {
         let _: () = msg![env; v_set addObject:touch];
         retain(env, view);
         retain(env, window);
-        {
-            let t_obj = env.objc.borrow_mut::<UITouchHostObject>(touch);
-            t_obj.view = view;
-            t_obj.window = window;
-            t_obj.location = location;
-        }
+        touch_ivars(env, touch, |v| {
+            v.view = view;
+            v.window = window;
+            v.location = location;
+        });
     }
 
     for (view, v_set) in view_touches {
@@ -796,15 +837,21 @@ fn handle_touches_move(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             x: coords.0,
             y: coords.1,
         };
-        let view = env.objc.borrow::<UITouchHostObject>(touch).view;
-        let host = env.objc.borrow_mut::<UITouchHostObject>(touch);
-        if host.location == location {
+        let view = touch_ivars(env, touch, |v| v.view);
+        let moved = touch_ivars(env, touch, |v| {
+            if v.location == location {
+                false
+            } else {
+                v.previous_location = v.location;
+                v.location = location;
+                v.timestamp = timestamp;
+                v.phase = UITouchPhaseMoved;
+                true
+            }
+        });
+        if !moved {
             continue;
         }
-        host.previous_location = host.location;
-        host.location = location;
-        host.timestamp = timestamp;
-        host.phase = UITouchPhaseMoved;
 
         if let Entry::Vacant(e) = view_touches.entry(view) {
             let s: id = msg_class![env;
@@ -960,15 +1007,13 @@ fn handle_touches_up(env: &mut Environment, map: HashMap<FingerId, Coords>) {
             x: coords.0,
             y: coords.1,
         };
-        let view = env.objc.borrow::<UITouchHostObject>(touch).view;
-        let start_location = env.objc.borrow::<UITouchHostObject>(touch).start_location;
-        {
-            let host = env.objc.borrow_mut::<UITouchHostObject>(touch);
-            host.previous_location = host.location;
-            host.location = location;
-            host.timestamp = timestamp;
-            host.phase = UITouchPhaseEnded;
-        }
+        let view = touch_ivars(env, touch, |v| v.view);
+        touch_ivars(env, touch, |v| {
+            v.previous_location = v.location;
+            v.location = location;
+            v.timestamp = timestamp;
+            v.phase = UITouchPhaseEnded;
+        });
 
         let _: () = msg![env;
             touches addObject:touch];

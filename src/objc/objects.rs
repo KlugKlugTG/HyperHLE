@@ -194,6 +194,26 @@ impl super::ObjC {
         )
     }
 
+    /// Like [Self::alloc_object], but with an explicit guest instance size.
+    /// Needed for classes whose guest-memory layout carries the object's
+    /// state (so guest code that bit-copies the object — e.g. Gameloft's
+    /// engines copying a 0x40-byte UITouch — gets a fully functional copy).
+    pub fn alloc_object_sized(
+        &mut self,
+        isa: Class,
+        instance_size: GuestUSize,
+        host_object: Box<dyn AnyHostObject>,
+        mem: &mut Mem,
+    ) -> id {
+        self.alloc_object_inner(
+            isa,
+            instance_size,
+            host_object,
+            mem,
+            Some(NonZeroU32::new(1).unwrap()),
+        )
+    }
+
     pub fn alloc_static_object(
         &mut self,
         isa: Class,
