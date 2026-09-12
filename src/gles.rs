@@ -1770,13 +1770,9 @@ pub fn create_gles1_ctx_no_parent_stack(
         Some(_) => &forced_list[..],
         None => match options.gles1_implementation {
             Some(ref preference) => std::slice::from_ref(preference),
-            // ANGLE implements OpenGL ES 1.1 natively (libGLESv1_CM_angle),
-            // so the native path is preferred exactly as without ANGLE; the
-            // ES1-on-ES2 translator stays available as a fallback because
-            // ANGLE has no desktop-GL backend for GLES1OnGL2.
             None if using_angle => &[
-                GLESImplementation::GLES1Native,
                 GLESImplementation::GLES1OnGLES2,
+                GLESImplementation::GLES1Native,
                 GLESImplementation::GLES1OnGL2,
             ],
             None => GLESImplementation::GLES1_IMPLEMENTATIONS,
