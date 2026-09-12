@@ -109,10 +109,7 @@ impl GLESContext for LoggingGLESContext {
         "Logging wrapper for GLES context"
     }
 
-    fn new(
-        window: &mut crate::window::Window,
-        _options: &crate::options::Options,
-    ) -> Result<Self, String> {
+    fn new(window: &mut crate::window::Window) -> Result<Self, String> {
         // This is a wrapper, so it's not created directly via `new`.
         // It's created by wrapping an existing context.
         Err("LoggingGLESContext cannot be created directly via new()".to_string())
@@ -1515,15 +1512,14 @@ impl GLESImplementation {
     pub fn construct(
         self,
         window: &mut crate::window::Window,
-        options: &crate::options::Options,
     ) -> Result<Box<dyn GLESContext>, String> {
         fn boxer<T: GLESContext + 'static>(ctx: T) -> Box<dyn GLESContext> {
             Box::new(ctx)
         }
         match self {
-            Self::GLES1Native => GLES1NativeContext::new(window, options).map(boxer),
-            Self::GLES1OnGL2 => GLES1OnGL2Context::new(window, options).map(boxer),
-            Self::GLES1OnGLES2 => GLES1OnGLES2Context::new(window, options).map(boxer),
+            Self::GLES1Native => GLES1NativeContext::new(window).map(boxer),
+            Self::GLES1OnGL2 => GLES1OnGL2Context::new(window).map(boxer),
+            Self::GLES1OnGLES2 => GLES1OnGLES2Context::new(window).map(boxer),
         }
     }
 }
@@ -1534,7 +1530,7 @@ pub fn create_gles1_translator_ctx_no_parent_stack(
     assert!(window.on_main_stack());
     log!("Creating the OpenGL ES 1.1 to native OpenGL ES 2.0 translator");
     Box::new(
-        GLES1OnGLES2Context::new(window, &crate::options::Options::default())
+        GLES1OnGLES2Context::new(window)
             .expect("Couldn't create OpenGL ES 1.1-on-GLES2 translator context!"),
     )
 }
@@ -1544,12 +1540,8 @@ pub fn create_gles1_gles3_translator_ctx_no_parent_stack(
     assert!(window.on_main_stack());
     log!("Creating the OpenGL ES 1.1 to native OpenGL ES 3.0 translator");
     Box::new(
-        GLES1OnGLES2Context::new_with_gl_version(
-            window,
-            &crate::options::Options::default(),
-            GLVersion::GLES30,
-        )
-        .expect("Couldn't create OpenGL ES 1.1-on-GLES3 translator context!"),
+        GLES1OnGLES2Context::new_with_gl_version(window, GLVersion::GLES30)
+            .expect("Couldn't create OpenGL ES 1.1-on-GLES3 translator context!"),
     )
 }
 
@@ -1600,7 +1592,7 @@ pub fn create_gles2_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
 
         let ctx = {
             log!("Trying: {}", GLES2NativeContext::description());
-            match GLES2NativeContext::new(window, options) {
+            match GLES2NativeContext::new(window) {
                 Ok(ctx) => {
                     log!("=> Success!");
                     Some(Box::new(ctx) as Box<dyn GLESContext>)
@@ -1615,7 +1607,7 @@ pub fn create_gles2_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
                     "Trying: {} (used for OpenGL ES 2.0)",
                     GLES2OnGL3Context::description()
                 );
-                match GLES2OnGL3Context::new(window, options) {
+                match GLES2OnGL3Context::new(window) {
                     Ok(ctx) => {
                         log!("=> Success!");
                         Some(Box::new(ctx) as Box<dyn GLESContext>)
@@ -1631,7 +1623,7 @@ pub fn create_gles2_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
                     "Trying: {} (legacy GL 2.1 fallback for OpenGL ES 2.0)",
                     GLES1OnGL2Context::description()
                 );
-                match GLES1OnGL2Context::new(window, options) {
+                match GLES1OnGL2Context::new(window) {
                     Ok(ctx) => {
                         log!("=> Success!");
                         Some(Box::new(ctx) as Box<dyn GLESContext>)
@@ -1671,7 +1663,7 @@ pub fn create_gles3_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
 
         let ctx = {
             log!("Trying: {}", GLES3NativeContext::description());
-            match GLES3NativeContext::new(window, options) {
+            match GLES3NativeContext::new(window) {
                 Ok(ctx) => {
                     log!("=> Success!");
                     Some(Box::new(ctx) as Box<dyn GLESContext>)
@@ -1686,7 +1678,7 @@ pub fn create_gles3_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
                     "Trying: {} (used for OpenGL ES 3.0)",
                     GLES3OnGL3Context::description()
                 );
-                match GLES3OnGL3Context::new(window, options) {
+                match GLES3OnGL3Context::new(window) {
                     Ok(ctx) => {
                         log!("=> Success!");
                         Some(Box::new(ctx) as Box<dyn GLESContext>)
@@ -1717,13 +1709,12 @@ pub fn create_gles3_ctx(env: &mut Environment) -> Box<dyn GLESContext> {
 /// screen, so it must be created before the guest environment exists.
 pub fn create_gles2_ctx_no_parent_stack(
     window: &mut crate::window::Window,
-    options: &crate::options::Options,
 ) -> Box<dyn GLESContext> {
     assert!(window.on_main_stack());
     log!("Creating an OpenGL ES 2.0 context:");
 
     log!("Trying: {}", GLES2NativeContext::description());
-    if let Ok(ctx) = GLES2NativeContext::new(window, options) {
+    if let Ok(ctx) = GLES2NativeContext::new(window) {
         log!("=> Success!");
         return Box::new(ctx);
     }
@@ -1732,7 +1723,7 @@ pub fn create_gles2_ctx_no_parent_stack(
         "Trying: {} (used for OpenGL ES 2.0)",
         GLES2OnGL3Context::description()
     );
-    if let Ok(ctx) = GLES2OnGL3Context::new(window, options) {
+    if let Ok(ctx) = GLES2OnGL3Context::new(window) {
         log!("=> Success!");
         return Box::new(ctx);
     }
@@ -1741,7 +1732,7 @@ pub fn create_gles2_ctx_no_parent_stack(
         "Trying: {} (legacy GL 2.1 fallback for OpenGL ES 2.0)",
         GLES1OnGL2Context::description()
     );
-    match GLES1OnGL2Context::new(window, options) {
+    match GLES1OnGL2Context::new(window) {
         Ok(ctx) => {
             log!("=> Success!");
             Box::new(ctx)
@@ -1794,7 +1785,7 @@ pub fn create_gles1_ctx_no_parent_stack(
     let mut gles1_ctx = None;
     for implementation in list {
         log!("Trying: {}", implementation.description());
-        match implementation.construct(window, options) {
+        match implementation.construct(window) {
             Ok(ctx) => {
                 log!("=> Success!");
                 gles1_ctx = Some(ctx);

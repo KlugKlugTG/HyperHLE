@@ -64,9 +64,6 @@ pub struct Options {
     pub stick_to_touch: Option<(f32, f32, f32, f32)>,
     pub stabilize_virtual_cursor: Option<(f32, f32)>,
     pub gles1_implementation: Option<GLESImplementation>,
-    /// OpenGL ES version requested by EAGL-style host contexts (XaView
-    /// DynamicEsOne/DynamicEsTwo). 1 => ES 1.1, 2 => ES 2.0.
-    pub gles_version: u32,
     /// Allow selected early OpenGL ES 2.0 apps to use the GLES2 subset exposed
     /// through touchHLE's desktop OpenGL 2.1 compatibility backend.
     pub gles2_compat: bool,
@@ -150,7 +147,6 @@ impl Default for Options {
             stick_to_touch: None,
             stabilize_virtual_cursor: None,
             gles1_implementation: None,
-            gles_version: 2,
             gles2_compat: false,
             direct_memory_access: true,
             gdb_listen_addrs: None,
@@ -347,8 +343,6 @@ impl Options {
                     "Invalid sticky radius for --stabilize-virtual-cursor=".to_string()
                 })?;
             self.stabilize_virtual_cursor = Some((smoothing_strength, sticky_radius));
-        } else if let Some(value) = arg.strip_prefix("--gles-version=") {
-            self.gles_version = value.parse().unwrap_or(2);
         } else if let Some(value) = arg.strip_prefix("--gles1=") {
             self.gles1_implementation = Some(
                 GLESImplementation::from_short_name(value)
