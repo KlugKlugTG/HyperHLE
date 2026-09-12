@@ -397,11 +397,15 @@ impl Options {
             self.verbose_gles = true;
         } else if arg == "--fix-texture-min-filter" {
             self.fix_texture_min_filter = true;
+            // GLES1Native reads this as its source of truth (it has no
+            // `Options` access from inside the GL call path).
+            std::env::set_var("TOUCHHLE_FIX_TEXTURE_MIN_FILTER", "1");
         } else if arg == "--no-fix-texture-min-filter" {
             // Off-switch for the Android default. Useful when an iOS
             // title actually relies on mipmap minification and the
             // forced `GL_LINEAR` would visibly degrade quality.
             self.fix_texture_min_filter = false;
+            std::env::set_var("TOUCHHLE_FIX_TEXTURE_MIN_FILTER", "0");
         } else if let Some(value) = arg.strip_prefix("--zero-stack-after-guest-to-host-call=") {
             self.zero_stack_after_guest_to_host_call = Some(value.parse().map_err(|_| {
                 "Invalid value for --zero-stack-after-guest-to-host-call=".to_string()
