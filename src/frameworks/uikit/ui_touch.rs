@@ -264,10 +264,17 @@ pub const CLASSES: ClassExports = objc_classes! {
 }
 
 - (())dealloc {
-    let &mut UITouchHostObject { view, window, .. } = env.objc.borrow_mut(this);
-    release(env, view);
-    release(env, window);
-    env.objc.dealloc_object(this, &mut env.mem)
+    // UITouch objects are owned by the system on real iOS: apps only ever
+    // hold weak, unowned references to them and UIKit keeps them alive for
+    // the app's lifetime. Some 3D games (Gameloft's Scarface, Asphalt etc.)
+    // keep messaging a UITouch pointer many frames after the touch ended.
+    // If we actually deallocate here, those late messages hit a dead object
+    // ("SUPER HACK! Faking borrow for missing object" spam) and return
+    // garbage, which makes the games ignore input. So -dealloc is a no-op:
+    // the refcount machinery still works (releases below zero are no-ops
+    // once the entry's refcount is gone), and each touch leaks a few dozen
+    // bytes for the app's lifetime — negligible.
+    log_dbg!("[(UITouch) dealloc suppressed: touches live for the app's lifetime, like on real iOS]");
 }
 
 - (CGPoint)locationInView:(id)that_view {
