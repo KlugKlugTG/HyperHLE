@@ -1760,21 +1760,10 @@ pub fn create_gles1_ctx_no_parent_stack(
         Some(impl_) => [impl_],
         None => [GLESImplementation::GLES1OnGL2],
     };
-    // When the host GLES stack is ANGLE (the bundled default on Android),
-    // there is no native ES 1.1 support, so the ES 1.1-on-ES 2.0 translator
-    // must come first.
-    let using_angle = std::env::var("SDL_VIDEO_EGL_DRIVER")
-        .map(|driver| driver.contains("angle"))
-        .unwrap_or(false);
     let list: &[GLESImplementation] = match forced {
         Some(_) => &forced_list[..],
         None => match options.gles1_implementation {
             Some(ref preference) => std::slice::from_ref(preference),
-            None if using_angle => &[
-                GLESImplementation::GLES1OnGLES2,
-                GLESImplementation::GLES1Native,
-                GLESImplementation::GLES1OnGL2,
-            ],
             None => GLESImplementation::GLES1_IMPLEMENTATIONS,
         },
     };

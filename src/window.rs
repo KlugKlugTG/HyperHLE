@@ -591,10 +591,6 @@ fn prefer_bundled_angle_driver() {
     }
 
     // Respect an explicit user override completely.
-    if env::var_os("TOUCHHLE_ANGLE").map(|v| v == "0").unwrap_or(false) {
-        log!("TOUCHHLE_ANGLE=0; not using bundled ANGLE.");
-        return;
-    }
     if env::var_os("SDL_VIDEO_EGL_DRIVER").is_some() || env::var_os("SDL_VIDEO_GL_DRIVER").is_some()
     {
         log!(
