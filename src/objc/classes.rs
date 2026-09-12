@@ -752,9 +752,25 @@ impl ObjC {
 
         assert!(list.size % 4 == 0);
         let base: ConstPtr<Class> = Ptr::from_bits(list.addr);
-        for i in 0..(list.size / 4) {
+        let total_entries = list.size / 4;
+        let mut garbage_entries: u32 = 0;
+        for i in 0..total_entries {
             let class = mem.read(base + i);
             let metaclass = Self::read_isa(class, mem);
+
+            // A truncated Mach-O (e.g. Bug Heroes Quest's trimmed armv6 slice,
+            // whose __DATA is entirely past EOF and therefore zero-filled) can
+            // have __objc_classlist entries pointing into zeroed memory: the
+            // class pointer itself reads as nil, or the class struct is zeroed
+            // so its isa (the metaclass) reads as nil. A real class always has
+            // both. Skip garbage entries *before* anything else: registering a
+            // nil object is a no-op in register_static_object, so the name
+            // would still be inserted into `self.classes` below and the
+            // inheritance pass would panic on `get_host_object(nil).unwrap()`.
+            if class == nil || metaclass == nil {
+                garbage_entries += 1;
+                continue;
+            }
 
             let name = if let Some(fakes) = substitute_classes(bundle, mem, class, metaclass) {
                 let (class_host_object, metaclass_host_object) = fakes;
@@ -810,6 +826,12 @@ impl ObjC {
             };
 
             self.classes.insert(name.to_string(), class);
+        }
+
+        if garbage_entries > 0 {
+            log!(
+                "Warning: register_bin_classes: {garbage_entries} of {total_entries} ObjC class entries were garbage (truncated/zero-filled binary — the .ipa is likely damaged); the app may fail to start or misbehave."
+            );
         }
 
         let mut queue = VecDeque::<Class>::new();
@@ -1039,6 +1061,16 @@ impl ObjC {
                 }
             };
             let class = data.class;
+            // In a truncated binary the category entry itself can live in
+            // zero-filled memory (nil/garbage class pointer), or it can target
+            // a class that was skipped as garbage in register_bin_classes.
+            // Skip instead of panicking on get_host_object().unwrap().
+            if class == nil || !self.objects.contains_key(&class) {
+                log!(
+                    "Warning: register_bin_categories: skipping category #{i} — its class ({class:?}) is nil or was not registered (truncated binary)"
+                );
+                continue;
+            }
             let metaclass = Self::read_isa(class, mem);
             for (class, methods) in [
                 (class, data.instance_methods),
