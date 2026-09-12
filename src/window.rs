@@ -565,10 +565,23 @@ pub fn host_screen_size() -> Option<(u32, u32)> {
 ///   when the user enabled ANGLE Preferences).
 #[cfg(target_os = "android")]
 fn prefer_bundled_angle_driver() {
-    /// Candidate (EGL, GLESv2) soname pairs, most specific first.
-    const CANDIDATES: &[(&str, &str)] = &[
-        ("libEGL_angle.so", "libGLESv2_angle.so"),
-        ("libEGL_angle_in_apk.so", "libGLESv2_angle_in_apk.so"),
+    /// Candidate (EGL, GLESv1_CM, GLESv2) soname triples, most specific first.
+    /// `libGLESv1_CM_angle.so` is what SDL should load for touchHLE's ES 1.1
+    /// contexts (this is how Google's own ANGLE-in-APK setup works); entry
+    /// points for higher versions resolve through ANGLE's `eglGetProcAddress`
+    /// regardless. `libfeature_support_angle.so` is dlopened by
+    /// `libGLESv2_angle.so` at runtime, so it must be packaged alongside.
+    const CANDIDATES: &[(&str, &str, &str)] = &[
+        (
+            "libEGL_angle.so",
+            "libGLESv1_CM_angle.so",
+            "libGLESv2_angle.so",
+        ),
+        (
+            "libEGL_angle_in_apk.so",
+            "libGLESv1_CM_angle_in_apk.so",
+            "libGLESv2_angle_in_apk.so",
+        ),
     ];
 
     /// Returns true if `name` can be dynamically loaded (i.e. it is present in
@@ -591,6 +604,13 @@ fn prefer_bundled_angle_driver() {
     }
 
     // Respect an explicit user override completely.
+    if env::var_os("TOUCHHLE_ANGLE")
+        .map(|v| v == "0")
+        .unwrap_or(false)
+    {
+        log!("TOUCHHLE_ANGLE=0; not using bundled ANGLE.");
+        return;
+    }
     if env::var_os("SDL_VIDEO_EGL_DRIVER").is_some() || env::var_os("SDL_VIDEO_GL_DRIVER").is_some()
     {
         log!(
@@ -600,20 +620,33 @@ fn prefer_bundled_angle_driver() {
         return;
     }
 
-    for &(egl, gles) in CANDIDATES {
-        if can_load(egl) && can_load(gles) {
-            // Set before any SDL video init reads these variables; we are still
-            // single-threaded during Window::new startup here.
-            env::set_var("SDL_VIDEO_EGL_DRIVER", egl);
-            env::set_var("SDL_VIDEO_GL_DRIVER", gles);
-            log!(
-                "Bundled ANGLE detected ({} / {}); preferring it over the \
-                 system OpenGL ES driver to avoid Adreno black-screen issues.",
+    for &(egl, gles1, gles2) in CANDIDATES {
+        let loadable =
+            can_load(egl) && can_load(gles1) && can_load(gles2);
+        if !loadable {
+            log_dbg!(
+                "Bundled ANGLE candidate not fully loadable \
+                 (egl={} gles1={} gles2={}); letting SDL use the system driver.",
                 egl,
-                gles
+                gles1,
+                gles2
             );
-            return;
+            continue;
         }
+        // Set before any SDL video init reads these variables; we are still
+        // single-threaded during Window::new startup here.
+        env::set_var("SDL_VIDEO_EGL_DRIVER", egl);
+        // Point SDL's GL loader at ANGLE's ES 1.1 front-end, as in Google's
+        // own ANGLE-in-APK setup.
+        env::set_var("SDL_VIDEO_GL_DRIVER", gles1);
+        log!(
+            "Bundled ANGLE detected ({} / {} / {}); preferring it over the \
+             system OpenGL ES driver to avoid Adreno black-screen issues.",
+            egl,
+            gles1,
+            gles2
+        );
+        return;
     }
     // No bundled ANGLE: fall through and let SDL use the system driver.
 }
