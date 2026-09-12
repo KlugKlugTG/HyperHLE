@@ -1773,7 +1773,6 @@ pub fn create_gles1_ctx_no_parent_stack(
             Some(ref preference) => std::slice::from_ref(preference),
             None if using_angle => &[
                 GLESImplementation::GLES1Native,
-                GLESImplementation::GLES1OnGLES2,
                 GLESImplementation::GLES1OnGL2,
             ],
             None => GLESImplementation::GLES1_IMPLEMENTATIONS,
