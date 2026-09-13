@@ -278,7 +278,7 @@ jobs:
       run: echo 'sdk.dir='$ANDROID_SDK_ROOT > android/local.properties  
 
     - name: Build for Android  
-      run: cd android && ../gradle/gradle-8.11.1/bin/gradle assembleRelease && mv app/build/outputs/apk/release/app-release.apk ../touchHLE.apk  
+      run: cd android && ../gradle/gradle-8.11.1/bin/gradle assembleRelease && mv app/build/outputs/apk/release/HyperHLE-Fork-release.apk ../HyperHLE-Fork.apk  
       env:  
         HYPERHLE_KEYSTORE_B64: ${{ secrets.HYPERHLE_KEYSTORE_B64 }}
         HYPERHLE_KEYSTORE_PASSWORD: ${{ secrets.HYPERHLE_KEYSTORE_PASSWORD }}
@@ -289,7 +289,7 @@ jobs:
     - uses: actions/upload-artifact@main
       with:  
         name: HyperHLE_Android_AArch64  
-        path: touchHLE.apk
+        path: HyperHLE-Fork.apk
 
   build-win:
     runs-on: windows-2022  
