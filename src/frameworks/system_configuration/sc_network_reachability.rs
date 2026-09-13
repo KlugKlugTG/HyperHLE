@@ -142,7 +142,7 @@ fn SCNetworkReachabilitySetCallback(
         .borrow_mut::<SCNetworkReachabilityHostObject>(target);
     host.callout = Some(callout);
     host.context = context;
-    false
+    true
 }
 
 fn SCNetworkReachabilityScheduleWithRunLoop(
