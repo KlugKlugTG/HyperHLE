@@ -211,7 +211,7 @@ fn fork(env: &mut Environment) -> i32 {
     -1
 }
 
-fn unlink(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
+pub(crate) fn unlink(env: &mut Environment, path: ConstPtr<u8>) -> i32 {
     set_errno(env, 0);
 
     let Ok(path_str) = env.mem.cstr_at_utf8(path) else {

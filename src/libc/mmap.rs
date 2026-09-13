@@ -167,6 +167,16 @@ fn shm_open(env: &mut Environment, name: ConstPtr<u8>, oflag: i32, mode: u32) ->
     open_direct(env, name, oflag)
 }
 
+/// `int shm_unlink(const char *name)`
+///
+/// POSIX shared-memory unlink: removes the named shared-memory object.
+/// Regions opened via `shm_open` are backed by our fs layer, where `unlink`
+/// already implements remove-on-last-close semantics. Missing regions return
+/// -1/ENOENT per POSIX.
+fn shm_unlink(env: &mut Environment, name: ConstPtr<u8>) -> i32 {
+    crate::libc::unistd::unlink(env, name)
+}
+
 fn mprotect(env: &mut Environment, addr: MutVoidPtr, len: GuestUSize, prot: i32) -> i32 {
     // POSIX `int mprotect(void *addr, size_t len, int prot)`: returns 0
     // on success, -1 on failure with errno set.
@@ -235,6 +245,7 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(munmap(_, _)),
     export_c_func!(madvise(_, _, _)),
     export_c_func!(shm_open(_, _, _)),
+    export_c_func!(shm_unlink(_)),
     export_c_func!(mprotect(_, _, _)),
     export_c_func!(mlock(_, _)),
     export_c_func!(munlock(_, _)),
