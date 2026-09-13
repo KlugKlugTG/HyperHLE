@@ -1172,16 +1172,16 @@ unsafe fn present_renderbuffer_es2(
         (w, h)
     };
 
-    let mut pixels = vec![
-        0u8;
-        (width.max(0) as usize)
-            .saturating_mul(height.max(0) as usize)
-            .saturating_mul(4)
-    ];
+    // PERF OPTIMIZATION: the frame is resolved on the GPU below via
+    // glCopyTexImage2D (fast path). A CPU-side pixel buffer is only allocated
+    // in the unlikely fallback branch, not unconditionally on every frame.
+    let mut pixels: Vec<u8> = Vec::new();
+    let needs_cpu_fallback = width <= 0 || height <= 0;
+    let present_objects = ensure_present_objects(gles);
     if options.trace_gl_errors {
         log!("PRESENTATION: viewport={:?}, rotation={:?}", viewport, rotation_matrix);
     }
-    if width > 0 && height > 0 && !pixels.is_empty() {
+    if !needs_cpu_fallback {
         // Diagnostic: check if the buffer is actually empty (all zeros/black)
         static LOGGED_EMPTY: std::sync::Once = std::sync::Once::new();
         LOGGED_EMPTY.call_once(|| {
@@ -1214,25 +1214,35 @@ unsafe fn present_renderbuffer_es2(
             gles2::RENDERBUFFER,
             renderbuffer as GLuint,
         );
-        gles.Finish();
-        gles.ReadPixels(
+        // PERF OPTIMIZATION: copy the renderbuffer into the present texture
+        // directly on the GPU. The old path did glFinish() (full pipeline
+        // stall) + glReadPixels() (GPU->CPU copy of the whole frame), then
+        // re-uploaded the same pixels with glTexImage2D (CPU->GPU) — a costly
+        // round-trip on every single presented frame.
+        // NOTE: the copy target MUST be the real present texture object
+        // (binding 0 is not a texture object in ES2 -> GL_INVALID_OPERATION).
+        // There is no feedback loop here: the copy source FBO has only the
+        // renderbuffer attached, not this texture.
+        gles.ActiveTexture(gles2::TEXTURE0);
+        gles.BindTexture(gles2::TEXTURE_2D, present_objects.texture);
+        gles.CopyTexImage2D(
+            gles2::TEXTURE_2D,
+            0,
+            gles2::RGBA,
             0,
             0,
             width,
             height,
-            gles2::RGBA,
-            gles2::UNSIGNED_BYTE,
-            pixels.as_mut_ptr().cast(),
+            0,
         );
         gles.BindFramebuffer(gles2::FRAMEBUFFER, old_rb as _);
         gles.DeleteFramebuffers(1, &src_framebuffer);
         static LOGGED: std::sync::Once = std::sync::Once::new();
         LOGGED.call_once(|| {
-            log!("GLES2 presenter: using RGBA CPU readback before texture presentation")
+            log!("GLES2 presenter: resolving frame on GPU (glCopyTexImage2D fast path)")
         });
     }
 
-    let present_objects = ensure_present_objects(gles);
     gles.BindFramebuffer(gles2::FRAMEBUFFER, present_objects.framebuffer);
     if options.trace_gl_errors {
         log!("PRESENTATION: binding framebuffer {}", present_objects.framebuffer);
