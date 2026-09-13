@@ -1546,10 +1546,14 @@ pub const CLASSES: ClassExports = objc_classes! {
         let nsstring_class = env.objc.get_known_class("NSString", &mut env.mem);
         let key_class: Class = msg![env; key class];
         if !env.objc.class_is_subclass_of(key_class, nsstring_class) {
+            // Include the actual class name: ad-SDK code (e.g. PlayHaven) that
+            // passes non-string keys on a real device passes strings, so the
+            // class name tells us which earlier call produced a wrong object.
             log!(
                 "Warning: -[NSMutableDictionary setValue:forKey:] called \
-                 with non-string key {:?}; continuing anyway.",
-                key
+                 with non-string key {:?} (class {}); continuing anyway.",
+                key,
+                env.objc.get_class_name(key_class)
             );
         }
     }

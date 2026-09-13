@@ -26,7 +26,7 @@ use crate::bundle;
 use crate::cpu::Cpu;
 use crate::frameworks::foundation::ns_string;
 use crate::mach_o::{MachO, SectionType};
-use crate::mem::{ConstVoidPtr, GuestUSize, Mem, MutPtr, Ptr};
+use crate::mem::{ConstPtr, ConstVoidPtr, GuestUSize, Mem, MutPtr, MutVoidPtr, Ptr};
 use crate::objc::{nil, ClassExports, ObjC};
 use crate::Environment;
 use std::collections::HashMap;
@@ -1059,6 +1059,8 @@ impl Dyld {
                     mem.write(p + i, 0);
                 }
                 p.cast().cast_const()
+            } else if let Some(stub) = self.cxxabi_intercept(mem, name) {
+                Ptr::<std::ffi::c_void, false>::from_bits(stub.to_ptr().to_bits())
             } else if let Some(&external_addr) = bins
                 .iter()
                 .flat_map(|other_bin| other_bin.exported_symbols.get(name))
@@ -1587,6 +1589,28 @@ impl Dyld {
             return None;
         }
 
+        // Intercept C++ exception ABI symbols (e.g. `__cxa_throw`) before the
+        // guest dylibs: letting a real throw reach the guest unwinder ends in
+        // `std::terminate` → guest `exit(0)` (no unwinder on our side).
+        if let Some(stub) = self.cxxabi_intercept(mem, symbol) {
+            let (stub_function_ptr, la_symbol_ptr) = link_by_restoring_stub(
+                mem,
+                cpu,
+                stub.addr_with_thumb_bit(),
+                svc_pc,
+                info.entry_size,
+                pic_offset,
+            );
+            log!(
+                "Intercepted guest C++ exception ABI symbol {} -> host stub ({:?}/{:?})",
+                symbol,
+                stub_function_ptr,
+                la_symbol_ptr
+            );
+            // Restart execution at the (now rewritten) stub.
+            return None;
+        }
+
         // Prefer guest dylibs (libstdc++.6.dylib, libgcc_s.1.dylib, …) over
         // host dylib stubs. Apps that bundle their own libstdc++ rely on the
         // proper guest C++ ABI (`__cxa_throw`, `__cxa_begin_catch`, the SjLj
@@ -1715,6 +1739,10 @@ impl Dyld {
             return Ok(function_ptr);
         }
 
+        if let Some(stub) = self.cxxabi_intercept(mem, symbol) {
+            return Ok(stub);
+        }
+
         let &(symbol, f) = search_host_dylibs(|dylib| dylib.function_exports, symbol).ok_or(())?;
         if let Some(&cached_fn) = self.non_lazy_host_functions.get(symbol) {
             return Ok(cached_fn);
@@ -1745,6 +1773,94 @@ impl Dyld {
         log!("host fn stub {} at {:#x}", symbol, function_ptr.to_bits());
         GuestFunction::from_addr_with_thumb_bit(function_ptr.to_bits())
     }
+
+    /// Intercepts guest C++ exception ABI symbols that must not reach the
+    /// guest's real unwinder (see `cxxabi_throw_intercept`). Returns the
+    /// linked host stub, or `None` if `name` isn't intercepted.
+    fn cxxabi_intercept(&mut self, mem: &mut Mem, name: &str) -> Option<GuestFunction> {
+        if name != "__cxa_throw" {
+            return None;
+        }
+        let sym: &'static str = "__cxa_throw";
+        if let Some(&cached) = self.non_lazy_host_functions.get(sym) {
+            return Some(cached);
+        }
+        let (_, f) = export_c_func!(cxxabi_throw_intercept(_, _, _));
+        let function_ptr = self.create_guest_function(mem, sym, f);
+        self.non_lazy_host_functions.insert(sym, function_ptr);
+        Some(function_ptr)
+    }
+}
+
+/// Host-side intercept for `__cxa_throw` (Itanium C++ ABI).
+///
+/// Direct `throw` statements in app/libstdc++ code call `__cxa_throw`, which
+/// normally starts real unwinding. touchHLE has no unwinder: the SjLj/LSDA
+/// walk ends in `std::terminate` → guest `exit(0)` (observed with CSR Racing:
+/// PlayHaven init threw, unwinder bailed, app exited during startup).
+///
+/// Instead of letting the throw reach the unwinder, we log the exception type
+/// (and `what()` when readable) and simply RETURN. The caller continues after
+/// the throw point — the same trade-off as the `std::__throw_*` `BX LR` patch
+/// above, but for direct throws. The log line makes the root cause of each
+/// suppressed exception visible.
+fn cxxabi_throw_intercept(
+    env: &mut Environment,
+    exception: MutVoidPtr,
+    tinfo: MutVoidPtr,
+    _dest: MutVoidPtr,
+) {
+    use std::sync::atomic::{AtomicU32, Ordering};
+    static LOGGED: AtomicU32 = AtomicU32::new(0);
+
+    // type_info layout (Itanium, 32-bit): +0 vptr, +4 `char const* name`.
+    let type_name = if !tinfo.is_null() {
+        let name_ptr: ConstPtr<u8> = env.mem.read(tinfo.cast());
+        read_printable_guest_string(env, name_ptr, 64)
+    } else {
+        String::new()
+    };
+
+    // Best-effort `what()`: for `std::runtime_error`-style exceptions the
+    // user object is `[vptr, std::string]`; COW std::string holds a pointer
+    // to its rep at +4, and the character data lives at rep + 12.
+    let what = if !exception.is_null() {
+        let rep: ConstPtr<u8> = env.mem.read(exception.cast());
+        if !rep.is_null() {
+            read_printable_guest_string(env, unsafe { rep + 12 }, 96)
+        } else {
+            String::new()
+        }
+    } else {
+        String::new()
+    };
+
+    let n = LOGGED.fetch_add(1, Ordering::Relaxed);
+    if n < 8 {
+        log!(
+            "Suppressed guest C++ exception (no unwinder): type={} what={} at exception={:?}; \
+             execution continues after the throw point.",
+            if type_name.is_empty() { "?" } else { &type_name[..] },
+            if what.is_empty() { "?" } else { &what[..] },
+            exception
+        );
+    }
+}
+
+/// Reads a NUL-terminated guest string defensively, keeping only printable
+/// ASCII. Never panics on NULL/garbage pointers (null-page reads are handled
+/// by `Mem::bytes_at`, garbage yields an empty string).
+fn read_printable_guest_string(env: &Environment, ptr: ConstPtr<u8>, max: usize) -> String {
+    if ptr.is_null() {
+        return String::new();
+    }
+    let bytes = env.mem.bytes_at(ptr, max as GuestUSize);
+    let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
+    bytes[..end]
+        .iter()
+        .filter(|&&b| (0x20..0x7f).contains(&b))
+        .map(|&b| b as char)
+        .collect()
 }
 
 fn dyld_stub_binder(_env: &mut Environment, _arg: u32) {
