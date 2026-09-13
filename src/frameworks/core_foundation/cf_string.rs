@@ -227,6 +227,35 @@ fn CFStringGetSmallestEncoding(env: &mut Environment, the_string: CFStringRef) -
     CFStringConvertNSStringEncodingToEncoding(env, ns_enc)
 }
 
+/// `CFStringRef CFStringConvertEncodingToIANACharSetName(CFStringEncoding encoding)`
+///
+/// Apple docs: returns the IANA character-set name registered for `encoding`,
+/// or NULL if the encoding has no IANA equivalent. Games use this when building
+/// HTTP headers (e.g. `Content-Type: text/html; charset=...`). We return the
+/// canonical IANA names for the encodings touchHLE supports and NULL for the
+/// rest, matching real CFString behavior.
+fn CFStringConvertEncodingToIANACharSetName(
+    env: &mut Environment,
+    encoding: CFStringEncoding,
+) -> CFStringRef {
+    let name: &'static str = match encoding {
+        kCFStringEncodingMacRoman => "macintosh",
+        kCFStringEncodingASCII => "us-ascii",
+        kCFStringEncodingUTF8 => "utf-8",
+        kCFStringEncodingUTF16 | kCFStringEncodingUnicode => "utf-16",
+        kCFStringEncodingUTF16BE => "utf-16be",
+        kCFStringEncodingUTF16LE => "utf-16le",
+        kCFStringEncodingUTF32 => "utf-32",
+        kCFStringEncodingUTF32BE => "utf-32be",
+        kCFStringEncodingUTF32LE => "utf-32le",
+        kCFStringEncodingISOLatin1 => "iso-8859-1",
+        kCFStringEncodingWindowsLatin1 => "windows-1252",
+        kCFStringEncodingNextStepLatin => "x-nextstep",
+        _ => return nil,
+    };
+    ns_string::get_static_str(env, name)
+}
+
 fn CFStringGetMostCompatibleMacStringEncoding(
     _env: &mut Environment,
     encoding: CFStringEncoding,
@@ -2313,6 +2342,7 @@ pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CFStringIsEncodingAvailable(_)),
     export_c_func!(CFStringGetSystemEncoding()),
     export_c_func!(CFStringGetFastestEncoding(_)),
+    export_c_func!(CFStringConvertEncodingToIANACharSetName(_)),
     export_c_func!(CFStringGetSmallestEncoding(_)),
     export_c_func!(CFStringGetMostCompatibleMacStringEncoding(_)),
     // Immutable constructors

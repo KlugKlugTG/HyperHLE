@@ -36,6 +36,23 @@ fn CFReadStreamCreateForHTTPRequest(env: &mut Environment, _alloc: u32, _request
     crate::frameworks::core_foundation::cf_stream::alloc_read_stream_for_cf_network(env)
 }
 
+/// `CFReadStreamRef CFReadStreamCreateForStreamedHTTPRequest(
+///     CFAllocatorRef alloc, CFHTTPRequestRef request, CFReadStreamRef body)`
+///
+/// Apple docs: like `CFReadStreamCreateForHTTPRequest`, but the request body
+/// is streamed from `body` (used for large uploads). We have no real HTTP
+/// stack, so we hand back the same kind of placeholder read stream used by
+/// `CFReadStreamCreateForHTTPRequest` — a real registered host object (so
+/// later `CFReadStream*` calls behave) whose contents are empty.
+fn CFReadStreamCreateForStreamedHTTPRequest(
+    env: &mut Environment,
+    _alloc: u32,
+    _request: u32,
+    _body: u32,
+) -> u32 {
+    crate::frameworks::core_foundation::cf_stream::alloc_read_stream_for_cf_network(env)
+}
+
 fn CFReadStreamOpen(env: &mut Environment, stream: u32) -> bool {
     crate::frameworks::core_foundation::cf_stream::cf_network_read_stream_open(env, stream)
 }
@@ -164,6 +181,7 @@ fn CFNetworkCopyProxiesForURL(
 
 pub const FUNCTIONS: FunctionExports = &[
     export_c_func!(CFReadStreamCreateForHTTPRequest(_, _)),
+    export_c_func!(CFReadStreamCreateForStreamedHTTPRequest(_, _, _)),
     // Other CFReadStream* helpers are exported from
     // core_foundation::cf_stream; not duplicated here.
     export_c_func!(CFReadStreamCopyError(_)),

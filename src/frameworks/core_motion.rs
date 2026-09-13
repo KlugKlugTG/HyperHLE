@@ -156,9 +156,42 @@ struct CMAttitude {
     yaw: f64,
 }
 
+/// Per Apple docs: CMQuaternion is (x, y, z, w) as IEEE doubles. Rotation of
+/// angle theta about the unit axis (x, y, z) is represented as
+/// (x*sin(theta/2), y*sin(theta/2), z*sin(theta/2), cos(theta/2)).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[repr(C, packed)]
+struct CMQuaternion {
+    x: f64,
+    y: f64,
+    z: f64,
+    w: f64,
+}
+unsafe impl crate::mem::SafeRead for CMQuaternion {}
+impl_GuestRet_for_large_struct!(CMQuaternion);
+impl GuestArg for CMQuaternion {
+    const REG_COUNT: usize = 8;
+    fn from_regs(regs: &[u32]) -> Self {
+        CMQuaternion {
+            x: f64::from_regs(&regs[0..2]),
+            y: f64::from_regs(&regs[2..4]),
+            z: f64::from_regs(&regs[4..6]),
+            w: f64::from_regs(&regs[6..8]),
+        }
+    }
+    fn to_regs(self, regs: &mut [u32]) {
+        let (x, y, z, w) = (self.x, self.y, self.z, self.w);
+        x.to_regs(&mut regs[0..2]);
+        y.to_regs(&mut regs[2..4]);
+        z.to_regs(&mut regs[4..6]);
+        w.to_regs(&mut regs[6..8]);
+    }
+}
+
 #[derive(Default)]
 struct CMAttitudeHostObject {
     attitude: CMAttitude,
+    quaternion: CMQuaternion,
 }
 impl HostObject for CMAttitudeHostObject {}
 
@@ -312,6 +345,10 @@ const CLASSES: ClassExports = objc_classes! {
     env.objc.borrow::<CMAttitudeHostObject>(this).attitude.yaw
 }
 
+- (CMQuaternion)quaternion {
+    env.objc.borrow::<CMAttitudeHostObject>(this).quaternion
+}
+
 @end
 
 // =============================================================================
@@ -337,12 +374,26 @@ const CLASSES: ClassExports = objc_classes! {
     let roll = gy.atan2((gx * gx + gz * gz).sqrt());
     let attitude: id = msg_class![env; CMAttitude new];
     {
+        // Derive the orientation quaternion from roll/pitch (yaw = 0):
+        // q = q_pitch * q_roll, with yaw rotation about the device z axis.
+        let hp = pitch / 2.0;
+        let hr = roll / 2.0;
+        let (sp, cp) = hp.sin_cos();
+        let (sr, cr) = hr.sin_cos();
+        let quaternion = CMQuaternion {
+            // q = (1,0,0,cp) * (0,0,1,cr) rotated into the device frame
+            x: cp * sr,
+            y: sp * cr,
+            z: -sp * sr,
+            w: cp * cr,
+        };
         let attitude_host = env.objc.borrow_mut::<CMAttitudeHostObject>(attitude);
         attitude_host.attitude = CMAttitude {
             roll,
             pitch,
             yaw: 0.0,
         };
+        attitude_host.quaternion = quaternion;
     }
     autorelease(env, attitude)
 }
