@@ -1241,8 +1241,14 @@ pub fn render_audio_unit(env: &mut Environment, audio_unit: AudioUnit) {
         }
     }
 
+    // PERF OPTIMIZATION (audio): keep a few buffers queued ahead of playback
+    // instead of throttling at ~1. The old cap meant any main-thread hitch
+    // longer than a single buffer (~12-23ms) drained the OpenAL queue dry and
+    // produced an audible dropout/crackle. Allowing ~4 buffers of slack
+    // (~50ms) rides out hitches at the cost of imperceptible extra latency;
+    // the throttle below still reclaims buffers and re-syncs if we run ahead.
     let remaining_buffers = queued_buffers.saturating_sub(processed_buffers);
-    if remaining_buffers > 1 {
+    if remaining_buffers > 3 {
         let mut drained_buffers = Vec::new();
         {
             let context = env
