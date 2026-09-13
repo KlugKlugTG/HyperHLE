@@ -156,7 +156,7 @@ fn SCNetworkReachabilityScheduleWithRunLoop(
         (host.callout, host.context)
     };
     if let Some(callback) = callback {
-        env.sleep(std::time::Duration::from_millis(16));
+        env.sleep(std::time::Duration::ZERO);
         let flags = kSCNetworkReachabilityFlagsReachable
             | kSCNetworkReachabilityFlagsIsDirect
             | kSCNetworkReachabilityFlagsIsWWAN;
